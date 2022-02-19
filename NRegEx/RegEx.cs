@@ -233,7 +233,7 @@ public class Regex
                 }
             }
 
-            return i == text.Length;
+            return i == text.Length && (nodes.Count == 0 || nodes.Any(n=>n.Outputs.Count ==0));
         }
 
         return false;
