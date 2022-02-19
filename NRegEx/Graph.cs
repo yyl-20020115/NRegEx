@@ -106,17 +106,25 @@ public record class Graph
     }
     public Graph Star(Graph g0)
     {
-        this.Nodes.Add(this.Head = new Node());
-        this.Nodes.Add(this.Tail = new Node());
-        this.Edges.Add(new (this.Head, g0.Head));
-        this.Edges.Add(new (g0.Tail, this.Tail));
-        this.Edges.Add(new(g0.Tail, g0.Head));
+        this.Plus(g0);
+
         this.Edges.Add(new(g0.Head, g0.Tail)); //direct pass
-        this.Edges.UnionWith(g0.Edges);
-        this.Nodes.UnionWith(g0.Nodes);
-        
         this.Description = "(" + g0.Description + ")*";
         return this;
     }
+    public Graph Plus(Graph g0)
+    {
+        this.Nodes.Add(this.Head = new Node());
+        this.Nodes.Add(this.Tail = new Node());
+        this.Edges.Add(new(this.Head, g0.Head));
+        this.Edges.Add(new(g0.Tail, this.Tail));
+        this.Edges.Add(new(g0.Tail, g0.Head));
+        this.Edges.UnionWith(g0.Edges);
+        this.Nodes.UnionWith(g0.Nodes);
+
+        this.Description = "(" + g0.Description + ")+";
+        return this;
+    }
+
     public override string ToString() => $"H:{this.Head},T:{this.Tail}";
 }
