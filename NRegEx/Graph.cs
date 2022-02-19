@@ -111,6 +111,7 @@ public record class Graph
         this.Edges.Add(new (this.Head, g0.Head));
         this.Edges.Add(new (g0.Tail, this.Tail));
         this.Edges.Add(new(g0.Tail, g0.Head));
+        this.Edges.Add(new(g0.Head, g0.Tail)); //direct pass
         this.Edges.UnionWith(g0.Edges);
         this.Nodes.UnionWith(g0.Nodes);
         
