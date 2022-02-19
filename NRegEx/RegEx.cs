@@ -206,33 +206,30 @@ public class Regex
         {
             var nodes = this.Graph.Nodes
                     .Where(n=>n.Inputs.Count==0).ToHashSet();
-            int i = 0;
+
+            var i = 0;
             while (i<text.Length)
             {
-                char c = text[i];
-                var col = nodes.ToArray();
+                var copies = nodes.ToArray();
                 nodes.Clear();
-                bool hit = false;
-                bool all_virtual = true;
-                foreach (var node in col)
+                if (copies.All(copy => copy.IsVirtual))
                 {
-                    if (!node.IsVirtual)
+                    nodes.UnionWith(copies.SelectMany(n => n.Outputs));
+                }
+                else
+                {
+                    var c = text[i];
+                    var hit = false;
+                    foreach (var node in copies)
                     {
-                        all_virtual = false;
                         if (node.Hit(c))
                         {
                             hit = true;
+                            //needs all hits
                             nodes.UnionWith(node.Outputs);
                         }
                     }
-                }
-                if (all_virtual)
-                {
-                    nodes.UnionWith(col.SelectMany(n => n.Outputs));
-                }
-                if (hit)
-                {
-                    i++;
+                    if (hit) i++;
                 }
             }
 
