@@ -208,7 +208,7 @@ public class Regex
                     .Where(n=>n.Inputs.Count==0).ToHashSet();
 
             var i = 0;
-            while (i<text.Length)
+            while (nodes.Count>0 && i<text.Length)
             {
                 var copies = nodes.ToArray();
                 nodes.Clear();
