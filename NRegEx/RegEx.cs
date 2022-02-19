@@ -1,27 +1,33 @@
-﻿namespace NRegEx;
+﻿using System.Text;
+
+namespace NRegEx;
 
 public class Regex
 {
     public const char NullChar = '\0';
-    public const string Operators = "*&|()#";
-    private string regex = "";
-    private Stack<object> operatorStack = new Stack<object>();
-    private Stack<object> operandStack = new Stack<object>();
-    private int[][] priority = new int[][]{
+    public static string Operators = "*&|()" + NullChar;
+    protected string regex = "";
+    protected string inverted = "";
+    protected static int[][] priorities = new int[][]{
             new []{ 1, 1, 1, -1, 1, 1 }, // *&|()#
             new []{ -1, 1, 1, -1, 1, 1 },
             new []{ -1, -1, 1, -1, 1, 1 },
             new []{ -1, -1, -1, -1, 0, 2 },
             new []{ 1, 1, 1, 1, 1, 1 },
             new []{ -1, -1, -1, -1, -1, -1 } };
-
+    public static bool HigherPriority(char c1, char c2)
+        => Operators.IndexOf(c1) <= Operators.IndexOf(c2);
     public Regex(string regex = "")
     {
         this.regex = "";
         this.Prepare(regex);
-        this.NFA = this.BuildNFA();
+        this.Graph = this.Build();
     }
-    public Graph NFA { get; protected set; }
+    public Graph Graph { get; protected set; }
+
+    protected Graph Concate(Graph g2, Graph g1) => new Graph().Concate(g2, g1);
+    protected Graph Union(Graph g2, Graph g1) => new Graph().Union(g2, g1);
+    protected Graph Star(Graph g) => new Graph().Star(g);
     /**
      * 核心转换代码
      * stack 记录 NFA 片段
@@ -30,45 +36,44 @@ public class Regex
      * 如果 ch 是普通字符，创建新的状态，并构建只包含此状态的 NFA 片段入栈 stack
      * 返回 stack 栈顶的 NFA 片段，即最终结果
      */
-    protected Graph BuildNFA()
+    protected Graph Build()
     {
         if (regex.Length == 0)
-            return new Graph();
+            return new();
         else
         {
             int i = 0;
+            var operatorStack = new Stack<char>();
+            var operandStack = new Stack<Graph>();
             operatorStack.Push(NullChar);
-            char[] _regex = (regex + NullChar).ToArray();
+            var _regex = (regex + NullChar).ToArray();
             while (_regex[i] != NullChar
-                    || (char)(operatorStack.Peek()) != NullChar)
+                    || operatorStack.Peek() != NullChar)
             {
-                if (!IsOperator(_regex[i]))
+                char c = _regex[i];
+
+                if (IsNotOperator(c))
                 {
-                    operandStack.Push(_regex[i]);
+                    operandStack.Push(new(c));
                     i++;
                 }
                 else
                 {
-                    var value = GetPriority((char)(operatorStack.Peek()), _regex[i]);
+                    int value = GetPriority(operatorStack.Peek(), c);
                     switch (value)
                     {
                         case 1:
-                            char character = (char)operatorStack.Pop();
+                            char character = operatorStack.Pop();
                             switch (character)
                             {
                                 case '*':
-                                    operandStack.Push(
-                                        new Graph().Star(operandStack.Pop()));
+                                    operandStack.Push(new Graph().Star(operandStack.Pop()));
                                     break;
                                 case '&':
-                                    var obj2 = operandStack.Pop();
-                                    var obj1 = operandStack.Pop();
-                                    operandStack.Push(new Graph().Concat(obj1, obj2));
+                                    operandStack.Push(new Graph().Concate(operandStack.Pop(), operandStack.Pop()));
                                     break;
                                 case '|':
-                                    var obj4 = operandStack.Pop();
-                                    var obj3 = operandStack.Pop();
-                                    operandStack.Push(new Graph().Union(obj3,obj4));
+                                    operandStack.Push(new Graph().Union(operandStack.Pop(), operandStack.Pop()));
                                     break;
                                 default:
                                     break;
@@ -79,7 +84,7 @@ public class Regex
                             i++;
                             break;
                         case -1:
-                            operatorStack.Push(_regex[i]);
+                            operatorStack.Push(c);
                             i++;
                             break;
                         default:
@@ -87,32 +92,22 @@ public class Regex
                     }
                 }
             }
-            return (Graph)operandStack.Pop();
+            return operandStack.Pop();
         }
-    }
-
-    public void Reset()
-    {
-        Node.ResetID();
-        this.operandStack.Clear();
-        this.operatorStack.Clear();
-    }
+    } 
 
     public string RegexText { get => regex; set {  
             Prepare(value);
-            this.operandStack.Clear();
-            this.operatorStack.Clear();
-            this.NFA = this.BuildNFA();
+            this.Graph = this.Build();
         } }
 
-    protected bool IsOperator(char c) 
-        => Operators.Contains(c.ToString());
+    protected bool IsNotOperator(char c) 
+        => Operators.IndexOf(c)<0;
 
     protected int GetPriority(char c1, char c2)
     {
-        var priorityString = "*&|()#";
-        return this.priority[priorityString.IndexOf(c1.ToString())]
-            [priorityString.IndexOf(c2.ToString())];
+        return priorities[Operators.IndexOf(c1)]
+            [Operators.IndexOf(c2)];
     }
 
     /**
@@ -120,7 +115,41 @@ public class Regex
      * 对当前字符类型进行判断，并对前一个字符进行判断，最终得到添加连接符之后的字符串
      * 如 (a|b)*abb 添加完则为 (a|b)*&a&b&b
      */
-    protected void Prepare(string _regex)
+    protected string Invert(string input)
+    {
+        var builder = new StringBuilder();
+        var inputStack = new Stack<char>();
+        foreach (var c in input)
+        {
+            if (c == '(')
+            {
+                inputStack.Push(c);
+            }
+            else if (c == ')')
+            {
+                while (inputStack.Count > 0 && inputStack.Peek() != '(')
+                {
+                    builder.Append(inputStack.Pop());
+                }
+                inputStack.Pop();
+
+            }
+            else if (IsNotOperator(c))
+            {
+                builder.Append(c);
+            }
+            else //operator
+            {
+                while (inputStack.Count > 0 && HigherPriority(inputStack.Peek(), c))
+                {
+                    builder.Append(inputStack.Pop());
+                }
+                inputStack.Push(c);
+            }
+        }
+        return builder.ToString();
+    }
+    protected string Prepare(string _regex)
     {
         var regexs = _regex.Replace(" ", "").ToArray();
         for (int i = 0; i < regexs.Length; i++)
@@ -142,25 +171,71 @@ public class Regex
                 }
             }
         }
+        return this.inverted = this.Invert(regex);
     }
 
-    protected HashSet<Node> PerformMatching(char c, HashSet<Node> nodes)
+    protected HashSet<Node> MoveForward(IEnumerable<Node> nodes)
     {
-        var outs = nodes.SelectMany(n=>n.OutEdges).ToHashSet();
+        var ret = new HashSet<Node>(nodes);
 
-        return outs.Where(e => e.Hit(c)).Select(e=>e.Tail).ToHashSet();
+        var any = true;
+        while (any)
+        {
+            var rta = ret.ToArray();
+            ret.Clear();
+            any= false;
+            foreach (var n in rta)
+            {
+                if (n.IsVirtual)
+                {
+                    any |= true;
+                    ret.UnionWith(n.Outputs);
+                }
+            }
+            if (!any)
+            {
+                ret.UnionWith(rta);
+            }
+        }
+
+        return ret;
     }
     public bool Match(string text)
     {
         if (!string.IsNullOrEmpty(text))
         {
-            var nodes = new HashSet<Node> { this.NFA.Head };
-            var tail = this.NFA.Tail;
+            var nodes = this.Graph.Nodes
+                    .Where(n=>n.Inputs.Count==0).ToHashSet();
             int i = 0;
-            while (i<text.Length && nodes.Count!=0 && !nodes.Contains(tail))
+            while (i<text.Length)
             {
-                nodes = this.PerformMatching(text[i++], nodes);
+                char c = text[i];
+                var col = nodes.ToArray();
+                nodes.Clear();
+                bool hit = false;
+                bool all_virtual = true;
+                foreach (var node in col)
+                {
+                    if (!node.IsVirtual)
+                    {
+                        all_virtual = false;
+                        if (node.Hit(c))
+                        {
+                            hit = true;
+                            nodes.UnionWith(node.Outputs);
+                        }
+                    }
+                }
+                if (all_virtual)
+                {
+                    nodes.UnionWith(col.SelectMany(n => n.Outputs));
+                }
+                if (hit)
+                {
+                    i++;
+                }
             }
+
             return i == text.Length;
         }
 
