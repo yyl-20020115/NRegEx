@@ -144,9 +144,25 @@ public class Regex
         }
     }
 
+    protected HashSet<Node> PerformMatching(char c, HashSet<Node> nodes)
+    {
+        var outs = nodes.SelectMany(n=>n.OutEdges).ToHashSet();
 
+        return outs.Where(e => e.Hit(c)).Select(e=>e.Tail).ToHashSet();
+    }
     public bool Match(string text)
     {
+        if (!string.IsNullOrEmpty(text))
+        {
+            var nodes = new HashSet<Node> { this.NFA.Head };
+            var tail = this.NFA.Tail;
+            int i = 0;
+            while (i<text.Length && nodes.Count!=0 && !nodes.Contains(tail))
+            {
+                nodes = this.PerformMatching(text[i++], nodes);
+            }
+            return i == text.Length;
+        }
 
         return false;
     }
