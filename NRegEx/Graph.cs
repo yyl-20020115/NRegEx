@@ -9,14 +9,20 @@ public record class Node
     public static int Nid = 0;
     public readonly char C;
     public readonly int Id ;
+    public readonly bool IsVirtual;
     public readonly bool Inverted;
     public readonly string Name ;
-    public bool IsVirtual => this.C == '\0';
-    public HashSet<int> CharSet;
-    public HashSet<Node> Inputs { get; }= new ();
-    public HashSet<Node> Outputs { get; }= new ();
-    public Node(string name = "", char c = '\0', bool inverted = false)
+    public readonly HashSet<int>? CharSet;
+    public readonly HashSet<Node> Inputs = new ();
+    public readonly HashSet<Node> Outputs = new ();
+    public Node(string name = "")
+        :this(name,'\0')
     {
+        this.IsVirtual = true;
+    }
+    public Node(string name, char c, bool inverted = false)
+    {
+        this.IsVirtual = false;
         this.Name = name;
         this.Id = ++Nid;
         this.C = c;
@@ -33,7 +39,7 @@ public record class Node
         }
         else
         {
-            this.CharSet = new HashSet<int>() { c };
+            this.CharSet = new (){ c };
         }
     }
     public bool Hit(char c) => this.Inverted ? this.C!=c : this.C == c;
@@ -62,8 +68,8 @@ public record class Node
 }
 public record class Edge
 {
-    public Node Head { get; }
-    public Node Tail { get; }
+    public readonly Node Head;
+    public readonly Node Tail;
     public Edge(Node Head,Node Tail)
     {
         this.Head = Head;
@@ -81,12 +87,12 @@ public record class Graph
     public int Id => id;
 
     public string Description { get; protected set; }
+    public readonly string Name;
 
-    public HashSet<Node> Nodes { get; } = new();
-    public HashSet<Edge> Edges { get; } = new();
+    public readonly HashSet<Node> Nodes = new();
+    public readonly HashSet<Edge> Edges = new();
     public Node Head { get; protected set; }
     public Node Tail { get; protected set; }
-    public readonly string Name;
     public Graph(string name = "",char c = '\0')
     {
         this.Name = name;
@@ -110,6 +116,13 @@ public record class Graph
         this.Description = "(" + g1.Description + " & " + g2.Description + ")";
         return this;
     }
+    public Graph UnionWith(IEnumerable<Graph> gs)
+    {
+        foreach(var g in gs) this.UnionWith(g);
+        return this;
+    }
+
+
     public Graph UnionWith(Graph g0)
     {
         if(this.Head==null) 
@@ -172,19 +185,58 @@ public record class Graph
 
     public override string ToString() => $"H:{this.Head},T:{this.Tail}";
 
-    public HashSet<Node> Heads => this.Nodes
-                .Where(n => n.Inputs.Count == 0).ToHashSet();
-    public HashSet<Node> Reduce()
-    {
-        var heads = this.Nodes.Where(n => n.Inputs.Count == 0).ToHashSet();
-        var founds = new HashSet<Node>(heads);
-        while (founds.Any(f => f.IsVirtual))
-        {
-            founds.UnionWith(heads.Where(h => !h.IsVirtual).SelectMany(h => h.Outputs));
-        }
+    protected HashSet<Node>? heads = null;
+    public HashSet<Node>? Heads => (this.heads??=this.Compact());
 
-        return heads;
+    protected HashSet<Node> Compact()
+    {
+        var inits = this.Nodes.Where(n => n.Inputs.Count == 0).ToHashSet();
+        var nodes = inits.ToHashSet();
+        var visited = nodes.ToHashSet();
+
+        var heads = new HashSet<Node>();
+        do
+        {
+            heads.UnionWith(nodes.Where(n => !n.IsVirtual));
+
+            var virtuals = nodes.Where(n => n.IsVirtual).ToHashSet();
+
+            nodes = virtuals.SelectMany(n => n.Outputs).ToHashSet();
+
+            virtuals.ToList().ForEach(v =>
+                v.Outputs.ToList().ForEach(o => o.Inputs.Remove(v)));
+            
+            this.Nodes.ExceptWith(virtuals);
+
+            nodes.ExceptWith(visited);
+            visited.UnionWith(nodes);
+        } while (nodes.Count > 0);
+
+
+        nodes = this.heads = heads;
+        
+        while(nodes.Count > 0)
+        {
+            nodes = nodes.SelectMany(n => n.Outputs).ToHashSet();
+            var virtuals= nodes.Where(n => n.IsVirtual).ToHashSet();
+            foreach (var node in virtuals)
+            {
+                foreach (var i in node.Inputs)
+                {
+                    i.Outputs.Remove(node);
+                    i.Outputs.UnionWith(node.Outputs);
+                }
+                foreach (var o in node.Outputs)
+                {
+                    o.Inputs.Remove(node);
+                    o.Inputs.UnionWith(node.Inputs);
+                }
+            }
+            this.Nodes.ExceptWith(virtuals);
+        }
+        return this.heads;
     }
+
 
 
     public bool IsBacktracingFriendly()

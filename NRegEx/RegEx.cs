@@ -2,7 +2,7 @@
 
 namespace NRegEx;
 
-public record class Capture(int Index = 0,int Length = 0, string Value = "", string Name ="");
+public record class Capture(int Index = 0,int Length = -1, string? Value = null);
 
 public delegate string CaptureEvaluator(Capture capture);
 public class Regex
@@ -186,7 +186,7 @@ public class Regex
     public string RegexText => regex;
     public string Name => name;
     public Regex() { }
-    public Regex(string regex, string name =null)
+    public Regex(string regex, string? name =null)
     {
         this.SetRegexText(regex,name);
     }
@@ -259,7 +259,7 @@ public class Regex
         }
     }
 
-    public void SetRegexText(string regex, string name = null)
+    public void SetRegexText(string regex, string? name = null)
     { 
         this.Graph = this.Build(
             this.regex = this.Prepare(regex),
@@ -338,7 +338,9 @@ public class Regex
         if (length < 0) length = input.Length;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start)+","+nameof(length));
 
-        var nodes = this.Graph.Heads;
+        var heads = this.Graph.Heads;
+        
+        var nodes = heads.ToHashSet();
 
         var i = start;
         while (nodes.Count > 0 && i < length)
@@ -375,9 +377,10 @@ public class Regex
         if (length < 0) length = input.Length;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "," + nameof(length));
         var s = start;
+        var heads = this.Graph.Heads;
     repeat:
 
-        var nodes = this.Graph.Heads;
+        var nodes = heads?.ToHashSet() ?? new ();
         var i = start;
         var m = 0;
         while (nodes.Count > 0 && i < length)
@@ -408,16 +411,15 @@ public class Regex
                 }
                 else
                 {
-                    start++;
+                    start+=m;
                     goto repeat;
                 }
             }
         }
 
         return start > s && nodes.Count==0
-            ? new Capture(start, m,
-                input[start..(start+m)], this.Name)
-            : new Capture(start,-1);
+            ? new (start, m, input[start..(start+m)])
+            : new (start,-1);
     }
     public List<Capture> Matches(string input, int start = 0,int length = -1)
     {

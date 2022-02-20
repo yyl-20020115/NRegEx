@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace NRegEx;
+﻿namespace NRegEx;
 
 public class RegExArray
 {
@@ -71,29 +65,29 @@ public class RegExArray
         }
         return new();
     }
-    public HashLookups<string, Capture> Match(string input, int start = 0, int length = -1)
+    public Dictionary<string,Capture> Match(string input, int start = 0, int length = -1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
         if (start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "," + nameof(length));
         
-        var lookups = new HashLookups<string, Capture>();
+        var dict = new Dictionary<string,Capture>();
 
         var s = start;
-        var allGraph = new Graph();
-        foreach (var r in this.Array)
-            allGraph.UnionWith(r.Graph);
-
+        var graph = new Graph().UnionWith(this.Array.Select(a=>a.Graph));
+        var heads = graph.Heads;
     repeat:
+        var nodes = heads?.ToHashSet() ?? new();
+        var last = nodes;
 
-        var nodes = allGraph.Heads;
         var i = start;
         var m = 0;
         while (nodes.Count > 0 && i < length)
         {
             var copies = nodes.ToArray();
-            nodes.Clear();
+            last = nodes;
+            nodes = new HashSet<Node>();
             if (copies.All(copy => copy.IsVirtual))
             {
                 nodes.UnionWith(copies.SelectMany(n => n.Outputs));
@@ -115,22 +109,88 @@ public class RegExArray
                 {
                     m++;
                     i++;
+                    foreach(var node in nodes)
+                    {
+                        if(node.Outputs.Count == 0)
+                        {
+                            dict[node.Name]=( 
+                                new(start,m,
+                                    input[start..(start+m)]));
+                        }
+                    }
                 }
                 else
                 {
-                    start++;
+                    start+=m;
                     goto repeat;
                 }
             }
         }
 
-
-        //TODO:
-        return lookups;
-        //return start > s && nodes.Count == 0
-        //    ? new Capture(start, m,
-        //        input[start..(start + m)], "")
-        //    : new Capture(start, -1);
+        return dict;
     }
 
+    public HashLookups<string,Capture> Matches(string input, int start = 0, int length = -1)
+    {
+        if (input == null) throw new ArgumentNullException(nameof(input));
+        if (start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
+        if (length < 0) length = input.Length;
+        if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "," + nameof(length));
+
+        var lookups = new HashLookups<string,Capture>();
+
+        var s = start;
+        var graph = new Graph().UnionWith(this.Array.Select(a => a.Graph));
+        var heads = graph.Heads;
+    repeat:
+        var nodes = heads?.ToHashSet() ?? new();
+        var last = nodes;
+
+        var i = start;
+        var m = 0;
+        while (nodes.Count > 0 && i < length)
+        {
+            var copies = nodes.ToArray();
+            last = nodes;
+            nodes = new HashSet<Node>();
+            if (copies.All(copy => copy.IsVirtual))
+            {
+                nodes.UnionWith(copies.SelectMany(n => n.Outputs));
+            }
+            else
+            {
+                var c = input[i];
+                var hit = false;
+                foreach (var node in copies)
+                {
+                    if (node.Hit(c))
+                    {
+                        hit = true;
+                        //needs all hits
+                        nodes.UnionWith(node.Outputs);
+                    }
+                }
+                if (hit)
+                {
+                    m++;
+                    i++;
+                    foreach (var node in nodes)
+                    {
+                        if (node.Outputs.Count == 0)
+                        {
+                            lookups[node.Name].Add(
+                                new(start, m,
+                                    input[start..(start + m)]));
+                        }
+                    }
+                }
+                else
+                {
+                    start += m;
+                    goto repeat;
+                }
+            }
+        }
+        return lookups;
+    }
 }
