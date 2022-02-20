@@ -221,9 +221,9 @@ public record class Graph
         } while (nodes.Count > 0);
 
 
-        nodes = this.heads = heads;
-        
-        while(nodes.Count > 0)
+        nodes = heads.ToHashSet();
+
+        while (nodes.Count > 0)
         {
             nodes = nodes.SelectMany(n => n.Outputs).ToHashSet();
             var virtuals= nodes.Where(n => n.IsVirtual).ToHashSet();
@@ -242,7 +242,7 @@ public record class Graph
             }
             this.Nodes.ExceptWith(virtuals);
         }
-        return this.heads;
+        return heads;
     }
 
 

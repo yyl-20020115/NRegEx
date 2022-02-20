@@ -109,6 +109,7 @@ public class RegExArray
                 {
                     m++;
                     i++;
+                    var any = false;
                     foreach(var node in nodes)
                     {
                         if(node.Outputs.Count == 0)
@@ -116,12 +117,14 @@ public class RegExArray
                             dict[node.Name]=( 
                                 new(start,m,
                                     input[start..(start+m)]));
+                            any = true;
                         }
                     }
+                    if (any) break;
                 }
                 else
                 {
-                    start+=m;
+                    start += m;
                     goto repeat;
                 }
             }

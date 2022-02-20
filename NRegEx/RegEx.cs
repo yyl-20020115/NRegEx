@@ -169,17 +169,6 @@ public class Regex
         => !string.IsNullOrEmpty(regex) 
         && new Regex(regex).Graph.IsBacktracingFriendly();
     
-    public const char NullChar = '\0';
-    public static string Operators = "*&|()" + NullChar;
-    protected static int[][] Priorities = new int[][]{
-            new []{ 1, 1, 1, -1, 1, 1 }, // *&|()#
-            new []{ -1, 1, 1, -1, 1, 1 },
-            new []{ -1, -1, 1, -1, 1, 1 },
-            new []{ -1, -1, -1, -1, 0, 2 },
-            new []{ 1, 1, 1, 1, 1, 1 },
-            new []{ -1, -1, -1, -1, -1, -1 } };
-    public static bool HigherPriority(char c1, char c2)
-        => Operators.IndexOf(c1) <= Operators.IndexOf(c2);
     protected string regex = "";
     protected string name = "";
     public Graph Graph { get; protected set; } = new Graph();
@@ -191,145 +180,17 @@ public class Regex
         this.SetRegexText(regex,name);
     }
 
-    /**
-     * 核心转换代码
-     * stack 记录 NFA 片段
-     * 依次读取表达式的每个字符 ch
-     * 如果 ch 是运算符，从 stack 出栈所需数目的 NFA 片段，构建新的 NFA 片段后入栈 stack
-     * 如果 ch 是普通字符，创建新的状态，并构建只包含此状态的 NFA 片段入栈 stack
-     * 返回 stack 栈顶的 NFA 片段，即最终结果
-     */
-    protected Graph Build(string input_regex, string name)
-    {
-        if (input_regex.Length == 0)
-            return new();
-        else
-        {
-            int i = 0;
-            var operatorStack = new Stack<char>();
-            var operandStack = new Stack<Graph>();
-            operatorStack.Push(NullChar);
-            var _regex = (input_regex + NullChar);
-            while (_regex[i] != NullChar
-                    || operatorStack.Peek() != NullChar)
-            {
-                char c = _regex[i];
-
-                if (IsNotOperator(c))
-                {
-                    operandStack.Push(new(name,c));
-                    i++;
-                }
-                else
-                {
-                    int value = GetPriority(operatorStack.Peek(), c);
-                    switch (value)
-                    {
-                        case 1:
-                            char character = operatorStack.Pop();
-                            switch (character)
-                            {
-                                case '*':
-                                    operandStack.Push(new Graph(name).ZeroPlus(operandStack.Pop()));
-                                    break;
-                                case '&':
-                                    operandStack.Push(new Graph(name).Concate(operandStack.Pop(), operandStack.Pop()));
-                                    break;
-                                case '|':
-                                    operandStack.Push(new Graph(name).Union(operandStack.Pop(), operandStack.Pop()));
-                                    break;
-                                default:
-                                    break;
-                            }
-                            break;
-                        case 0:
-                            operatorStack.Pop();
-                            i++;
-                            break;
-                        case -1:
-                            operatorStack.Push(c);
-                            i++;
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-            return operandStack.Pop();
-        }
-    }
-
     public void SetRegexText(string regex, string? name = null)
     { 
-        this.Graph = this.Build(
-            this.regex = this.Prepare(regex),
-            this.name = name ?? regex);
+        this.Graph = new RegExParser(this.name = name ?? regex)
+            .Parse(this.regex = regex);
     }
-    protected bool IsNotOperator(char c) 
-        => Operators.IndexOf(c)<0;
 
-    protected int GetPriority(char c1, char c2) 
-        => Priorities[Operators.IndexOf(c1)][Operators.IndexOf(c2)];
-
-
-    protected string Invert(string input)
-    {
-        var builder = new StringBuilder();
-        var inputStack = new Stack<char>();
-        foreach (var c in input)
-        {
-            if (c == '(')
-            {
-                inputStack.Push(c);
-            }
-            else if (c == ')')
-            {
-                while (inputStack.Count > 0 && inputStack.Peek() != '(')
-                {
-                    builder.Append(inputStack.Pop());
-                }
-                inputStack.Pop();
-
-            }
-            else if (IsNotOperator(c))
-            {
-                builder.Append(c);
-            }
-            else //operator
-            {
-                while (inputStack.Count > 0 && HigherPriority(inputStack.Peek(), c))
-                {
-                    builder.Append(inputStack.Pop());
-                }
-                inputStack.Push(c);
-            }
-        }
-        return builder.ToString();
-    }
     /**
      * 在构建 NFA 之前，需要对正则表达式进行处理，以 (a|b)*abb 为例，在正则表达式里是没有连接符号的，这时就需要添加连接符
      * 对当前字符类型进行判断，并对前一个字符进行判断，最终得到添加连接符之后的字符串
      * 如 (a|b)*abb 添加完则为 (a|b)*&a&b&b
      */
-    protected string Prepare(string input_regex)
-    {
-        var builder = new StringBuilder();
-        input_regex = input_regex.Replace(" ", "");
-        for (int i = 0; i < input_regex.Length; i++)
-            if (i == 0)
-                builder.Append(input_regex[i]);
-            else
-            {
-                if (input_regex[i] == '|' || input_regex[i] == '*' || input_regex[i] == ')')
-                    builder.Append(input_regex[i]);
-                else
-                    if (i >= 1 && input_regex[i - 1] == '(' || input_regex[i - 1] == '|')
-                    builder.Append(input_regex[i]);
-                else
-                    builder.Append("&" + input_regex[i]);
-            }
-        return builder.ToString();
-    }
 
     public bool IsMatch(string input, int start = 0, int length = -1)
     {
