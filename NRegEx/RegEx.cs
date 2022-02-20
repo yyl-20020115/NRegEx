@@ -424,10 +424,10 @@ public class Regex
     public List<Capture> Matches(string input, int start = 0,int length = -1)
     {
         var captures = new List<Capture>();
-        Capture capture = null;
-        do
+        while(true)
         {
-            if(null == (capture = this.Match(input, start, length)))
+            var capture = this.Match(input, start, length);
+            if (null == capture)
             {
                 break;
             }
@@ -437,9 +437,8 @@ public class Regex
                     break;
                 captures.Add(capture);
             }
+            if (capture.Index + capture.Length >= length) break;
         }
-        while (capture.Index + capture.Length < length);
-        
         return captures;
     }
     public string Replace(string input, string replacement, int count = 0, int start = 0)

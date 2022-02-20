@@ -12,7 +12,7 @@ public record class Node
     public readonly bool IsVirtual;
     public readonly bool Inverted;
     public readonly string Name ;
-    public readonly HashSet<int>? CharSet;
+    public readonly HashSet<int> CharSet;
     public readonly HashSet<Node> Inputs = new ();
     public readonly HashSet<Node> Outputs = new ();
     public Node(string name = "")
@@ -30,11 +30,14 @@ public record class Node
 
         if (this.Inverted)
         {
-            if (!KnownInvertedSets.TryGetValue(c,out this.CharSet))
+            if (!KnownInvertedSets.TryGetValue(c,out var chs))
             {
                 (KnownInvertedSets[c] = this.CharSet = new (Enumerable.Range(
                     char.MinValue,
                     char.MaxValue - char.MinValue + 1))).Remove(c);
+            }
+            else {
+                this.CharSet = chs;
             }
         }
         else
@@ -43,14 +46,14 @@ public record class Node
         }
     }
     public bool Hit(char c) => this.Inverted ? this.C!=c : this.C == c;
-    public string FormatNodes(IEnumerable<Node> nodes)
+    public string FormatNodes(IEnumerable<Node?> nodes)
     {
         var builder = new StringBuilder();
-        var ns = new List<Node>(nodes);
+        var ns = new List<Node?>(nodes);
         for(int i = 0; i < ns.Count; i++)
         {
             var node = ns[i];
-            builder.Append(node.Id);
+            builder.Append(node?.Id);
             if (i < ns.Count - 1)
             {
                 builder.Append(',');
@@ -86,13 +89,13 @@ public record class Graph
     protected readonly int id = 0;
     public int Id => id;
 
-    public string Description { get; protected set; }
+    public string? Description { get; protected set; }
     public readonly string Name;
 
     public readonly HashSet<Node> Nodes = new();
     public readonly HashSet<Edge> Edges = new();
-    public Node Head { get; protected set; }
-    public Node Tail { get; protected set; }
+    public Node Head;
+    public Node Tail;
     public Graph(string name = "",char c = '\0')
     {
         this.Name = name;
@@ -101,6 +104,11 @@ public record class Graph
         {
             this.Nodes.Add(this.Head = this.Tail = new(name,c));
             this.Description = this.Head.ToString();
+        }
+        else
+        {
+            this.Head = new(name);
+            this.Tail = new(name);
         }
     }
 
@@ -186,7 +194,7 @@ public record class Graph
     public override string ToString() => $"H:{this.Head},T:{this.Tail}";
 
     protected HashSet<Node>? heads = null;
-    public HashSet<Node>? Heads => (this.heads??=this.Compact());
+    public HashSet<Node> Heads => (this.heads??=this.Compact());
 
     protected HashSet<Node> Compact()
     {

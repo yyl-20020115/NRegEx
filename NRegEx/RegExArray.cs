@@ -29,7 +29,7 @@ public class RegExArray
         foreach(var r in this.Array)
             allGraph.UnionWith(r.Graph);
 
-        var nodes = allGraph.Heads;
+        HashSet<Node> nodes = allGraph.Heads??new ();
         var last = nodes;
         var i = start;
         while (nodes.Count > 0 && i < length)
@@ -143,7 +143,7 @@ public class RegExArray
         var graph = new Graph().UnionWith(this.Array.Select(a => a.Graph));
         var heads = graph.Heads;
     repeat:
-        var nodes = heads?.ToHashSet() ?? new();
+        var nodes = heads.ToHashSet();
         var last = nodes;
 
         var i = start;
@@ -181,6 +181,8 @@ public class RegExArray
                             lookups[node.Name].Add(
                                 new(start, m,
                                     input[start..(start + m)]));
+                            //reset for this name
+                            nodes.UnionWith(heads.Where(n => n.Name == node.Name));
                         }
                     }
                 }
