@@ -5,7 +5,7 @@ var regex0 = new Regex(regexString0);
 Console.WriteLine(regex0);
 Console.WriteLine(regex0.RegexText);
 Console.WriteLine(regex0.Graph);
-var b = regex0.Match("ccabb");
+var b = regex0.IsMatch("ccabb");
 Console.WriteLine(b);
 
 var regexString1 = "a*";
