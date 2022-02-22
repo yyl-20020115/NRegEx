@@ -171,21 +171,17 @@ public class Regex
     
     protected string regex = "";
     protected string name = "";
-    public Graph Graph { get; protected set; } = new Graph();
-    public string RegexText => regex;
+    protected Graph? graph;
+    public Graph Graph =>graph??=this.Build();
+    public string Pattern => regex;
     public string Name => name;
-    public Regex() { }
     public Regex(string regex, string? name =null)
     {
-        this.SetRegexText(regex,name);
+        this.regex = regex;
+        this.name = name ?? this.regex;
     }
 
-    public void SetRegexText(string regex, string? name = null)
-    { 
-        this.Graph = new RegExParser(this.name = name ?? regex)
-            .Parse(this.regex = regex);
-    }
-
+    protected Graph Build() => new RegExParser(this.name).Parse(this.regex);
     /**
      * 在构建 NFA 之前，需要对正则表达式进行处理，以 (a|b)*abb 为例，在正则表达式里是没有连接符号的，这时就需要添加连接符
      * 对当前字符类型进行判断，并对前一个字符进行判断，最终得到添加连接符之后的字符串

@@ -2,8 +2,66 @@
 
 namespace NRegEx;
 
+// Parser flags.
+[Flags]
+public enum RegExParserOptions : uint
+{
+    // Fold case during matching (case-insensitive).
+    FOLD_CASE = 0x01,
+    // Treat pattern as a literal string instead of a regexp.
+    LITERAL = 0x02,
+    // Allow character classes like [^a-z] and [[:space:]] to match newline.
+    CLASS_NL = 0x04,
+    // Allow '.' to match newline.
+    DOT_NL = 0x08,
+    // Treat ^ and $ as only matching at beginning and end of text, not
+    // around embedded newlines.  (Perl's default).
+    ONE_LINE = 0x10,
+    // Make repetition operators default to non-greedy.
+    NON_GREEDY = 0x20,
+    // allow Perl extensions:
+    //   non-capturing parens - (?: )
+    //   non-greedy operators - *? +? ?? {}?
+    //   flag edits - (?i) (?-i) (?i: )
+    //     i - FoldCase
+    //     m - !OneLine
+    //     s - DotNL
+    //     U - NonGreedy
+    //   line ends: \A \z
+    //   \Q and \E to disable/enable metacharacters
+    //   (?P<name>expr) for named captures
+    // \C (any byte) is not supported.
+    PERL_X = 0x40,
+    // Allow \p{Han}, \P{Han} for Unicode group and negation.
+    UNICODE_GROUPS = 0x80,
+    // Regexp END_TEXT was $, not \z.  Internal use only.
+    WAS_DOLLAR = 0x100,
+    MATCH_NL = CLASS_NL | DOT_NL,
+    // As close to Perl as possible.
+    PERL = CLASS_NL | ONE_LINE | PERL_X | UNICODE_GROUPS,
+    // POSIX syntax.
+    POSIX = 0,
+}
+
 public class RegExParser
 {
+    // Unexpected error
+    private const string ERR_INTERNAL_ERROR = "regexp/syntax: internal error";
+
+    // Parse errors
+    private const string ERR_INVALID_CHAR_CLASS = "invalid character class";
+    private const string ERR_INVALID_CHAR_RANGE = "invalid character class range";
+    private const string ERR_INVALID_ESCAPE = "invalid escape sequence";
+    private const string ERR_INVALID_NAMED_CAPTURE = "invalid named capture";
+    private const string ERR_INVALID_PERL_OP = "invalid or unsupported Perl syntax";
+    private const string ERR_INVALID_REPEAT_OP = "invalid nested repetition operator";
+    private const string ERR_INVALID_REPEAT_SIZE = "invalid repeat count";
+    private const string ERR_MISSING_BRACKET = "missing closing ]";
+    private const string ERR_MISSING_PAREN = "missing closing )";
+    private const string ERR_MISSING_REPEAT_ARGUMENT = "missing argument to repetition operator";
+    private const string ERR_TRAILING_BACKSLASH = "trailing backslash at end of expression";
+    private const string ERR_DUPLICATE_NAMED_CAPTURE = "duplicate capture group name";
+
 
     public const char NullChar = '\0';
     public static string Operators = "*&|()" + NullChar;
@@ -87,7 +145,7 @@ public class RegExParser
         {
             //TODO: need full algorithm (see RE2CS)
         }
-        return new();
+        return this.SimpleParse(regex);
     }
     public Graph SimpleParse(string regex)
     {
