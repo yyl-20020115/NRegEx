@@ -6,6 +6,7 @@ namespace NRegEx;
 [Flags]
 public enum RegExParserOptions : uint
 {
+    None = 0,
     // Fold case during matching (case-insensitive).
     FOLD_CASE = 0x01,
     // Treat pattern as a literal string instead of a regexp.
@@ -46,21 +47,21 @@ public enum RegExParserOptions : uint
 public class RegExParser
 {
     // Unexpected error
-    private const string ERR_INTERNAL_ERROR = "regexp/syntax: internal error";
+    public const string ERR_INTERNAL_ERROR = "regexp/syntax: internal error";
 
     // Parse errors
-    private const string ERR_INVALID_CHAR_CLASS = "invalid character class";
-    private const string ERR_INVALID_CHAR_RANGE = "invalid character class range";
-    private const string ERR_INVALID_ESCAPE = "invalid escape sequence";
-    private const string ERR_INVALID_NAMED_CAPTURE = "invalid named capture";
-    private const string ERR_INVALID_PERL_OP = "invalid or unsupported Perl syntax";
-    private const string ERR_INVALID_REPEAT_OP = "invalid nested repetition operator";
-    private const string ERR_INVALID_REPEAT_SIZE = "invalid repeat count";
-    private const string ERR_MISSING_BRACKET = "missing closing ]";
-    private const string ERR_MISSING_PAREN = "missing closing )";
-    private const string ERR_MISSING_REPEAT_ARGUMENT = "missing argument to repetition operator";
-    private const string ERR_TRAILING_BACKSLASH = "trailing backslash at end of expression";
-    private const string ERR_DUPLICATE_NAMED_CAPTURE = "duplicate capture group name";
+    public const string ERR_INVALID_CHAR_CLASS = "invalid character class";
+    public const string ERR_INVALID_CHAR_RANGE = "invalid character class range";
+    public const string ERR_INVALID_ESCAPE = "invalid escape sequence";
+    public const string ERR_INVALID_NAMED_CAPTURE = "invalid named capture";
+    public const string ERR_INVALID_PERL_OP = "invalid or unsupported Perl syntax";
+    public const string ERR_INVALID_REPEAT_OP = "invalid nested repetition operator";
+    public const string ERR_INVALID_REPEAT_SIZE = "invalid repeat count";
+    public const string ERR_MISSING_BRACKET = "missing closing ]";
+    public const string ERR_MISSING_PAREN = "missing closing )";
+    public const string ERR_MISSING_REPEAT_ARGUMENT = "missing argument to repetition operator";
+    public const string ERR_TRAILING_BACKSLASH = "trailing backslash at end of expression";
+    public const string ERR_DUPLICATE_NAMED_CAPTURE = "duplicate capture group name";
 
 
     public const char NullChar = '\0';

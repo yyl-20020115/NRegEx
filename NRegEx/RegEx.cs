@@ -175,18 +175,13 @@ public class Regex
     public Graph Graph =>graph??=this.Build();
     public string Pattern => regex;
     public string Name => name;
-    public Regex(string regex, string? name =null)
+    public Regex(string regex, string? name = null)
     {
         this.regex = regex;
         this.name = name ?? this.regex;
     }
 
     protected Graph Build() => new RegExParser(this.name).Parse(this.regex);
-    /**
-     * 在构建 NFA 之前，需要对正则表达式进行处理，以 (a|b)*abb 为例，在正则表达式里是没有连接符号的，这时就需要添加连接符
-     * 对当前字符类型进行判断，并对前一个字符进行判断，最终得到添加连接符之后的字符串
-     * 如 (a|b)*abb 添加完则为 (a|b)*&a&b&b
-     */
 
     public bool IsMatch(string input, int start = 0, int length = -1)
     {
@@ -195,8 +190,7 @@ public class Regex
         if (length < 0) length = input.Length;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start)+","+nameof(length));
 
-        var heads = this.Graph.Heads;
-        
+        var heads = this.Graph.Heads;        
         var nodes = heads.ToHashSet();
 
         var i = start;
@@ -233,7 +227,7 @@ public class Regex
         if (start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "," + nameof(length));
-        var s = start;
+        var s = start; 
         var heads = this.Graph.Heads;
     repeat:
 
