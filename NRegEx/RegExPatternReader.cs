@@ -13,6 +13,13 @@ public class RegExPatternReader
     public int Peek() => char.ConvertToUtf32(Pattern, position);// str[_pos];
     public void Skip(int n = 1) => position += n;
     public void SkipString(string s) => position += s.Length;
+    public int Pop()
+    {
+        var r = char.ConvertToUtf32(Pattern, position);// str.codePointAt(Pos);
+        position += (r > char.MaxValue ? 2 : 1);// new Rune(r).Utf16SequenceLength;//. Character.charCount(r);
+        return r;
+    }
+
     public int Take()
     {
         var r = char.ConvertToUtf32(this.Pattern, this.position);
