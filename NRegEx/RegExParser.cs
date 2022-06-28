@@ -144,6 +144,9 @@ public class RegExParser
     {
         if (!string.IsNullOrEmpty(regex))
         {
+            var node = new RegExDomParser(regex, RegExParserOptions.None);
+            
+
             //TODO: need full algorithm (see RE2CS)
         }
         return this.SimpleParse(regex);

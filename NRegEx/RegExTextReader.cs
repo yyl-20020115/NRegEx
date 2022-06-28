@@ -1,20 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace NRegEx;
-
+﻿namespace NRegEx;
 public class RegExTextReader
 {
     public const int EOF = -1;
     public const int UNICODE_LIMIT = 0x10ffff;
-
     public const int BEGIN_TEXT = UNICODE_LIMIT + 1;
     public const int END_TEXT = UNICODE_LIMIT + 2;
-
-
     public const int WORD_BOUNDARY = UNICODE_LIMIT + 1;
 
     public readonly TextReader Reader;
