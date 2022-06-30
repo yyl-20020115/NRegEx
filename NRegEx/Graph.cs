@@ -4,6 +4,10 @@ namespace NRegEx;
 
 public record class Node
 {
+    public static readonly HashSet<int> AllChars = new(Enumerable.Range(
+                    char.MinValue,
+                    char.MaxValue - char.MinValue + 1));
+
     public static Dictionary<int, HashSet<int>> KnownInvertedSets = new();
 
     public static int Nid = 0;
@@ -12,7 +16,7 @@ public record class Node
     public readonly bool IsVirtual;
     public readonly bool Inverted;
     public readonly string Name ;
-    public readonly HashSet<int> CharSet;
+    public readonly HashSet<int> CharSet = new();
     public readonly HashSet<Node> Inputs = new ();
     public readonly HashSet<Node> Outputs = new ();
     public Node(string name = "")
@@ -32,9 +36,7 @@ public record class Node
         {
             if (!KnownInvertedSets.TryGetValue(c,out var chs))
             {
-                (KnownInvertedSets[c] = this.CharSet = new (Enumerable.Range(
-                    char.MinValue,
-                    char.MaxValue - char.MinValue + 1))).Remove(c);
+                (KnownInvertedSets[c] = this.CharSet = new HashSet<int> (AllChars)).Remove(c);
             }
             else {
                 this.CharSet = chs;
@@ -44,6 +46,12 @@ public record class Node
         {
             this.CharSet = new (){ c };
         }
+    }
+
+    public Node UnionWith(IEnumerable<int> runes)
+    {
+        this.CharSet.UnionWith(runes);
+        return this;
     }
     public bool Hit(char c) => this.Inverted ? this.C!=c : this.C == c;
     public string FormatNodes(IEnumerable<Node?> nodes)
@@ -111,26 +119,72 @@ public record class Graph
             this.Tail = new(name);
         }
     }
+    public Graph Compose(params Node[] nodes)
+        => this.Compose(nodes as IEnumerable<Node>);
 
-    public Graph Concate(Graph g2, Graph g1)
-    {
-        this.Head = g1.Head;
-        this.Tail = g2.Tail;
-        this.Edges.UnionWith(g1.Edges);
-        this.Edges.UnionWith(g2.Edges);
-        this.Edges.Add(new(g1.Tail, g2.Head));
-        this.Nodes.UnionWith(g1.Nodes);
-        this.Nodes.UnionWith(g2.Nodes);
-        this.Description = "(" + g1.Description + " & " + g2.Description + ")";
+    public Graph Compose(IEnumerable<Node> nodes)
+        => this.Compose(nodes.ToList());
+
+    public Graph Compose(List<Node> nodes)
+    {        
+        for(int i= 0; i < nodes.Count; i++)
+        {
+            var _pre = i > 0 ? nodes[i - 1] : this.Head;
+            var node = nodes[i];
+            var next = (i < nodes.Count - 1) ? nodes[i + 1] : this.Tail;
+            _pre.Outputs.Add(node);
+            node.Inputs.Add(_pre);
+            node.Outputs.Add(next);
+            next.Inputs.Add(node);
+        }
         return this;
     }
+    public Graph Concate(params Graph[] graphs)
+        => Concate(graphs as IEnumerable<Graph>);
+    public Graph Concate(IEnumerable<Graph> graphs)
+        => this.Concate(graphs.ToList());
+    public Graph Concate(List<Graph> graphs)
+    {
+        for(int i= 0; i < graphs.Count; i++)
+        {
+
+        }
+        return this;
+    }
+    public Graph Concate(Graph tail, Graph head)
+    {
+        this.Head = head.Head;
+        this.Tail = tail.Tail;
+        this.Edges.UnionWith(head.Edges);
+        this.Edges.UnionWith(tail.Edges);
+        this.Edges.Add(new(head.Tail, tail.Head));
+        this.Nodes.UnionWith(head.Nodes);
+        this.Nodes.UnionWith(tail.Nodes);
+        this.Description = "(" + head.Description + " & " + tail.Description + ")";
+        return this;
+    }
+
     public Graph UnionWith(IEnumerable<Graph> gs)
     {
         foreach(var g in gs) this.UnionWith(g);
         return this;
     }
-
-
+    public Graph UnionWith(params Node[] nodes)
+        => this.UnionWith(nodes as IEnumerable<Node>);
+    public Graph UnionWith(IEnumerable<Node> nodes)
+        => this.UnionWith(nodes.ToList());
+    public Graph UnionWith(List<Node> nodes)
+    {
+        for (int i = 0; i < nodes.Count; i++)
+        {
+            var n = nodes[i];
+            this.Head.Outputs.Add(n);
+            n.Inputs.Add(this.Head);
+            n.Outputs.Add(this.Tail);
+            this.Tail.Inputs.Add(n);
+        }
+        return this;
+    }
     public Graph UnionWith(Graph g0)
     {
         if(this.Head==null) 

@@ -181,7 +181,7 @@ public class Regex
         this.name = name ?? this.regex;
     }
 
-    protected Graph Build() => new RegExParser(this.name).Parse(this.regex);
+    protected Graph Build() => new RegExParser(this.name).FullParse(this.regex);
 
     public bool IsMatch(string input, int start = 0, int length = -1)
     {

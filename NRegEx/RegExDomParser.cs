@@ -8,7 +8,7 @@ public enum RegExTokenType: int
     EOF = -1,
     Literal = 0,
     CharClass = 1,
-    FoldCase = 2,
+    FoldCase = 2, //NOT USED
     AnyCharExcludingNewLine = 3,
     AnyCharIncludingNewLine = 4,
     BeginLine = 5,
@@ -17,20 +17,21 @@ public enum RegExTokenType: int
     EndText = 8,
     WordBoundary = 9,
     NotWordBoundary = 10,
-    Capture = 11,
+    Capture = 11,       //NOT USED
     ZeroPlus = 12,      //*
     OnePlus = 13,       //+
     ZeroOne = 14,       //?
     Repeats = 15,
-    Concate = 16,       //&
+    Concate = 16,       //& = Sequence
     Sequence = 17,      //.&.&.&...
     Alternate = 18,     // |
-    Union = 19,         //..|..|..
+    Union = 19,         //..|..|.. = Alternate
     OpenParenthesis = 19,     //(
 }
 public record class RegExNode(
     RegExTokenType Type = RegExTokenType.EOF,
     string Value = "",
+    string Name = "",
     int? Min = null,
     int? Max = null, 
     int? CaptureIndex = null, 
@@ -110,17 +111,17 @@ public class RegExDomParser
                     break;
                 case '*':
                     this.Push(new(RegExTokenType.ZeroPlus,
-                        this.Reader.TakeString(), 0, -1)
+                        this.Reader.TakeString(),"", 0, -1)
                     { Children = new() { this.TokenStack.Pop() } });
                     break;
                 case '+':
                     this.Push(new(RegExTokenType.OnePlus,
-                        this.Reader.TakeString(), 1, -1)
+                        this.Reader.TakeString(), "", 1, -1)
                     { Children = new() { this.TokenStack.Pop() } });
                     break;
                 case '?':
                     this.Push(new(RegExTokenType.ZeroOne,
-                        this.Reader.TakeString(), 0, 1)
+                        this.Reader.TakeString(), "", 0, 1)
                     { Children = new() { this.TokenStack.Pop() } });
                     break;
                 case '{':
@@ -136,7 +137,7 @@ public class RegExDomParser
                         {
                             this.Reader.Discard();
                             this.Push(new(RegExTokenType.Repeats,
-                                this.Reader.TakeString(), 0, 1)
+                                this.Reader.TakeString(), "", min, max)
                             { Children = new() { this.TokenStack.Pop() } });
                         }
                     }
@@ -266,7 +267,7 @@ public class RegExDomParser
             }
         }
         this.Push(
-            new(RegExTokenType.Sequence) { Children = nodes });
+            new(RegExTokenType.Union) { Children = nodes });
     }
     protected void Push(RegExNode node) => this.TokenStack.Push(node);
     protected RegExNode Pop() => this.TokenStack.Pop();

@@ -140,16 +140,17 @@ public class RegExParser
             }
         return builder.ToString();
     }
-    public Graph Parse(string regex)
+    
+    public Graph FullParse(string regex)
     {
         if (!string.IsNullOrEmpty(regex))
         {
-            var node = new RegExDomParser(regex, RegExParserOptions.None);
-            
-
-            //TODO: need full algorithm (see RE2CS)
+            var parser = new RegExDomParser(regex, RegExParserOptions.None);
+            var node = parser.Parse();
+            var builder = new RegExGraphBuilder();
+            return builder.Build(node);
         }
-        return this.SimpleParse(regex);
+        return new Graph();
     }
     public Graph SimpleParse(string regex)
     {
