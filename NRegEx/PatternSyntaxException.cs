@@ -1,33 +1,32 @@
 ﻿using System.Runtime.Serialization;
 
-namespace NRegEx
+namespace NRegEx;
+
+[Serializable]
+internal class PatternSyntaxException : Exception
 {
-    [Serializable]
-    internal class PatternSyntaxException : Exception
+    private object e = new();
+    private string s = "";
+
+    public PatternSyntaxException()
     {
-        private object e = new();
-        private string s = "";
+    }
 
-        public PatternSyntaxException()
-        {
-        }
+    public PatternSyntaxException(string? message) : base(message)
+    {
+    }
 
-        public PatternSyntaxException(string? message) : base(message)
-        {
-        }
+    public PatternSyntaxException(object e, string s)
+    {
+        this.e = e;
+        this.s = s;
+    }
 
-        public PatternSyntaxException(object e, string s)
-        {
-            this.e = e;
-            this.s = s;
-        }
+    public PatternSyntaxException(string? message, Exception? innerException) : base(message, innerException)
+    {
+    }
 
-        public PatternSyntaxException(string? message, Exception? innerException) : base(message, innerException)
-        {
-        }
-
-        protected PatternSyntaxException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
+    protected PatternSyntaxException(SerializationInfo info, StreamingContext context) : base(info, context)
+    {
     }
 }

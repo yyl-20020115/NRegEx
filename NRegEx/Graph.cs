@@ -8,6 +8,15 @@ public record class Node
                     char.MinValue,
                     char.MaxValue - char.MinValue + 1));
 
+    public static readonly HashSet<int> WordChars = new(Enumerable.Range(
+                    char.MinValue,
+                    char.MaxValue - char.MinValue + 1).Where(i => char.IsLetter((char)i)));
+
+    public static readonly HashSet<int> NonWordChars = new(Enumerable.Range(
+                    char.MinValue,
+                    char.MaxValue - char.MinValue + 1).Where(i => !char.IsLetter((char)i)));
+
+
     public static Dictionary<int, HashSet<int>> KnownInvertedSets = new();
 
     public static int Nid = 0;
@@ -48,6 +57,8 @@ public record class Node
         }
     }
 
+    public Node UnionWith(params int[] runes)
+        => this.UnionWith(runes as IEnumerable<int>);
     public Node UnionWith(IEnumerable<int> runes)
     {
         this.CharSet.UnionWith(runes);
@@ -145,11 +156,18 @@ public record class Graph
         => this.Concate(graphs.ToList());
     public Graph Concate(List<Graph> graphs)
     {
+        var head = this;
         for(int i= 0; i < graphs.Count; i++)
         {
-
+            var graph = graphs[i];
+            this.Concate(graph, head);
+            head = graph;
         }
         return this;
+    }
+    public Graph ConcateWith(Graph tail)
+    {
+        return Concate(tail, this);
     }
     public Graph Concate(Graph tail, Graph head)
     {
@@ -164,6 +182,8 @@ public record class Graph
         return this;
     }
 
+    public Graph UnionWith(params Graph[] gs)
+        => this.UnionWith(gs as IEnumerable<Graph>);
     public Graph UnionWith(IEnumerable<Graph> gs)
     {
         foreach(var g in gs) this.UnionWith(g);
@@ -242,6 +262,28 @@ public record class Graph
         this.Edges.Add(new(g0.Tail, this.Tail));
         this.Edges.UnionWith(g0.Edges);
         this.Nodes.UnionWith(g0.Nodes);
+        return this;
+    }
+
+    public Graph ComposeRepeats(Graph graph, int min, int max)
+    {
+        min = min <= 0 ? 0 : min;
+        max = max <= 0 ? 0 : max;
+
+        var fols = new List<Graph>();
+        for (int i = 0; i < max; i++)
+        {
+            var ng = graph with { };
+            fols.Add(ng);
+            if (i >= min && i < max - 1)
+            {
+                ng.Tail.Outputs.Add(this.Tail);
+                this.Tail.Inputs.Add(ng.Tail);
+            }
+        }
+
+        this.Concate(fols);
+
         return this;
     }
 
