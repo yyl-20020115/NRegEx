@@ -157,18 +157,18 @@ public class Program
     {
         try
         {
-            var t = new StringWriter();
-
-            Parser = new CommandLine.Parser(s =>
+            Parser = new Parser(s =>
             {
                 s.CaseSensitive = true;
-                s.HelpWriter = t;
+                s.HelpWriter = Console.Out;
                 s.IgnoreUnknownArguments = false;
+                s.AutoHelp = true;
+                s.AutoVersion = true;
             });
             
-            var isValid = Parser.ParseArguments(args, typeof(Options));
+            var result = Parser.ParseArguments(()=>Options, args);
 
-            if (isValid.Value!=null)
+            if (result.Value!=null)
             {
                 if (Options.Verbose)
                 {

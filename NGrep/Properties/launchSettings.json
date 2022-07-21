@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "NGrep": {
+      "commandName": "Project",
+      "commandLineArgs": "-V -n -r test -i TextFile.txt"
+    }
+  }
+}
