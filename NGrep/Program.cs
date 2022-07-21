@@ -7,11 +7,11 @@ public class Options
 {
     [Option('r', "regexp", Required = true,
       HelpText = "Regular expression to be processed.")]
-    public string Regexpr { get; set; } = "";
+    public string RegExpr { get; set; } = "";
 
     [Option('i', "input", Required = true,
       HelpText = "Input file to be processed.")]
-    public string Inputfile { get; set; } = "";
+    public string InputFile { get; set; } = "";
 
     [Option('n', "line-number", Required = false,
       HelpText = "Print the line number.")]
@@ -19,51 +19,51 @@ public class Options
 
     [Option('o', "only-matching", Required = false,
       HelpText = "Print only the matching part")]
-    public bool PrintOnlymatchingPart { get; set; } = false;
+    public bool PrintOnlyMatchingPart { get; set; } = false;
 
     [Option('m', "max-count", Required = false,
       HelpText = "Stop after numer of matches")]
     public long MaxMatches { get; set; } = long.MaxValue;
 
-    [Option('A', "after-context", Required = false,
+    [Option('a', "after-context", Required = false,
       HelpText = "print number of context lines trailing match")]
     public int AfterContext { get; set; } = 0;
 
-    [Option('B', "before-context", Required = false,
+    [Option('b', "before-context", Required = false,
       HelpText = "print number of context lines leading match")]
     public int BeforeContext { get; set; } = 0;
 
-    [Option('C', "context", Required = false,
+    [Option('t', "context", Required = false,
       HelpText = "print number of context lines leading & trailing match")]
     public int Context { get; set; } = 0;
 
     [Option('c', "count", Required = false,
       HelpText = "Print only count of matching lines per FILE")]
-    public bool Countonly { get; set; } = false;
+    public bool CountOnly { get; set; } = false;
 
-    [Option('H', "with-filename", Required = false,
+    [Option('f', "with-filename", Required = false,
       HelpText = "Print filename for each match")]
-    public bool WithFilename { get; set; } = false;
+    public bool WithFileName { get; set; } = false;
 
-    [Option('U', "binary", Required = false,
+    [Option('u', "binary", Required = false,
       HelpText = "Do not strip CR characters at EOL (MSDOS/Windows)")]
     public bool DoNotStripCR { get; set; } = false;
 
     // Omitting long name, default --verbose
-    [Option('V', "verbose", Required = false,
+    [Option('v', "verbose", Required = false,
       HelpText = "Prints all diagnostic messages to standard output.")]
     public bool Verbose { get; set; } = false;
 }
 
 public class Program
 {
-    public static Options Options = new ();
-    public static int Count = 0;
-    public static Parser? Parser;
+    protected static Options Options = new ();
+    protected static int Count = 0;
+    protected static Parser? Parser;
 
-    public static void PrintLeadingContext(string[] lines, int linenumber, int num_context, Match m, string filename)
+    public static void PrintLeadingContext(string[] lines, int line_number, int num_context, Match m, string filename)
     {
-        int start = linenumber - num_context;
+        int start = line_number - num_context;
 
         if (start < 0)
         {
@@ -71,43 +71,43 @@ public class Program
         }
 
         Console.WriteLine();
-        for (int i = start; i < linenumber; i++)
+        for (int i = start; i < line_number; i++)
         {
             PrintMatch(lines, i, m, filename);
         }
     }
 
-    public static void PrintTrailingContext(string[] lines, int linenumber, int num_context, Match m, string filename)
+    public static void PrintTrailingContext(string[] lines, int line_number, int num_context, Match m, string filename)
     {
-        int end = linenumber + num_context + 1;
+        int end = line_number + num_context + 1;
 
         if (end > lines.Length)
         {
             end = lines.Length;
         }
 
-        for (int i = linenumber + 1; i < end; i++)
+        for (int i = line_number + 1; i < end; i++)
         {
             PrintMatch(lines, i, m, filename);
         }
         Console.WriteLine();
     }
 
-    public static void PrintMatch(string[] lines, int linenumber, Match m, string filename)
+    public static void PrintMatch(string[] lines, int linenumber, Match match, string filename)
     {
         if (Options.PrintLineNumber)
         {
             Console.Write(string.Format("[{0}] ", linenumber + 1));
         }
 
-        if (Options.WithFilename)
+        if (Options.WithFileName)
         {
             Console.Write(string.Format("[{0}] ", filename));
         }
 
-        if (Options.PrintOnlymatchingPart)
+        if (Options.PrintOnlyMatchingPart)
         {
-            Console.Write(lines[linenumber].Substring(m.Index, m.Length));
+            Console.Write(lines[linenumber].Substring(match.Index, match.Length));
         }
         else
         {
@@ -118,7 +118,7 @@ public class Program
 
     public static void Finalise()
     {
-        if (Options.Countonly)
+        if (Options.CountOnly)
         {
             Console.WriteLine("Number of matches: {0}", Count);
         }
@@ -129,28 +129,28 @@ public class Program
         }
     }
 
-    static void OnCommandLineParseFail()
+    public static void OnCommandLineParseFail()
     {
         Console.WriteLine("Command line parse failure");
 
-        Console.WriteLine("Help: " + Parser!.Settings.HelpWriter.ToString());
+        Console.WriteLine("Help: " + Parser!.Settings.HelpWriter);
     }
 
-    static void PrintOptions()
+    public static void PrintOptions()
     {
         Console.WriteLine("Options:");
-        Console.WriteLine("After Context: " + Options.AfterContext.ToString());
-        Console.WriteLine("Before Context: " + Options.BeforeContext.ToString());
-        Console.WriteLine("Context: " + Options.Context.ToString());
-        Console.WriteLine("Count only: " + Options.Countonly.ToString());
-        Console.WriteLine("Do not strip CR: " + Options.DoNotStripCR.ToString());
-        Console.WriteLine("Input filename: " + Options.Inputfile.ToString());
-        Console.WriteLine("Max Matches: " + Options.MaxMatches.ToString());
-        Console.WriteLine("Print line number: " + Options.PrintLineNumber.ToString());
-        Console.WriteLine("Print only matching part: " + Options.PrintOnlymatchingPart.ToString());
-        Console.WriteLine("Regular expression: " + Options.Regexpr.ToString());
-        Console.WriteLine("Verbose: " + Options.Verbose.ToString());
-        Console.WriteLine("With filename: " + Options.WithFilename.ToString());
+        Console.WriteLine("After Context: " + Options.AfterContext);
+        Console.WriteLine("Before Context: " + Options.BeforeContext);
+        Console.WriteLine("Context: " + Options.Context);
+        Console.WriteLine("Count only: " + Options.CountOnly);
+        Console.WriteLine("Do not strip CR: " + Options.DoNotStripCR);
+        Console.WriteLine("Input filename: " + Options.InputFile);
+        Console.WriteLine("Max Matches: " + Options.MaxMatches);
+        Console.WriteLine("Print line number: " + Options.PrintLineNumber);
+        Console.WriteLine("Print only matching part: " + Options.PrintOnlyMatchingPart);
+        Console.WriteLine("Regular expression: " + Options.RegExpr);
+        Console.WriteLine("Verbose: " + Options.Verbose);
+        Console.WriteLine("With filename: " + Options.WithFileName);
     }
 
     public static void Main(string[] args)
@@ -166,7 +166,7 @@ public class Program
                 s.AutoVersion = true;
             });
             
-            var result = Parser.ParseArguments(()=>Options, args);
+            var result = Parser.ParseArguments<Options>(args);
 
             if (result.Value != null)
             {
@@ -189,9 +189,9 @@ public class Program
             PrintOptions();
         }
 
-        var input = File.ReadAllText(Options.Inputfile);
+        var input = File.ReadAllText(Options.InputFile);
 
-        var regex = new Regex(Options.Regexpr);
+        var regex = new Regex(Options.RegExpr);
 
         if (Options.Context > 0)
         {
@@ -215,18 +215,18 @@ public class Program
 
             foreach (Match m in regex.Matches(lines[i]))
             {
-                if (!Options.Countonly)
+                if (!Options.CountOnly)
                 {
                     if (Options.BeforeContext > 0)
                     {
-                        PrintLeadingContext(lines, i, Options.BeforeContext, m, Options.Inputfile);
+                        PrintLeadingContext(lines, i, Options.BeforeContext, m, Options.InputFile);
                     }
 
-                    PrintMatch(lines, i, m, Options.Inputfile);
+                    PrintMatch(lines, i, m, Options.InputFile);
 
                     if (Options.AfterContext > 0)
                     {
-                        PrintTrailingContext(lines, i, Options.AfterContext, m, Options.Inputfile);
+                        PrintTrailingContext(lines, i, Options.AfterContext, m, Options.InputFile);
                     }
                 }
 
