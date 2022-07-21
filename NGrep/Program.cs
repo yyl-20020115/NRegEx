@@ -168,64 +168,9 @@ public class Program
             
             var result = Parser.ParseArguments(()=>Options, args);
 
-            if (result.Value!=null)
+            if (result.Value != null)
             {
-                if (Options.Verbose)
-                {
-                    PrintOptions();
-                }
-
-                var s = File.ReadAllText(Options.Inputfile);
-
-                var regex = new Regex(Options.Regexpr);
-
-                if (Options.Context > 0)
-                {
-                    Options.AfterContext = Options.Context;
-                    Options.BeforeContext = Options.Context;
-                }
-
-                var lines = s.Split(new[] { '\n' }, StringSplitOptions.None);
-
-                if (Options.Verbose)
-                {
-                    Console.WriteLine("Lines read: " + lines.Length);
-                }
-
-                for (int i = 0; i < lines.Length; i++)
-                {
-                    if (!Options.DoNotStripCR)
-                    {
-                        lines[i] = lines[i].Replace("\r", "");
-                    }
-
-                    foreach (Match m in regex.Matches(lines[i]))
-                    {
-                        if (!Options.Countonly)
-                        {
-                            if (Options.BeforeContext > 0)
-                            {
-                                PrintLeadingContext(lines, i, Options.BeforeContext, m, Options.Inputfile);
-                            }
-
-                            PrintMatch(lines, i, m, Options.Inputfile);
-
-                            if (Options.AfterContext > 0)
-                            {
-                                PrintTrailingContext(lines, i, Options.AfterContext, m, Options.Inputfile);
-                            }
-                        }
-
-                        Count++;
-                        if (Count >= Options.MaxMatches)
-                        {
-                            Console.WriteLine("Maximum number of matches reached ({0})", Options.MaxMatches);
-                            Finalise();
-                            return;
-                        }
-                    }
-                }
-                Finalise();
+                PlatformRegEx();
             }
             else
             {
@@ -236,5 +181,65 @@ public class Program
         {
             Console.WriteLine("Error (Exception): " + ex.Message);
         }
+    }
+    public static void PlatformRegEx()
+    {
+        if (Options.Verbose)
+        {
+            PrintOptions();
+        }
+
+        var input = File.ReadAllText(Options.Inputfile);
+
+        var regex = new Regex(Options.Regexpr);
+
+        if (Options.Context > 0)
+        {
+            Options.AfterContext = Options.Context;
+            Options.BeforeContext = Options.Context;
+        }
+
+        var lines = input.Split(new[] { '\n' }, StringSplitOptions.None);
+
+        if (Options.Verbose)
+        {
+            Console.WriteLine("Lines read: " + lines.Length);
+        }
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (!Options.DoNotStripCR)
+            {
+                lines[i] = lines[i].Replace("\r", "");
+            }
+
+            foreach (Match m in regex.Matches(lines[i]))
+            {
+                if (!Options.Countonly)
+                {
+                    if (Options.BeforeContext > 0)
+                    {
+                        PrintLeadingContext(lines, i, Options.BeforeContext, m, Options.Inputfile);
+                    }
+
+                    PrintMatch(lines, i, m, Options.Inputfile);
+
+                    if (Options.AfterContext > 0)
+                    {
+                        PrintTrailingContext(lines, i, Options.AfterContext, m, Options.Inputfile);
+                    }
+                }
+
+                Count++;
+                if (Count >= Options.MaxMatches)
+                {
+                    Console.WriteLine("Maximum number of matches reached ({0})", Options.MaxMatches);
+                    Finalise();
+                    return;
+                }
+            }
+        }
+
+        Finalise();
     }
 }
