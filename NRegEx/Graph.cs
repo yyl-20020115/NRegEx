@@ -4,56 +4,67 @@ namespace NRegEx;
 
 public record class Node
 {
-    public static readonly HashSet<int> AllChars = new(Enumerable.Range(
+    public const int EOFChar = -1;
+    public const int NewLineChar = '\n';
+    public const int ReturnChar = '\r';
+
+    protected static HashSet<int>? _AllChars = null;
+    protected static HashSet<int>? _WordChars = null;
+    protected static HashSet<int>? _NonWordChars = null;
+
+    public static HashSet<int> AllChars => _AllChars ??= new(Enumerable.Range(
                     char.MinValue,
                     char.MaxValue - char.MinValue + 1));
-
-    public static readonly HashSet<int> WordChars = new(Enumerable.Range(
+    public static HashSet<int> WordChars => _WordChars ??= new(Enumerable.Range(
                     char.MinValue,
                     char.MaxValue - char.MinValue + 1).Where(i => char.IsLetter((char)i)));
-
-    public static readonly HashSet<int> NonWordChars = new(Enumerable.Range(
+    public static HashSet<int> NonWordChars => _NonWordChars ??= new(Enumerable.Range(
                     char.MinValue,
                     char.MaxValue - char.MinValue + 1).Where(i => !char.IsLetter((char)i)));
-
 
     public static Dictionary<int, HashSet<int>> KnownInvertedSets = new();
 
     public static int Nid = 0;
-    public readonly char C;
     public readonly int Id ;
     public readonly bool IsVirtual;
     public readonly bool Inverted;
-    public readonly string Name ;
+    public string Name { get; set; } = String.Empty;
     public readonly HashSet<int> CharSet = new();
     public readonly HashSet<Node> Inputs = new ();
     public readonly HashSet<Node> Outputs = new ();
     public Node(string name = "")
-        :this(name,'\0')
+        :this(Node.EOFChar)
     {
+        this.Name = name;
         this.IsVirtual = true;
     }
-    public Node(string name, char c, bool inverted = false)
+    public Node(params char[] cs)
+        : this(cs.Select(c => (int)c).ToArray()) { }
+    public Node(params int[] cs)
     {
         this.IsVirtual = false;
-        this.Name = name;
         this.Id = ++Nid;
-        this.C = c;
+        this.Inverted = false;
+        this.CharSet = new HashSet<int>(cs);
+    }
+    public Node(bool inverted, params char[] cs)
+        : this(inverted, cs.Select(c => (int)c).ToArray()) { }
+
+    public Node(bool inverted, params int[] cs)
+    {
+        this.IsVirtual = false;
+        this.Name = "";
+        this.Id = ++Nid;
         this.Inverted = inverted;
 
         if (this.Inverted)
         {
-            if (!KnownInvertedSets.TryGetValue(c,out var chs))
-            {
-                (KnownInvertedSets[c] = this.CharSet = new HashSet<int> (AllChars)).Remove(c);
-            }
-            else {
-                this.CharSet = chs;
-            }
+            this.CharSet = new HashSet<int>(AllChars);
+            this.CharSet.ExceptWith(cs);
         }
         else
         {
-            this.CharSet = new (){ c };
+            this.CharSet = new HashSet<int>(cs);
         }
     }
 
@@ -64,7 +75,12 @@ public record class Node
         this.CharSet.UnionWith(runes);
         return this;
     }
-    public bool Hit(char c) => this.Inverted ? this.C!=c : this.C == c;
+    public bool Hit(int c)
+    {
+        var cx = this.CharSet.Contains(c);
+        return Inverted ? !cx : cx;
+    }
+
     public string FormatNodes(IEnumerable<Node?> nodes)
     {
         var builder = new StringBuilder();
@@ -84,9 +100,9 @@ public record class Node
         }
         return builder.ToString();
     }
-    public override string ToString() => "["+this.Id + ":" 
-        + (C!='\0'? C:' ')
-        +$"  IN:{this.FormatNodes(this.Inputs)}  OUT:{this.FormatNodes(this.Outputs)}"+"]";
+    public override string ToString() => "["+this.Id + "(inverted:" 
+        + this.Inverted +"):" + string.Join(',',this.CharSet)
+        +$" IN:{this.FormatNodes(this.Inputs)}  OUT:{this.FormatNodes(this.Outputs)}"+"]";
 }
 public record class Edge
 {
@@ -115,13 +131,13 @@ public record class Graph
     public readonly HashSet<Edge> Edges = new();
     public Node Head;
     public Node Tail;
-    public Graph(string name = "",char c = '\0')
+    public Graph(string name = "",params char[] cs )
     {
         this.Name = name;
         this.id = ++Gid;
-        if (c != '\0')
+        if (cs.Length>0)
         {
-            this.Nodes.Add(this.Head = this.Tail = new(name,c));
+            this.Nodes.Add(this.Head = this.Tail = new Node(cs) with { Name = name });
             this.Description = this.Head.ToString();
         }
         else
@@ -345,7 +361,10 @@ public record class Graph
 
     public bool IsBacktracingFriendly()
     {
-        //如果相继&的两个node之间具有交集，则会出现回溯灾难。
+        //对于支持回溯的RegEx引擎，
+        //  1.如果相继&的两个node之间具有交集，则有可能出现回溯灾难。
+        //  2.如果前一个是{0,n}后一个和前一个无交集，则有可能出现回溯灾难。
+        //本引擎不处理回溯灾难
         var heads = this.Nodes.Where(n => n.Inputs.Count == 0).ToHashSet();
         var copies = heads.ToHashSet();
         do

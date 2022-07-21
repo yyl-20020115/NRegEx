@@ -8,6 +8,29 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="ApiTestUtils.cs" />
+    <Compile Remove="CharClassTest.cs" />
+    <Compile Remove="CharUtils.cs" />
+    <Compile Remove="ExecTest.cs" />
+    <Compile Remove="FindTest.cs" />
+    <Compile Remove="GoTestUtils.cs" />
+    <Compile Remove="MatcherTest.cs" />
+    <Compile Remove="ParserTest.cs" />
+    <Compile Remove="PatternTest.cs" />
+    <Compile Remove="ProgTest.cs" />
+    <Compile Remove="RE2CompileTest.cs" />
+    <Compile Remove="RE2MatchTest.cs" />
+    <Compile Remove="RE2QuoteMetaTest.cs" />
+    <Compile Remove="RE2ReplaceAllFunctionTest.cs" />
+    <Compile Remove="RE2ReplaceTest.cs" />
+    <Compile Remove="RE2Test.cs" />
+    <Compile Remove="RE2TestNumSubexps.cs" />
+    <Compile Remove="RegexpHashcodeEqualsTest.cs" />
+    <Compile Remove="SimplifyTest.cs" />
+    <Compile Remove="StrConv.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.11.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="2.2.7" />
     <PackageReference Include="MSTest.TestFramework" Version="2.2.7" />

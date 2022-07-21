@@ -6,4 +6,5 @@ Unlike RE2 which implements the similar idea with virtual machines,
 we solve the problem with graph theory and set theory.
 
 
-Author: Yilin
+BR,
+Yilin

@@ -11,69 +11,99 @@ public class RegExGraphBuilder
         switch (node.Type)
         {
             case RegExTokenType.EOF:
-                graph.Compose(new Node("", '\0'));
+                {
+                    graph.Compose(new Node());
+                }
                 break;
             case RegExTokenType.OnePlus:
-                if (node.Children.Count != 1) throw new PatternSyntaxException(
-                    nameof(RegExTokenType.OnePlus) + nameof(node));
-                graph.OnePlus(this.Build(node.Children[0]));
+                {
+                    if (node.Children.Count != 1) throw new PatternSyntaxException(
+                        nameof(RegExTokenType.OnePlus) + nameof(node));
+                    graph.OnePlus(this.Build(node.Children[0]));
+                }
                 break;
             case RegExTokenType.ZeroPlus:
-                if (node.Children.Count != 1) throw new PatternSyntaxException(
-                    nameof(RegExTokenType.ZeroPlus) + nameof(node));
-                graph.ZeroPlus(this.Build(node.Children[0]));
+                {
+                    if (node.Children.Count != 1) throw new PatternSyntaxException(
+                        nameof(RegExTokenType.ZeroPlus) + nameof(node));
+                    graph.ZeroPlus(this.Build(node.Children[0]));
+                }
                 break;
             case RegExTokenType.ZeroOne:
-                if (node.Children.Count != 1) throw new PatternSyntaxException(
-                    nameof(RegExTokenType.ZeroOne) + nameof(node));
-                graph.ZeroOne(this.Build(node.Children[0]));
+                {
+                    if (node.Children.Count != 1) throw new PatternSyntaxException(
+                        nameof(RegExTokenType.ZeroOne) + nameof(node));
+                    graph.ZeroOne(this.Build(node.Children[0]));
+                }
                 break;
             case RegExTokenType.Literal:
-                graph.Compose(node.Value.Select(c => new Node("", c)));
+                {
+                    graph.Compose(node.Value.Select(c => new Node(c)));
+                }
                 break;
             case RegExTokenType.CharClass:
-                graph.Compose(new Node().UnionWith(node.Runes??Array.Empty<int>()));
+                {
+                    graph.Compose(new Node().UnionWith(node.Runes ?? Array.Empty<int>()));
+                }
                 break;
             case RegExTokenType.AnyCharIncludingNewLine:
-                graph.Compose(new Node().UnionWith(Node.AllChars));
+                {
+                    graph.Compose(new Node().UnionWith(Node.AllChars));
+                }
                 break;
             case RegExTokenType.AnyCharExcludingNewLine:
-                graph.UnionWith(new Node("",'\r',true), new Node("", '\n', true));
+                {
+                    graph.UnionWith(new Node(true, Node.ReturnChar), new Node(true, Node.NewLineChar));
+                }
                 break;
 
             case RegExTokenType.Sequence:
-                if (node.Children.Count == 0) throw new PatternSyntaxException(
-                    nameof(RegExTokenType.Sequence) + nameof(node));
-                graph.Concate(node.Children.Select(c => this.Build(c)));
+                {
+                    if (node.Children.Count == 0) throw new PatternSyntaxException(
+                        nameof(RegExTokenType.Sequence) + nameof(node));
+                    graph.Concate(node.Children.Select(c => this.Build(c)));
+                }
                 break;
 
             case RegExTokenType.Union:
-                if (node.Children.Count == 0) throw new PatternSyntaxException(
-                    nameof(RegExTokenType.Union) + nameof(node));
-                graph.UnionWith(node.Children.Select(c => this.Build(c)));
+                {
+                    if (node.Children.Count == 0) throw new PatternSyntaxException(
+                        nameof(RegExTokenType.Union) + nameof(node));
+                    graph.UnionWith(node.Children.Select(c => this.Build(c)));
+                }
                 break;
             case RegExTokenType.Repeats:
-                if (node.Children.Count == 0) throw new PatternSyntaxException(
-                    nameof(RegExTokenType.Union) + nameof(node));
-                graph.ComposeRepeats(this.Build(node.Children[0]),
-                    node.Min.GetValueOrDefault(),
-                    node.Max.GetValueOrDefault());
+                {
+                    if (node.Children.Count == 0) throw new PatternSyntaxException(
+                        nameof(RegExTokenType.Union) + nameof(node));
+                    graph.ComposeRepeats(this.Build(node.Children[0]),
+                        node.Min.GetValueOrDefault(),
+                        node.Max.GetValueOrDefault());
+                }
                 break;
             case RegExTokenType.BeginLine:
-                graph.Head.UnionWith('\n');
-                graph.Tail.UnionWith(Node.AllChars);
+                {
+                    graph.Head.UnionWith(Node.NewLineChar);
+                    graph.Tail.UnionWith(Node.AllChars);
+                }
                 break;
             case RegExTokenType.EndLine:
-                graph.Head.UnionWith(Node.AllChars);
-                graph.Tail.UnionWith('\n');
+                {
+                    graph.Head.UnionWith(Node.AllChars);
+                    graph.Tail.UnionWith(Node.NewLineChar);
+                }
                 break;
             case RegExTokenType.BeginText:
-                graph.Head.UnionWith('\0');
-                graph.Tail.UnionWith(Node.AllChars);
+                {
+                    graph.Head.UnionWith(Node.EOFChar);
+                    graph.Tail.UnionWith(Node.AllChars);
+                }
                 break;
             case RegExTokenType.EndText:
-                graph.Head.UnionWith(Node.AllChars);
-                graph.Tail.UnionWith('\0');
+                {
+                    graph.Head.UnionWith(Node.AllChars);
+                    graph.Tail.UnionWith(Node.EOFChar);
+                }
                 break;
             case RegExTokenType.WordBoundary:
                 {

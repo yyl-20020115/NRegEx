@@ -7,7 +7,6 @@ public record class Capture(int Index = 0,int Length = -1, string? Value = null)
 public delegate string CaptureEvaluator(Capture capture);
 public class Regex
 {
-
     public const string MetaChars = "|()[]{}^$*+?\\ #";
     private static bool IsMetachar(char ch) => MetaChars.IndexOf(ch)>=0;
 
