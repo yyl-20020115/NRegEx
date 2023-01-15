@@ -8,6 +8,13 @@ namespace NRegex.Test;
 public class UnitTest1
 {
     [TestMethod]
+    public void TestEscapse()
+    {
+        Assert.AreEqual(@"\|\(\)\[\]\{\}\^\$\*\+\?\\\.", Regex.Escape(@"|()[]{}^$*+?\."));
+        Assert.AreEqual(@"|()[]{}^$*+?\.", Regex.Unescape(@"\|\(\)\[\]\{\}\^\$\*\+\?\\\."));
+
+    }
+    [TestMethod]
     public void TestMethod1()
     {
         var regexString0 = "(ab|c)*abb";

@@ -12,25 +12,21 @@ public class Regex
     public readonly static char[] MetaChars
         = { '|', '(', ')', '[', ']', '{', '}', '^', '$', '*', '+', '?', '\\', '.' };
 
-    private static bool IsMetachar(char ch) => Array.IndexOf(MetaChars, ch) >= 0;
+    public static bool IsMetachar(char ch) 
+        => Array.IndexOf(MetaChars, ch) >= 0;
 
     public static string Escape(string input)
     {
-        for (int i = 0; i < input.Length; i++)
-            if (IsMetachar(input[i]))
-                return EscapeImpl(input, i);
-
-        return input;
-    }
-
-    private static string EscapeImpl(string input, int i)
-    {
+        var chars = input.ToArray();
+        if((Array.FindIndex(chars, ch => IsMetachar(ch)) is int i) && (-1 == i)) return input;
         var builder = new StringBuilder(input.Length * 3);
-        char ch = input[i];
-        builder.Append(input.AsSpan(0, i));
-
-        do
+        var last = 0;
+        while(true)
         {
+            builder.Append(chars[last..i]);
+            if (i>= chars.Length) break;
+            var ch = chars[i++];
+            last = i;
             builder.Append('\\');
             builder.Append(ch switch
             {
@@ -40,53 +36,53 @@ public class Regex
                 '\f' => 'f',
                 _ => ch,
             });
-            var lastpos = ++i;
-            while (i < input.Length)
-                if (IsMetachar(ch = input[i++])) break;
-            builder.Append(input.AsSpan(lastpos, i - lastpos));
-        } while (i < input.Length);
+
+            var tail = chars[last..];
+            if (-1 == (i = Array.FindIndex(tail, ch => IsMetachar(ch))))
+            {
+                builder.Append(tail);
+                break;
+            }
+            else
+            {
+                i += last;
+            }
+        }
         return builder.ToString();
     }
 
     public static string Unescape(string input)
-        => (input.IndexOf('\\') is int i) && (i >= 0) ?
-            UnescapeImpl(input, i) :
-            input;
-
-    private static string UnescapeImpl(string input, int i)
     {
+        var chars = input.ToArray();
+        if ((Array.IndexOf(chars, '\\') is int i) && (-1 == i)) return input;
+        var last = 0;
         var builder = new StringBuilder(input.Length * 3);
-        builder.Append(input.AsSpan(0, i));
-        do
+        while(true)
         {
-            i++;
-            if (i == input.Length - 1)
-                builder.Append(input[i]);
-            else //i<input.Length -1
+            builder.Append(chars[last..i]);
+            if (i == chars.Length) break;
+            var ch = chars[last = ++i];
+            builder.Append(ch switch
             {
-                var ch = input[i];
-                if (ch == '\\')
-                {
-                    i++;
-                    ch = input[i];
-                    if (!IsMetachar(ch))
-                        i--;
-                    else ch = ch switch
-                    {
-                        'n' => '\n',
-                        'r' => '\r',
-                        't' => '\t',
-                        'f' => '\f',
-                        _ => ch,
-                    };
-                    builder.Append(ch);
-                }
-            }
+                'n' => '\n',
+                'r' => '\r',
+                't' => '\t',
+                'f' => '\f',
+                _ => ch,
+            });
 
-            var lastpos = i;
-            while (i < input.Length && input[i] != '\\') i++;
-            builder.Append(input.AsSpan(lastpos, i - lastpos));
-        } while (i < input.Length);
+            last = ch == '\\' ? last + 2 : last + 1;
+            var tail = chars[last..];
+            if (-1 == (i = Array.IndexOf(tail, '\\')))
+            {
+                builder.Append(tail);
+                break;
+            }
+            else
+            {
+                i += last;
+            }
+        }
         return builder.ToString();
     }
 
@@ -266,4 +262,3 @@ public class Regex
         return result.ToArray();
     }
 }
-
