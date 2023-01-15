@@ -213,20 +213,20 @@ public static class Program
                 lines[i] = lines[i].Replace("\r", "");
             }
 
-            foreach (Match m in regex.Matches(lines[i]))
+            foreach (var match in regex.Matches(lines[i]).Cast<Match>())
             {
                 if (!Options.CountOnly)
                 {
                     if (Options.BeforeContext > 0)
                     {
-                        PrintLeadingContext(lines, i, Options.BeforeContext, m, Options.InputFile);
+                        PrintLeadingContext(lines, i, Options.BeforeContext, match, Options.InputFile);
                     }
 
-                    PrintMatch(lines, i, m, Options.InputFile);
+                    PrintMatch(lines, i, match, Options.InputFile);
 
                     if (Options.AfterContext > 0)
                     {
-                        PrintTrailingContext(lines, i, Options.AfterContext, m, Options.InputFile);
+                        PrintTrailingContext(lines, i, Options.AfterContext, match, Options.InputFile);
                     }
                 }
 
