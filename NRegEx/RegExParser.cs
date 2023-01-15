@@ -65,7 +65,7 @@ public class RegExParser
 
 
     public const char NullChar = '\0';
-    public static string Operators = "*&|()" + NullChar;
+    public static readonly string Operators = "*&|()" + NullChar;
     public static readonly int[][] Priorities = new int[][]{
             new []{ 1, 1, 1, -1, 1, 1 }, // *&|()#
             new []{ -1, 1, 1, -1, 1, 1 },
@@ -115,13 +115,12 @@ public class RegExParser
     public static int GetPriority(char c1, char c2)
         => Priorities[Operators.IndexOf(c1)][Operators.IndexOf(c2)];
 
-
     public readonly string Name;
     public RegExParser(string name = "")
     {
         this.Name = name;
     }
-    protected string Prepare(string input_regex)
+    protected static string Prepare(string input_regex)
     {
         var builder = new StringBuilder();
         input_regex = input_regex.Replace(" ", "");
@@ -129,19 +128,17 @@ public class RegExParser
             if (i == 0)
                 builder.Append(input_regex[i]);
             else
-            {
                 if (input_regex[i] == '|' || input_regex[i] == '*' || input_regex[i] == ')')
                     builder.Append(input_regex[i]);
                 else
                     if (i >= 1 && input_regex[i - 1] == '(' || input_regex[i - 1] == '|')
-                    builder.Append(input_regex[i]);
+                        builder.Append(input_regex[i]);
                 else
                     builder.Append("&" + input_regex[i]);
-            }
         return builder.ToString();
     }
     
-    public Graph FullParse(string regex)
+    public static Graph FullParse(string regex)
     {
         if (!string.IsNullOrEmpty(regex))
         {
@@ -150,11 +147,11 @@ public class RegExParser
             var builder = new RegExGraphBuilder();
             return builder.Build(node);
         }
-        return new Graph();
+        return new ();
     }
     public Graph SimpleParse(string regex)
     {
-        regex = this.Prepare(regex);
+        regex = Prepare(regex);
         if (regex.Length == 0)
             return new();
         else
@@ -168,7 +165,6 @@ public class RegExParser
                     || operatorStack.Peek() != NullChar)
             {
                 var c = _regex[i];
-
                 if (IsNotOperator(c))
                 {
                     operandStack.Push(new(this.Name, c));

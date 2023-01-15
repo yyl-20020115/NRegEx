@@ -39,20 +39,14 @@ public static class Unicode
         // binary search over ranges
         for (int lo = 0, hi = ranges.Length; lo < hi;)
         {
-            int m = lo + (hi - lo) / 2;
-            int[] range = ranges[m]; // [lo, hi, stride]
+            var m = lo + (hi - lo) / 2;
+            var range = ranges[m]; // [lo, hi, stride]
             if (range[0] <= r && r <= range[1])
-            {
                 return ((r - range[0]) % range[2]) == 0;
-            }
             if (r < range[0])
-            {
                 hi = m;
-            }
             else
-            {
                 lo = m + 1;
-            }
         }
         return false;
     }
@@ -64,16 +58,11 @@ public static class Unicode
         if (r <= MAX_LATIN1)
         {
             foreach (int[] range in ranges)
-            { // range = [lo, hi, stride]
+            // range = [lo, hi, stride]
                 if (r > range[1])
-                {
                     continue;
-                }
                 else
-                {
                     return r >= range[0] && ((r - range[0]) % range[2]) == 0;
-                }
-            }
             return false;
         }
         return ranges.Length > 0 && r >= ranges[0][0] && Is32(ranges, r);

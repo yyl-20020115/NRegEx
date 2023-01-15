@@ -125,7 +125,7 @@ public class Regex
     }
 
     protected Graph Build()
-        => new RegExParser(this.name).FullParse(this.regex);
+        => RegExParser.FullParse(this.regex);
 
     public bool IsMatch(string input, int start = 0, int length = -1)
     {

@@ -10,14 +10,15 @@ public class RegExTextReader
     public readonly TextReader Reader;
     protected enum ReaderStates : uint
     {
-        NotStarted,
-        InProgress,
-        PastEOF,
-        Finished
+        NotStarted = 0,
+        InProgress = 1,
+        PastEOF = 2,
+        Finished = 3
     }
     protected ReaderStates State = ReaderStates.NotStarted;
 
-    public RegExTextReader(TextReader reader) => this.Reader = reader;
+    public RegExTextReader(TextReader reader) 
+        => this.Reader = reader;
 
     public bool HasMore => this.Peek() != EOF;
 
@@ -30,21 +31,20 @@ public class RegExTextReader
     };
     public int Read()
     {
-        var c = -1;
         switch (this.State)
         {
             case ReaderStates.NotStarted:
                 this.State = ReaderStates.InProgress;
                 return BEGIN_TEXT;
             case ReaderStates.InProgress:
-                if((c = this.Read()) == EOF)
+                if ((this.Read() is int c) && c == EOF)
                 {
                     State = ReaderStates.PastEOF;
                     c = END_TEXT;
                 }
                 return c;
             case ReaderStates.PastEOF:
-                this.State = ReaderStates.Finished; 
+                this.State = ReaderStates.Finished;
                 return EOF;
             default: //Finished etc
                 return EOF;

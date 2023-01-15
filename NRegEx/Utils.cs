@@ -41,82 +41,50 @@ public static class Utils
             var r = new Rune(rune);
             var m = METACHARACTERS.EnumerateRunes().ToList();
             if (m.IndexOf(r) >= 0)
-            {
                 result.Append('\\');
-            }
             result.Append(r.ToString());
             return;
         }
 
-        switch (rune)
+        result.Append(rune switch
         {
-            case '"':
-                result.Append("\\\"");
-                break;
-            case '\\':
-                result.Append("\\\\");
-                break;
-            case '\t':
-                result.Append("\\t");
-                break;
-            case '\n':
-                result.Append("\\n");
-                break;
-            case '\r':
-                result.Append("\\r");
-                break;
-            case '\b':
-                result.Append("\\b");
-                break;
-            case '\f':
-                result.Append("\\f");
-                break;
-            default:
-                {
-                    var s = string.Format("{0:x}", rune);
-                    if (rune < 0x100)
-                    {
-                        result.Append("\\x");
-                        if (s.Length == 1)
-                        {
-                            result.Append('0');
-                        }
-                        result.Append(s);
-                    }
-                    else
-                    {
-                        result.Append("\\x{").Append(s).Append('}');
-                    }
-                    break;
-                }
-        }
+            '"' => ("\\\""),
+            '\\' => ("\\\\"),
+            '\t' => ("\\t"),
+            '\n' => ("\\n"),
+            '\r' => ("\\r"),
+            '\b' => ("\\b"),
+            '\f' => ("\\f"),
+            _ => (rune < 0x100
+                  ? (@"\x" + (string.Format("{0:x}", rune) is string t && t.Length == 1 ? "0" : "") 
+                            + string.Format("{0:x}", rune))
+                  : (@"\x{" + string.Format("{0:x}", rune) + "}")),
+        });
     }
 
     // Returns the array of runes in the specified Java UTF-16 string.
-    public static int[] StringToRunes(string str) => str.EnumerateRunes().Select(r => r.Value).ToArray();
+    public static int[] StringToRunes(string str)
+        => str.EnumerateRunes().Select(r => r.Value).ToArray();
 
     // Returns the Java UTF-16 string containing the single rune |r|.
-    public static string RuneToString(int r) => new Rune(r).ToString();
+    public static string RuneToString(int r)
+        => new Rune(r).ToString();
 
     // Returns a new copy of the specified subarray.
-    public static int[] Subarray(int[] array, int start, int end)
+    public static int[] SubArray(int[] array, int start, int end)
     {
         var r = new int[end - start];
         for (int i = start; i < end; ++i)
-        {
             r[i - start] = array[i];
-        }
         return r;
     }
 
     // Returns a new copy of the specified subarray.
-    public static byte[] Subarray(byte[] array, int start, int end)
+    public static byte[] SubArray(byte[] array, int start, int end)
     {
         var r = new byte[end - start];
         for (int i = start; i < end; ++i)
-        {
             r[i - start] = array[i];
-        }
         return r;
     }
 
@@ -125,26 +93,18 @@ public static class Utils
     public static int IndexOf(byte[] source, byte[] target, int fromIndex)
     {
         if (fromIndex >= source.Length)
-        {
             return target.Length == 0 ? source.Length : -1;
-        }
         if (fromIndex < 0)
-        {
             fromIndex = 0;
-        }
         if (target.Length == 0)
-        {
             return fromIndex;
-        }
 
-        byte first = target[0];
+        var first = target[0];
         for (int i = fromIndex, max = source.Length - target.Length; i <= max; i++)
         {
             // Look for first byte.
             if (source[i] != first)
-            {
-                while (++i <= max && source[i] != first) { }
-            }
+                while (++i <= max && source[i] != first) ;
 
             // Found first byte, now look at the rest of v2.
             if (i <= max)
@@ -153,10 +113,7 @@ public static class Utils
                 int end = j + target.Length - 1;
                 for (int k = 1; j < end && source[j] == target[k]; j++, k++) { }
 
-                if (j == end)
-                {
-                    return i; // found whole array
-                }
+                if (j == end) return i; // found whole array
             }
         }
         return -1;
@@ -165,10 +122,11 @@ public static class Utils
     // isWordRune reports whether r is consider a ``word character''
     // during the evaluation of the \b and \B zero-width assertions.
     // These assertions are ASCII-only: the word characters are [A-Za-z0-9_].
-    public static bool IsWordRune(int r)
-    {
-        return (('A' <= r && r <= 'Z') || ('a' <= r && r <= 'z') || ('0' <= r && r <= '9') || r == '_');
-    }
+    public static bool IsWordRune(int r) 
+        => ('A' <= r && r <= 'Z') 
+        || ('a' <= r && r <= 'z') 
+        || ('0' <= r && r <= '9') 
+        || (r == '_');
 
     //// EMPTY_* flags
 
@@ -188,31 +146,19 @@ public static class Utils
     // TODO(adonovan): move to Machine.
     public static int EmptyOpContext(int r1, int r2)
     {
-        int op = 0;
+        var op = 0;
         if (r1 < 0)
-        {
             op |= EMPTY_BEGIN_TEXT | EMPTY_BEGIN_LINE;
-        }
         if (r1 == '\n')
-        {
             op |= EMPTY_BEGIN_LINE;
-        }
         if (r2 < 0)
-        {
             op |= EMPTY_END_TEXT | EMPTY_END_LINE;
-        }
         if (r2 == '\n')
-        {
             op |= EMPTY_END_LINE;
-        }
         if (IsWordRune(r1) != IsWordRune(r2))
-        {
             op |= EMPTY_WORD_BOUNDARY;
-        }
         else
-        {
             op |= EMPTY_NO_WORD_BOUNDARY;
-        }
         return op;
     }
 
@@ -228,11 +174,45 @@ public static class Utils
             {
                 var d = s[--i];
                 if (char.IsHighSurrogate(d))
-                {
                     return char.ConvertToUtf32(d, c);
-                }
             }
             return c;
+        }
+        return -1;
+    }
+    public static int FastIndexOf(string source, string pattern)
+    {
+        var limit = source.Length - pattern.Length + 1;
+        if (limit < 1) return -1;
+
+        // Store the first 2 characters of "pattern"
+        var c0 = pattern[0];
+        var c1 = pattern.Length > 1 ? pattern[1] : ' ';
+
+        // Find the first occurrence of the first character
+        var first = source.IndexOf(c0, 0, limit);
+
+        while (first != -1)
+        {
+            // Check if the following character is the same like the 2nd character of "pattern"
+            if (pattern.Length > 1 && source[first + 1] != c1)
+            {
+                first = source.IndexOf(c0, ++first, limit - first);
+                continue;
+            }
+
+            // Check the rest of "pattern" (starting with the 3rd character)
+            var found = true;
+            for (int j = 2; j < pattern.Length; j++)
+                if (source[first + j] != pattern[j])
+                {
+                    found = false;
+                    break;
+                }
+
+            // If the whole word was found, return its index, otherwise try again
+            if (found) return first;
+            first = source.IndexOf(c0, ++first, limit - first);
         }
         return -1;
     }
