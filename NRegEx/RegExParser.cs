@@ -167,7 +167,7 @@ public class RegExParser
             while (_regex[i] != NullChar
                     || operatorStack.Peek() != NullChar)
             {
-                char c = _regex[i];
+                var c = _regex[i];
 
                 if (IsNotOperator(c))
                 {
@@ -180,7 +180,7 @@ public class RegExParser
                     switch (value)
                     {
                         case 1:
-                            char character = operatorStack.Pop();
+                            var character = operatorStack.Pop();
                             switch (character)
                             {
                                 case '*':

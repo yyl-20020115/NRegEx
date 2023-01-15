@@ -1,10 +1,7 @@
 ﻿namespace NRegEx;
 public class RegExGraphBuilder
 {
-    public RegExGraphBuilder()
-    {
-
-    }
+    public RegExGraphBuilder() { }
     public Graph Build(RegExNode node)
     {
         var graph = new Graph(node.Name);
@@ -56,7 +53,6 @@ public class RegExGraphBuilder
                     graph.UnionWith(new Node(true, Node.ReturnChar), new Node(true, Node.NewLineChar));
                 }
                 break;
-
             case RegExTokenType.Sequence:
                 {
                     if (node.Children.Count == 0) throw new PatternSyntaxException(

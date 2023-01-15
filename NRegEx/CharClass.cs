@@ -18,33 +18,33 @@ using System.Text;
 namespace NRegEx;
 public class CharClass
 {
-    private int[] r; // inclusive ranges, pairs of [lo,hi].  r.Length is even.
-    private int len; // prefix of |r| that is defined.  Even.
+    private int[] range; // inclusive ranges, pairs of [lo,hi].  r.Length is even.
+    private int length; // prefix of |r| that is defined.  Even.
 
     // Constructs a CharClass with initial ranges |r|.
     // The right to mutate |r| is passed to the callee.
     public CharClass(int[]? r = null)
     {
-        this.r = r ?? Utils.EMPTY_INTS;
-        this.len = this.r.Length;
+        this.range = r ?? Utils.EMPTY_INTS;
+        this.length = this.range.Length;
     }
 
 
     // After a call to ensureCapacity(), |r.Length| is at least |newLen|.
     private void EnsureCapacity(int newLen)
     {
-        if (r.Length < newLen)
+        if (range.Length < newLen)
         {
             // Expand by at least doubling, except when len == 0.
             // TODO(adonovan): opt: perhaps it would be better to allocate exactly
             // newLen, since the number of expansions is typically very small?
-            if (newLen < len * 2)
+            if (newLen < length * 2)
             {
-                newLen = len * 2;
+                newLen = length * 2;
             }
             int[] r2 = new int[newLen];
-            Array.Copy(r, 0, r2, 0, len);
-            r = r2;
+            Array.Copy(range, 0, r2, 0, length);
+            range = r2;
         }
     }
 
@@ -53,14 +53,14 @@ public class CharClass
     // performed on a given CharClass instance.
     public int[] ToArray()
     {
-        if (this.len == r.Length)
+        if (this.length == range.Length)
         {
-            return r;
+            return range;
         }
         else
         {
-            int[] r2 = new int[len];
-            Array.Copy(r, 0, r2, 0, len);
+            int[] r2 = new int[length];
+            Array.Copy(range, 0, r2, 0, length);
             return r2;
         }
     }
@@ -69,44 +69,42 @@ public class CharClass
     // merges them, and eliminates duplicates.
     public CharClass CleanClass()
     {
-        if (len < 4)
+        if (length < 4)
         {
             return this;
         }
 
         // Sort by lo increasing, hi decreasing to break ties.
-        QSortIntPair(r, 0, len - 2);
+        QSortIntPair(range, 0, length - 2);
 
         // Merge abutting, overlapping.
         int w = 2; // write index
-        for (int i = 2; i < len; i += 2)
+        for (int i = 2; i < length; i += 2)
         {
-            int lo = r[i];
-            int hi = r[i + 1];
-            if (lo <= r[w - 1] + 1)
+            int lo = range[i];
+            int hi = range[i + 1];
+            if (lo <= range[w - 1] + 1)
             {
                 // merge with previous range
-                if (hi > r[w - 1])
+                if (hi > range[w - 1])
                 {
-                    r[w - 1] = hi;
+                    range[w - 1] = hi;
                 }
                 continue;
             }
             // new disjoint range
-            r[w] = lo;
-            r[w + 1] = hi;
+            range[w] = lo;
+            range[w + 1] = hi;
             w += 2;
         }
-        len = w;
+        length = w;
 
         return this;
     }
 
     // appendLiteral() appends the literal |x| to this CharClass.
     public CharClass AppendLiteral(int x, RegExParserOptions flags)
-    {
-        return ((flags & RegExParserOptions.FOLD_CASE) != 0) ? AppendFoldedRange(x, x) : AppendRange(x, x);
-    }
+        => ((flags & RegExParserOptions.FOLD_CASE) != 0) ? AppendFoldedRange(x, x) : AppendRange(x, x);
 
     // appendRange() appends the range [lo-hi] (inclusive) to this CharClass.
     public CharClass AppendRange(int lo, int hi)
@@ -115,23 +113,23 @@ public class CharClass
         // Checking two ranges helps when appending case-folded
         // alphabets, so that one range can be expanding A-Z and the
         // other expanding a-z.
-        if (len > 0)
+        if (length > 0)
         {
             for (int i = 2; i <= 4; i += 2)
             { // twice, using i=2, i=4
-                if (len >= i)
+                if (length >= i)
                 {
-                    int rlo = r[len - i];
-                    int rhi = r[len - i + 1];
+                    int rlo = range[length - i];
+                    int rhi = range[length - i + 1];
                     if (lo <= rhi + 1 && rlo <= hi + 1)
                     {
                         if (lo < rlo)
                         {
-                            r[len - i] = lo;
+                            range[length - i] = lo;
                         }
                         if (hi > rhi)
                         {
-                            r[len - i + 1] = hi;
+                            range[length - i + 1] = hi;
                         }
                         return this;
                     }
@@ -139,9 +137,9 @@ public class CharClass
             }
         }
         // Can't coalesce; append.   Expand capacity by doubling as needed.
-        EnsureCapacity(len + 2);
-        r[len++] = lo;
-        r[len++] = hi;
+        EnsureCapacity(length + 2);
+        range[length++] = lo;
+        range[length++] = hi;
         return this;
     }
 
@@ -295,42 +293,40 @@ public class CharClass
     {
         int nextLo = 0; // lo end of next class to add
         int w = 0; // write index
-        for (int i = 0; i < len; i += 2)
+        for (int i = 0; i < length; i += 2)
         {
-            int lo = r[i], hi = r[i + 1];
+            int lo = range[i], hi = range[i + 1];
             if (nextLo <= lo - 1)
             {
-                r[w] = nextLo;
-                r[w + 1] = lo - 1;
+                range[w] = nextLo;
+                range[w + 1] = lo - 1;
                 w += 2;
             }
             nextLo = hi + 1;
         }
-        len = w;
+        length = w;
 
         if (nextLo <= Unicode.MAX_RUNE)
         {
             // It's possible for the negation to have one more
             // range - this one - than the original class, so use append.
-            EnsureCapacity(len + 2);
-            r[len++] = nextLo;
-            r[len++] = Unicode.MAX_RUNE;
+            EnsureCapacity(length + 2);
+            range[length++] = nextLo;
+            range[length++] = Unicode.MAX_RUNE;
         }
         return this;
     }
 
     // appendClassWithSign() calls appendClass() if sign is +1 or
     // appendNegatedClass if sign is -1.  Does not mutate |x|.
-    public CharClass AppendClassWithSign(int[] x, int sign)
-    {
-        return sign < 0 ? AppendNegatedClass(x) : AppendClass(x);
-    }
+    public CharClass AppendClassWithSign(int[] x, int sign) 
+        => sign < 0 ? AppendNegatedClass(x) : AppendClass(x);
 
     // appendGroup() appends CharGroup |g| to this CharClass, folding iff
     // |foldCase|.  Does not mutate |g|.
     public CharClass AppendGroup(CharGroup g, bool foldCase)
     {
-        int[] cls = g.Cls;
+        var cls = g.Class;
         if (foldCase)
         {
             cls = new CharClass().AppendFoldedClass(cls).CleanClass().ToArray();
@@ -369,12 +365,8 @@ public class CharClass
             {
                 if (i != j)
                 {
-                    int temp = array[i];
-                    array[i] = array[j];
-                    array[j] = temp;
-                    temp = array[i + 1];
-                    array[i + 1] = array[j + 1];
-                    array[j + 1] = temp;
+                    (array[j], array[i]) = (array[i], array[j]);
+                    (array[j + 1], array[i + 1]) = (array[i + 1], array[j + 1]);
                 }
                 i += 2;
                 j -= 2;
@@ -393,33 +385,34 @@ public class CharClass
     // Exposed, since useful for debugging CharGroups too.
     public static string CharClassToString(int[] r, int len)
     {
-        var b = new StringBuilder();
-        b.Append('[');
+        var builder = new StringBuilder();
+        builder.Append('[');
         for (int i = 0; i < len; i += 2)
         {
             if (i > 0)
             {
-                b.Append(' ');
+                builder.Append(' ');
             }
             int lo = r[i], hi = r[i + 1];
             // Avoid string.format (not available on GWT).
             // Cf. https://code.google.com/p/google-web-toolkit/issues/detail?id=3945
             if (lo == hi)
             {
-                b.Append("0x");
-                b.Append(string.Format("{0:x}", lo));
+                builder.Append("0x");
+                builder.Append(string.Format("{0:x}", lo));
             }
             else
             {
-                b.Append("0x");
-                b.Append(string.Format("{0:x}", lo));
-                b.Append("-0x");
-                b.Append(string.Format("{0:x}", hi));
+                builder.Append("0x");
+                builder.Append(string.Format("{0:x}", lo));
+                builder.Append("-0x");
+                builder.Append(string.Format("{0:x}", hi));
             }
         }
-        b.Append(']');
-        return b.ToString();
+        builder.Append(']');
+        return builder.ToString();
     }
 
-    public override string ToString() => CharClassToString(r, len);
+    public override string ToString()
+        => CharClassToString(range, length);
 }

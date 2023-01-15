@@ -11,12 +11,12 @@ namespace NRegEx;
 public class CharGroup
 {
     public readonly int Sign;
-    public readonly int[] Cls;
+    public readonly int[] Class;
 
     private CharGroup(int sign, int[] cls)
     {
         this.Sign = sign;
-        this.Cls = cls;
+        this.Class = cls;
     }
 
     private static readonly int[] Code1 = {

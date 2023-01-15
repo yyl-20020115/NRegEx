@@ -71,7 +71,7 @@ public class RegExDomParser
             pattern ?? throw new ArgumentNullException(nameof(pattern)));
         this.Options = options;
     }
-    public bool HasMore => this.Reader.Peek() != -1;
+    public bool HasMore => this.Peek() != -1;
     protected int Peek() => this.Reader.Peek();
     public RegExNode Parse()
     {
@@ -149,14 +149,10 @@ public class RegExDomParser
                 case '(':
                     if (((this.Options & RegExParserOptions.PERL) != RegExParserOptions.None) &&
                         this.Reader.LookingAt("(?"))
-                    {
                         this.ParsePerlFlags(Reader);
-                    }
                     else
-                    {
                         this.Push(
                             new(RegExTokenType.OpenParenthesis, Reader.TakeString(), CaptureIndex: ++CaptureIndex));
-                    }
                     break;
                 case ')':
                     this.ParseCloseParenthesis();
@@ -179,31 +175,21 @@ public class RegExDomParser
     {
         this.Concate();
         if (this.SwapAlternate())
-        {
             this.Pop();
-        }
         this.OverallAlternate();
 
         if (this.StackDepth < 2)
-        {
             throw new RegExSyntaxException(RegExParser.ERR_INTERNAL_ERROR, "Stack Underflow");
-        }
         var node = this.Pop();
         var right = this.Pop();
         if (right.Type != RegExTokenType.OpenParenthesis)
-        {
             throw new RegExSyntaxException(RegExParser.ERR_MISSING_PAREN, this.Pattern);
-        }
         if (right.CaptureIndex == null)
-        {
             this.Push(node);
-        }
         else
-        {
             this.Push(new(
                 RegExTokenType.Capture)
             { Children = new() { node } });
-        }
     }
     protected void Concate()
     {
@@ -213,9 +199,7 @@ public class RegExDomParser
         {
             var top = this.Pop();
             if (top.Type != RegExTokenType.Concate)
-            {
                 nodes.Add(top);
-            }
         }
         if (nodes.Count > 0)
         {
@@ -250,9 +234,7 @@ public class RegExDomParser
     {
         this.Concate();
         if (!this.SwapAlternate())
-        {
             this.Push(new(RegExTokenType.Alternate, alt));
-        }
     }
     protected void OverallAlternate()
     {
@@ -262,14 +244,13 @@ public class RegExDomParser
         {
             var top = this.Pop();
             if (top.Type != RegExTokenType.Alternate)
-            {
                 nodes.Add(top);
-            }
         }
         this.Push(
             new(RegExTokenType.Union) { Children = nodes });
     }
-    protected void Push(RegExNode node) => this.TokenStack.Push(node);
+    protected void Push(RegExNode node) 
+        => this.TokenStack.Push(node);
     protected RegExNode Pop() => this.TokenStack.Pop();
     protected RegExNode Top => this.TokenStack.Peek();
     protected int StackDepth => this.TokenStack.Count;
@@ -278,18 +259,13 @@ public class RegExDomParser
         int start = Reader.Position;
         int c;
         while (Reader.HasMore && (c = Reader.Peek()) >= '0' && c <= '9')
-        {
-            Reader.Skip(1); // digit
-        }
-        string n = Reader.From(start);
+            Reader.Skip(1);
+        var n = Reader.From(start);
         if (string.IsNullOrEmpty(n) || (n.Length > 1 && n[0] == '0'))
         { // disallow leading zeros
             return -1; // bad format
         }
-        if (n.Length > 8)
-        {
-            return -2; // overflow
-        }
+        if (n.Length > 8) return -2; // overflow
 
         return int.TryParse(n, out var r) ? r : -1;
     }
@@ -313,14 +289,10 @@ public class RegExDomParser
             else if ((max = ParseInt(Reader)) == -1) goto failed;
         }
         if (!Reader.HasMore || !Reader.LookingAt('}'))
-        {
             goto failed;
-        }
         Reader.Skip(1); // '}'
         if (min < 0 || min > 1000 || max == -2 || max > 1000 || (max >= 0 && min > max))
-        {
             throw new RegExSyntaxException(RegExParser.ERR_INVALID_REPEAT_SIZE, Reader.From(start));
-        }
         return (true, min, max); // success
     failed:
         return (false, null, null);
@@ -368,16 +340,14 @@ public class RegExDomParser
             // Pull out name.
             var end = s.IndexOf('>');
             if (end < 0)
-            {
                 throw new PatternSyntaxException(ERR_INVALID_NAMED_CAPTURE, s);
-            }
             var name = s.Substring(4, end - 4); // "name"
             Reader.SkipString(name);
             Reader.Skip(5); // "(?P<>"
             if (!IsValidCaptureName(name))
             {
                 throw new PatternSyntaxException(
-                    ERR_INVALID_NAMED_CAPTURE, s.Substring(0, end - 0)); // "(?P<name>"
+                    ERR_INVALID_NAMED_CAPTURE, s[..end]); // "(?P<name>"
             }
             var re = new RegExNode(RegExTokenType.OpenParenthesis, Value: name, CaptureIndex: ++this.CaptureIndex);
             // Like ordinary capture, but named.
@@ -580,9 +550,7 @@ public class RegExDomParser
             // If character class does not match \n, add it here,
             // so that negation later will do the right thing.
             if ((this.Options & RegExParserOptions.CLASS_NL) == 0)
-            {
                 cc.AppendRange('\n', '\n');
-            }
         }
 
         bool first = true; // ']' and '-' are okay as first char in class
@@ -592,7 +560,7 @@ public class RegExDomParser
             // Perl: - is okay anywhere.
             if (Reader.HasMore && Reader.LookingAt('-') && (Options & RegExParserOptions.PERL_X) == 0 && !first)
             {
-                string s = Reader.Rest;
+                var s = Reader.Rest;
                 if (s.Equals("-") || !s.StartsWith("-]"))
                 {
                     Reader.RewindTo(startPos);
@@ -859,9 +827,7 @@ public class RegExDomParser
                             var lit = Reader.Rest;
                             int i = lit.IndexOf("\\E");
                             if (i >= 0)
-                            {
-                                lit = lit.Substring(0, i - 0);
-                            }
+                                lit = lit[..i];
                             Reader.SkipString(lit);
                             Reader.SkipString("\\E");
                             for (int j = 0; j < lit.Length;)

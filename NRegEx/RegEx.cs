@@ -2,160 +2,108 @@
 
 namespace NRegEx;
 
-public record class Capture(int Index = 0,int Length = -1, string? Value = null);
+public record class Capture(int Index = 0, int Length = -1, string? Value = null);
 
 public delegate string CaptureEvaluator(Capture capture);
 public class Regex
 {
-    public const string MetaChars = "|()[]{}^$*+?\\ #";
-    private static bool IsMetachar(char ch) => MetaChars.IndexOf(ch)>=0;
+    //|()[]{}^$*+?\.
+    //there is no place for #
+    public readonly static char[] MetaChars
+        = { '|', '(', ')', '[', ']', '{', '}', '^', '$', '*', '+', '?', '\\', '.' };
+
+    private static bool IsMetachar(char ch) => Array.IndexOf(MetaChars, ch) >= 0;
 
     public static string Escape(string input)
     {
         for (int i = 0; i < input.Length; i++)
-        {
             if (IsMetachar(input[i]))
-            {
                 return EscapeImpl(input, i);
-            }
-        }
 
         return input;
     }
 
     private static string EscapeImpl(string input, int i)
     {
-        var vsb = new StringBuilder(input.Length*3);
-
+        var builder = new StringBuilder(input.Length * 3);
         char ch = input[i];
-        vsb.Append(input.AsSpan(0, i));
+        builder.Append(input.AsSpan(0, i));
 
         do
         {
-            vsb.Append('\\');
-            switch (ch)
+            builder.Append('\\');
+            builder.Append(ch switch
             {
-                case '\n':
-                    ch = 'n';
-                    break;
-                case '\r':
-                    ch = 'r';
-                    break;
-                case '\t':
-                    ch = 't';
-                    break;
-                case '\f':
-                    ch = 'f';
-                    break;
-            }
-
-            vsb.Append(ch);
-            i++;
-            int lastpos = i;
-
+                '\n' => 'n',
+                '\r' => 'r',
+                '\t' => 't',
+                '\f' => 'f',
+                _ => ch,
+            });
+            var lastpos = ++i;
             while (i < input.Length)
-            {
-                ch = input[i];
-                if (IsMetachar(ch))
-                {
-                    break;
-                }
-
-                i++;
-            }
-
-            vsb.Append(input.AsSpan(lastpos, i - lastpos));
+                if (IsMetachar(ch = input[i++])) break;
+            builder.Append(input.AsSpan(lastpos, i - lastpos));
         } while (i < input.Length);
-
-        return vsb.ToString();
+        return builder.ToString();
     }
 
     public static string Unescape(string input)
-    {
-        int i = input.IndexOf('\\');
-        return i >= 0 ?
+        => (input.IndexOf('\\') is int i) && (i >= 0) ?
             UnescapeImpl(input, i) :
             input;
-    }
 
     private static string UnescapeImpl(string input, int i)
     {
-        var vsb = new StringBuilder(input.Length * 3);
-
-        vsb.Append(input.AsSpan(0, i));
+        var builder = new StringBuilder(input.Length * 3);
+        builder.Append(input.AsSpan(0, i));
         do
         {
             i++;
             if (i == input.Length - 1)
-            {
-                vsb.Append(input[i]);
-            }
+                builder.Append(input[i]);
             else //i<input.Length -1
             {
-                char ch = input[i];
+                var ch = input[i];
                 if (ch == '\\')
                 {
                     i++;
                     ch = input[i];
-                    switch (ch)
+                    if (!IsMetachar(ch))
+                        i--;
+                    else ch = ch switch
                     {
-                        case 'n':
-                            ch = '\n';
-                            break;
-                        case 'r':
-                            ch = '\r';
-                            break;
-                        case 't':
-                            ch = '\t';
-                            break;
-                        case 'f':
-                            ch = '\f';
-                            break;
-                        default:
-                            if (IsMetachar(ch))
-                            {
-                                //ch is ok
-                            }
-                            else
-                            {
-                                i--;
-                                //ch not changed
-                            }
-                            break;
-                    }
-
-
-                    vsb.Append(ch);
-                } 
-            }
- 
-
-            int lastpos = i;
-            while (i < input.Length && input[i] != '\\')
-            {
-                i++;
+                        'n' => '\n',
+                        'r' => '\r',
+                        't' => '\t',
+                        'f' => '\f',
+                        _ => ch,
+                    };
+                    builder.Append(ch);
+                }
             }
 
-            vsb.Append(input.AsSpan(lastpos, i - lastpos));
+            var lastpos = i;
+            while (i < input.Length && input[i] != '\\') i++;
+            builder.Append(input.AsSpan(lastpos, i - lastpos));
         } while (i < input.Length);
-
-        return vsb.ToString();
+        return builder.ToString();
     }
 
-    public static string[] Split(string input, string pattern, int count = 0, int start =0)
+    public static string[] Split(string input, string pattern, int count = 0, int start = 0)
         => new Regex(pattern).Split(input, count, start);
 
-    public static string Replace(string input, string pattern,string replacement, int count = 0, int start = 0)
+    public static string Replace(string input, string pattern, string replacement, int count = 0, int start = 0)
         => new Regex(pattern).Replace(input, replacement, count, start);
 
     public static string Replace(string input, string pattern, CaptureEvaluator evaluator, int count = 0, int start = 0)
         => new Regex(pattern).Replace(input, evaluator, count, start);
 
-    public static bool IsMatch(string input, string pattern, int start = 0, int length = -1) 
-        => new Regex(pattern).IsMatch(input, start,length);
-    public static Capture Match(string input, string pattern, int start = 0, int length = -1) 
+    public static bool IsMatch(string input, string pattern, int start = 0, int length = -1)
+        => new Regex(pattern).IsMatch(input, start, length);
+    public static Capture Match(string input, string pattern, int start = 0, int length = -1)
         => new Regex(pattern).Match(input, start, length);
-    public static List<Capture> Matches(string input, string pattern, int start = 0, int length = -1) 
+    public static List<Capture> Matches(string input, string pattern, int start = 0, int length = -1)
         => new Regex(pattern).Matches(input, start, length);
     /// <summary>
     /// We should check easy back tracing regex first
@@ -165,13 +113,13 @@ public class Regex
     /// <param name="regex"></param>
     /// <returns></returns>
     public static bool IsBacktracingFriendly(string regex)
-        => !string.IsNullOrEmpty(regex) 
+        => !string.IsNullOrEmpty(regex)
         && new Regex(regex).Graph.IsBacktracingFriendly();
-    
+
     protected string regex = "";
     protected string name = "";
     protected Graph? graph;
-    public Graph Graph =>graph??=this.Build();
+    public Graph Graph => graph ??= this.Build();
     public string Pattern => regex;
     public string Name => name;
     public Regex(string regex, string? name = null)
@@ -180,16 +128,17 @@ public class Regex
         this.name = name ?? this.regex;
     }
 
-    protected Graph Build() => new RegExParser(this.name).FullParse(this.regex);
+    protected Graph Build()
+        => new RegExParser(this.name).FullParse(this.regex);
 
     public bool IsMatch(string input, int start = 0, int length = -1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
         if (start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length;
-        if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start)+","+nameof(length));
+        if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "," + nameof(length));
 
-        var heads = this.Graph.Heads;        
+        var heads = this.Graph.Heads;
         var nodes = heads.ToHashSet();
 
         var i = start;
@@ -198,39 +147,35 @@ public class Regex
             var copies = nodes.ToArray();
             nodes.Clear();
             if (copies.All(copy => copy.IsVirtual))
-            {
                 nodes.UnionWith(copies.SelectMany(n => n.Outputs));
-            }
             else
             {
                 var c = input[i];
                 var hit = false;
                 foreach (var node in copies)
-                {
                     if (node.Hit(c))
                     {
                         hit = true;
                         //needs all hits
                         nodes.UnionWith(node.Outputs);
                     }
-                }
                 if (hit) i++;
             }
         }
 
         return i == input.Length && (nodes.Count == 0 || nodes.Any(n => n.Outputs.Count == 0));
     }
-    public Capture Match(string input,int start = 0, int length = -1)
+    public Capture Match(string input, int start = 0, int length = -1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
         if (start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "," + nameof(length));
-        var s = start; 
+        var s = start;
         var heads = this.Graph.Heads;
     repeat:
 
-        var nodes = heads?.ToHashSet() ?? new ();
+        var nodes = heads?.ToHashSet() ?? new();
         var i = start;
         var m = 0;
         while (nodes.Count > 0 && i < length)
@@ -238,22 +183,18 @@ public class Regex
             var copies = nodes.ToArray();
             nodes.Clear();
             if (copies.All(copy => copy.IsVirtual))
-            {
                 nodes.UnionWith(copies.SelectMany(n => n.Outputs));
-            }
             else
             {
                 var c = input[i];
                 var hit = false;
                 foreach (var node in copies)
-                {
                     if (node.Hit(c))
                     {
                         hit = true;
                         //needs all hits
                         nodes.UnionWith(node.Outputs);
                     }
-                }
                 if (hit)
                 {
                     m++;
@@ -261,29 +202,28 @@ public class Regex
                 }
                 else
                 {
-                    start+=m;
+                    start += m;
                     goto repeat;
                 }
             }
         }
 
-        return start > s && nodes.Count==0
-            ? new (start, m, input[start..(start+m)])
-            : new (start,-1);
+        return start > s && nodes.Count == 0
+            ? new(start, m, input[start..(start + m)])
+            : new(start, -1)
+            ;
     }
-    public List<Capture> Matches(string input, int start = 0,int length = -1)
+    public List<Capture> Matches(string input, int start = 0, int length = -1)
     {
         var captures = new List<Capture>();
-        while(true)
+        while (true)
         {
             var capture = this.Match(input, start, length);
             if (null == capture)
-            {
                 break;
-            }
             else
             {
-                if (capture.Index<0 || capture.Length == 0) 
+                if (capture.Index < 0 || capture.Length == 0)
                     break;
                 captures.Add(capture);
             }
@@ -296,11 +236,8 @@ public class Regex
     public string Replace(string input, CaptureEvaluator evaluator, int count = 0, int start = 0)
     {
         var matchs = this.Matches(input, start);
-
         var result = new List<string>();
-
-        start = 0;
-        var c = 0;
+        var c = start = 0;
         foreach (var match in matchs)
         {
             var delta = match.Index - start;
@@ -311,25 +248,21 @@ public class Regex
             if (++c >= count) break;
         }
         if (start < input.Length) result.Add(input[start..]);
-
-        return result.Aggregate((a,b)=>a+b);
+        return result.Aggregate((a, b) => a + b);
     }
     public string[] Split(string input, int count = 0, int start = 0)
     {
         var matchs = this.Matches(input, start);
         var result = new List<string>();
-
-        start = 0;
-        var c = 0;
+        var c = start = 0;
         foreach (var match in matchs)
         {
             var delta = match.Index - start;
-            if (delta>0) result.Add(input[start..match.Index]);
-            start =match.Index + match.Length;
+            if (delta > 0) result.Add(input[start..match.Index]);
+            start = match.Index + match.Length;
             if (++c >= count) break;
         }
         if (start < input.Length) result.Add(input[start..]);
-
         return result.ToArray();
     }
 }

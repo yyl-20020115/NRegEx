@@ -8,27 +8,23 @@ public record class Node
     public const int NewLineChar = '\n';
     public const int ReturnChar = '\r';
 
-    protected static HashSet<int>? _AllChars = null;
-    protected static HashSet<int>? _WordChars = null;
-    protected static HashSet<int>? _NonWordChars = null;
+    public readonly static HashSet<int> AllChars = Enumerable.Range(
+                    char.MinValue,
+                    char.MaxValue - char.MinValue + 1).ToHashSet();
+    public readonly static HashSet<int> WordChars = Enumerable.Range(
+                    char.MinValue,
+                    char.MaxValue - char.MinValue + 1).Where(i => char.IsLetter((char)i)).ToHashSet();
+    public readonly static HashSet<int> NonWordChars = Enumerable.Range(
+                    char.MinValue,
+                    char.MaxValue - char.MinValue + 1).Where(i => !char.IsLetter((char)i)).ToHashSet();
 
-    public static HashSet<int> AllChars => _AllChars ??= new(Enumerable.Range(
-                    char.MinValue,
-                    char.MaxValue - char.MinValue + 1));
-    public static HashSet<int> WordChars => _WordChars ??= new(Enumerable.Range(
-                    char.MinValue,
-                    char.MaxValue - char.MinValue + 1).Where(i => char.IsLetter((char)i)));
-    public static HashSet<int> NonWordChars => _NonWordChars ??= new(Enumerable.Range(
-                    char.MinValue,
-                    char.MaxValue - char.MinValue + 1).Where(i => !char.IsLetter((char)i)));
-
-    public static Dictionary<int, HashSet<int>> KnownInvertedSets = new();
+    public readonly static Dictionary<int, HashSet<int>> KnownInvertedSets = new();
 
     public static int Nid = 0;
     public readonly int Id ;
     public readonly bool IsVirtual;
     public readonly bool Inverted;
-    public string Name { get; set; } = String.Empty;
+    public string Name { get; set; } = string.Empty;
     public readonly HashSet<int> CharSet = new();
     public readonly HashSet<Node> Inputs = new ();
     public readonly HashSet<Node> Outputs = new ();
@@ -59,12 +55,12 @@ public record class Node
 
         if (this.Inverted)
         {
-            this.CharSet = new HashSet<int>(AllChars);
+            this.CharSet = new (AllChars);
             this.CharSet.ExceptWith(cs);
         }
         else
         {
-            this.CharSet = new HashSet<int>(cs);
+            this.CharSet = new (cs);
         }
     }
 
@@ -81,7 +77,7 @@ public record class Node
         return Inverted ? !cx : cx;
     }
 
-    public string FormatNodes(IEnumerable<Node?> nodes)
+    public static string FormatNodes(IEnumerable<Node?> nodes)
     {
         var builder = new StringBuilder();
         var ns = new List<Node?>(nodes);
@@ -90,19 +86,15 @@ public record class Node
             var node = ns[i];
             builder.Append(node?.Id);
             if (i < ns.Count - 1)
-            {
                 builder.Append(',');
-            }
         }
         if (ns.Count == 0)
-        {
             builder.Append(' ');
-        }
         return builder.ToString();
     }
     public override string ToString() => "["+this.Id + "(inverted:" 
         + this.Inverted +"):" + string.Join(',',this.CharSet)
-        +$" IN:{this.FormatNodes(this.Inputs)}  OUT:{this.FormatNodes(this.Outputs)}"+"]";
+        +$" IN:{FormatNodes(this.Inputs)}  OUT:{FormatNodes(this.Outputs)}"+"]";
 }
 public record class Edge
 {
@@ -182,9 +174,7 @@ public record class Graph
         return this;
     }
     public Graph ConcateWith(Graph tail)
-    {
-        return Concate(tail, this);
-    }
+        => Concate(tail, this);
     public Graph Concate(Graph tail, Graph head)
     {
         this.Head = head.Head;
@@ -306,7 +296,7 @@ public record class Graph
     public override string ToString() => $"H:{this.Head},T:{this.Tail}";
 
     protected HashSet<Node>? heads = null;
-    public HashSet<Node> Heads => (this.heads??=this.Compact());
+    public HashSet<Node> Heads => (this.heads ??= this.Compact());
 
     protected HashSet<Node> Compact()
     {
@@ -318,23 +308,16 @@ public record class Graph
         do
         {
             heads.UnionWith(nodes.Where(n => !n.IsVirtual));
-
             var virtuals = nodes.Where(n => n.IsVirtual).ToHashSet();
-
             nodes = virtuals.SelectMany(n => n.Outputs).ToHashSet();
-
             virtuals.ToList().ForEach(v =>
                 v.Outputs.ToList().ForEach(o => o.Inputs.Remove(v)));
-            
             this.Nodes.ExceptWith(virtuals);
-
             nodes.ExceptWith(visited);
             visited.UnionWith(nodes);
         } while (nodes.Count > 0);
 
-
         nodes = heads.ToHashSet();
-
         while (nodes.Count > 0)
         {
             nodes = nodes.SelectMany(n => n.Outputs).ToHashSet();

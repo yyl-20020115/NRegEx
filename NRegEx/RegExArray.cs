@@ -1,21 +1,20 @@
-﻿namespace NRegEx;
+﻿using System.Text.RegularExpressions;
+
+namespace NRegEx;
 
 public class RegExArray
 {
-    public Dictionary<string, Regex> Dict = new ();    
-    public ICollection<Regex> Array =>Dict.Values;
-    public string[] Regexs { get; protected set; } 
+    public Dictionary<string, Regex> Dict = new();
+    public ICollection<Regex> Array => Dict.Values;
+    public string[] Regexs { get; protected set; }
         = System.Array.Empty<string>();
-    public RegExArray(params string[] regexs)
-    {
-        this.SetRegexs(regexs);
-    }
+    public RegExArray(params string[] regexs) => this.SetRegexs(regexs);
 
     public void SetRegexs(params string[] regexs)
     {
         this.Dict.Clear();
-        foreach(var regex in this.Regexs = regexs)
-            Dict.Add(regex,new(regex,regex));
+        foreach (var regex in this.Regexs = regexs)
+            Dict.Add(regex, new(regex, regex));
     }
 
     public HashSet<string> IsMatch(string input, int start = 0, int length = -1)
@@ -26,10 +25,10 @@ public class RegExArray
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "," + nameof(length));
 
         var allGraph = new Graph();
-        foreach(var r in this.Array)
+        foreach (var r in this.Array)
             allGraph.UnionWith(r.Graph);
 
-        HashSet<Node> nodes = allGraph.Heads??new ();
+        var nodes = allGraph.Heads ?? new();
         var last = nodes;
         var i = start;
         while (nodes.Count > 0 && i < length)
@@ -38,9 +37,7 @@ public class RegExArray
             last = nodes;
             nodes = new HashSet<Node>();
             if (copies.All(copy => copy.IsVirtual))
-            {
                 nodes.UnionWith(copies.SelectMany(n => n.Outputs));
-            }
             else
             {
                 var c = input[i];
@@ -58,24 +55,22 @@ public class RegExArray
             }
         }
 
-        if(i == input.Length && (nodes.Count == 0 
-            || nodes.Any(n => n.Outputs.Count == 0)))
-        {
-            return last.Select(n => n.Name).ToHashSet();
-        }
-        return new();
+        return i == input.Length && (nodes.Count == 0
+            || nodes.Any(n => n.Outputs.Count == 0))
+            ? last.Select(n => n.Name).ToHashSet()
+            : new();
     }
-    public Dictionary<string,Capture> Match(string input, int start = 0, int length = -1)
+    public Dictionary<string, Capture> Match(string input, int start = 0, int length = -1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
         if (start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "," + nameof(length));
-        
-        var dict = new Dictionary<string,Capture>();
+
+        var dict = new Dictionary<string, Capture>();
 
         var s = start;
-        var graph = new Graph().UnionWith(this.Array.Select(a=>a.Graph));
+        var graph = new Graph().UnionWith(this.Array.Select(a => a.Graph));
         var heads = graph.Heads;
     repeat:
         var nodes = heads?.ToHashSet() ?? new();
@@ -89,9 +84,7 @@ public class RegExArray
             last = nodes;
             nodes = new HashSet<Node>();
             if (copies.All(copy => copy.IsVirtual))
-            {
                 nodes.UnionWith(copies.SelectMany(n => n.Outputs));
-            }
             else
             {
                 var c = input[i];
@@ -110,13 +103,13 @@ public class RegExArray
                     m++;
                     i++;
                     var any = false;
-                    foreach(var node in nodes)
+                    foreach (var node in nodes)
                     {
-                        if(node.Outputs.Count == 0)
+                        if (node.Outputs.Count == 0)
                         {
-                            dict[node.Name]=( 
-                                new(start,m,
-                                    input[start..(start+m)]));
+                            dict[node.Name] = (
+                                new(start, m,
+                                    input[start..(start + m)]));
                             any = true;
                         }
                     }
@@ -133,14 +126,14 @@ public class RegExArray
         return dict;
     }
 
-    public HashLookups<string,Capture> Matches(string input, int start = 0, int length = -1)
+    public HashLookups<string, Capture> Matches(string input, int start = 0, int length = -1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
         if (start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "," + nameof(length));
 
-        var lookups = new HashLookups<string,Capture>();
+        var lookups = new HashLookups<string, Capture>();
 
         var s = start;
         var graph = new Graph().UnionWith(this.Array.Select(a => a.Graph));
@@ -157,9 +150,7 @@ public class RegExArray
             last = nodes;
             nodes = new HashSet<Node>();
             if (copies.All(copy => copy.IsVirtual))
-            {
                 nodes.UnionWith(copies.SelectMany(n => n.Outputs));
-            }
             else
             {
                 var c = input[i];

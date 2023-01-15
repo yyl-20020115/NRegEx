@@ -8,7 +8,7 @@ public class RegExTextReader
     public const int WORD_BOUNDARY = UNICODE_LIMIT + 1;
 
     public readonly TextReader Reader;
-    protected enum ReaderStates
+    protected enum ReaderStates : uint
     {
         NotStarted,
         InProgress,
@@ -23,17 +23,14 @@ public class RegExTextReader
 
     public int Peek() => this.State switch
     {
-        ReaderStates.NotStarted 
-            => BEGIN_TEXT,
-        ReaderStates.InProgress
-            => (this.Reader.Peek() is int c)?(c == EOF ? END_TEXT : c) : EOF ,
-        ReaderStates.PastEOF 
-            => EOF,
+        ReaderStates.NotStarted => BEGIN_TEXT,
+        ReaderStates.InProgress => (this.Reader.Peek() is int c)?(c == EOF ? END_TEXT : c) : EOF ,
+        ReaderStates.PastEOF => EOF,
         _ => EOF,
     };
     public int Read()
     {
-        int c = -1;
+        var c = -1;
         switch (this.State)
         {
             case ReaderStates.NotStarted:

@@ -8,13 +8,9 @@ internal class PatternSyntaxException : Exception
     private object e = new();
     private string s = "";
 
-    public PatternSyntaxException()
-    {
-    }
+    public PatternSyntaxException() { }
 
-    public PatternSyntaxException(string? message) : base(message)
-    {
-    }
+    public PatternSyntaxException(string? message) : base(message) { }
 
     public PatternSyntaxException(object e, string s)
     {
@@ -22,11 +18,7 @@ internal class PatternSyntaxException : Exception
         this.s = s;
     }
 
-    public PatternSyntaxException(string? message, Exception? innerException) : base(message, innerException)
-    {
-    }
+    public PatternSyntaxException(string? message, Exception? innerException) : base(message, innerException) { }
 
-    protected PatternSyntaxException(SerializationInfo info, StreamingContext context) : base(info, context)
-    {
-    }
+    protected PatternSyntaxException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 }

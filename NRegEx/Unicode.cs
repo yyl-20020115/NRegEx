@@ -69,11 +69,10 @@ public static class Unicode
                 {
                     continue;
                 }
-                if (r < range[0])
+                else
                 {
-                    return false;
+                    return r >= range[0] && ((r - range[0]) % range[2]) == 0;
                 }
-                return ((r - range[0]) % range[2]) == 0;
             }
             return false;
         }
@@ -118,7 +117,7 @@ public static class Unicode
             return UnicodeTables.CASE_ORBIT[r];
         if (r >= char.MinValue && r <= char.MaxValue)
         {
-            char s = char.ToLower((char)r);
+            var s = char.ToLower((char)r);
             return s != r ? s : char.ToUpper((char)r);
         }
         // No folding specified.  This is a one- or two-element

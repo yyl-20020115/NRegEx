@@ -22,24 +22,15 @@ public static class Utils
         => ('0' <= c && c <= '9') || ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z');
 
     // If |c| is an ASCII hex digit, returns its value, otherwise -1.
-    public static int Unhex(int c)
+    public static int Unhex(int c) => c switch
     {
-        if ('0' <= c && c <= '9')
-        {
-            return c - '0';
-        }
-        if ('a' <= c && c <= 'f')
-        {
-            return c - 'a' + 10;
-        }
-        if ('A' <= c && c <= 'F')
-        {
-            return c - 'A' + 10;
-        }
-        return -1;
-    }
+        >= '0' and <= '9' => c - '0',
+        >= 'a' and <= 'f' => c - 'a' + 10,
+        >= 'A' and <= 'F' => c - 'A' + 10,
+        _ => -1
+    };
 
-    private const string METACHARACTERS = "\\.+*?()|[]{}^$";
+    private const string METACHARACTERS = @"\.+*?()|[]{}^$";
 
     // Appends a RE2 literal to |out| for rune |rune|,
     // with regexp metacharacters escaped.
@@ -232,10 +223,10 @@ public static class Utils
     {
         if (i > 0)
         {
-            char c = s[--i];
+            var c = s[--i];
             if (char.IsLowSurrogate(c) && i > 0)
             {
-                char d = s[--i];
+                var d = s[--i];
                 if (char.IsHighSurrogate(d))
                 {
                     return char.ConvertToUtf32(d, c);
