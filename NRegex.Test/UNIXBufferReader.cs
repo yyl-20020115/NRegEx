@@ -17,37 +17,37 @@ using System.Text;
 */
 namespace NRegex.Tests;
 
-public class UNIXBufferedReader :StreamReader
+public class UNIXBufferedReader : StreamReader
 {
     public UNIXBufferedReader(Stream stream)
         : base(stream) { }
 
     public UNIXBufferedReader(Stream stream, bool detectEncodingFromByteOrderMarks)
-        :base(stream, detectEncodingFromByteOrderMarks) { }
+        : base(stream, detectEncodingFromByteOrderMarks) { }
 
     public UNIXBufferedReader(Stream stream, Encoding encoding)
-        :base(stream, encoding) { }
+        : base(stream, encoding) { }
     public UNIXBufferedReader(Stream stream, Encoding encoding, bool detectEncodingFromByteOrderMarks)
-        :base(stream , encoding, detectEncodingFromByteOrderMarks) { }
+        : base(stream, encoding, detectEncodingFromByteOrderMarks) { }
 
     public UNIXBufferedReader(Stream stream, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
-        :base(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize)    { }
+        : base(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize) { }
     public UNIXBufferedReader(Stream stream, Encoding? encoding = null, bool detectEncodingFromByteOrderMarks = true, int bufferSize = -1, bool leaveOpen = false)
-        :base(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen) { }
+        : base(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen) { }
     public UNIXBufferedReader(string path)
-        :base(path) { }
+        : base(path) { }
     public UNIXBufferedReader(string path, FileStreamOptions options)
-        :base(path, options) { }
+        : base(path, options) { }
     public UNIXBufferedReader(string path, bool detectEncodingFromByteOrderMarks)
-        :base(path, detectEncodingFromByteOrderMarks) { }
+        : base(path, detectEncodingFromByteOrderMarks) { }
     public UNIXBufferedReader(string path, Encoding encoding)
-        :base(path, encoding) { }
+        : base(path, encoding) { }
     public UNIXBufferedReader(string path, Encoding encoding, bool detectEncodingFromByteOrderMarks)
-        :base(path, encoding, detectEncodingFromByteOrderMarks) { }
+        : base(path, encoding, detectEncodingFromByteOrderMarks) { }
     public UNIXBufferedReader(string path, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
-        :base(path, encoding, detectEncodingFromByteOrderMarks, bufferSize) { }
+        : base(path, encoding, detectEncodingFromByteOrderMarks, bufferSize) { }
     public UNIXBufferedReader(string path, Encoding encoding, bool detectEncodingFromByteOrderMarks, FileStreamOptions options)
-        :base(path, encoding, detectEncodingFromByteOrderMarks) { }
+        : base(path, encoding, detectEncodingFromByteOrderMarks) { }
 
     protected char[] Buffer = new char[4096];
     protected int BufferLength = 0; // length prefix of |buf| that is filled
@@ -88,7 +88,7 @@ public class UNIXBufferedReader :StreamReader
                     string line;
                     if (builder == null)
                     {
-                        line = new (Buffer, _StartIndex, i - _StartIndex);
+                        line = new(Buffer, _StartIndex, i - _StartIndex);
                     }
                     else
                     {

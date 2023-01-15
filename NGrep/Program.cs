@@ -55,11 +55,11 @@ public class Options
     public bool Verbose { get; set; } = false;
 }
 
-public class Program
+public static class Program
 {
-    protected static Options Options = new ();
-    protected static int Count = 0;
-    protected static Parser? Parser;
+    private static readonly Options Options = new();
+    private static int Count = 0;
+    private static Parser? Parser;
 
     public static void PrintLeadingContext(string[] lines, int line_number, int num_context, Match m, string filename)
     {
@@ -165,7 +165,7 @@ public class Program
                 s.AutoHelp = true;
                 s.AutoVersion = true;
             });
-            
+
             var result = Parser.ParseArguments<Options>(args);
 
             if (result.Value != null)
