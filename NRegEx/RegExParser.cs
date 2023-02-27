@@ -44,7 +44,7 @@ public enum RegExParserOptions : uint
     POSIX = 0,
 }
 
-public class RegExParser
+public static class RegExParser
 {
     // Unexpected error
     public const string ERR_INTERNAL_ERROR = "regexp/syntax: internal error";
@@ -64,7 +64,7 @@ public class RegExParser
     public const string ERR_DUPLICATE_NAMED_CAPTURE = "duplicate capture group name";
 
 
-    public const char NullChar = '\0';
+    public const char NullChar = char.MinValue;
     public static readonly string Operators = "*&|()" + NullChar;
     public static readonly int[][] Priorities = new int[][]{
             new []{ 1, 1, 1, -1, 1, 1 }, // *&|()#
@@ -73,6 +73,9 @@ public class RegExParser
             new []{ -1, -1, -1, -1, 0, 2 },
             new []{ 1, 1, 1, 1, 1, 1 },
             new []{ -1, -1, -1, -1, -1, -1 } };
+    public static Graph FullParse(string regex, RegExParserOptions options = RegExParserOptions.None)
+        => !string.IsNullOrEmpty(regex) ? RegExGraphBuilder.Build(RegExDomParser.Parse(regex, options)) : new();
+
     public static string Invert(string input)
     {
         var builder = new StringBuilder();
@@ -115,12 +118,7 @@ public class RegExParser
     public static int GetPriority(char c1, char c2)
         => Priorities[Operators.IndexOf(c1)][Operators.IndexOf(c2)];
 
-    public readonly string Name;
-    public RegExParser(string name = "")
-    {
-        this.Name = name;
-    }
-    protected static string Prepare(string input_regex)
+    public static string Prepare(string input_regex)
     {
         var builder = new StringBuilder();
         input_regex = input_regex.Replace(" ", "");
@@ -137,19 +135,9 @@ public class RegExParser
                     builder.Append("&" + input_regex[i]);
         return builder.ToString();
     }
+
     
-    public static Graph FullParse(string regex)
-    {
-        if (!string.IsNullOrEmpty(regex))
-        {
-            var parser = new RegExDomParser(regex, RegExParserOptions.None);
-            var node = parser.Parse();
-            var builder = new RegExGraphBuilder();
-            return builder.Build(node);
-        }
-        return new ();
-    }
-    public Graph SimpleParse(string regex)
+    public static Graph SimpleParse(string regex,string name)
     {
         regex = Prepare(regex);
         if (regex.Length == 0)
@@ -167,7 +155,7 @@ public class RegExParser
                 var c = _regex[i];
                 if (IsNotOperator(c))
                 {
-                    operandStack.Push(new(this.Name, c));
+                    operandStack.Push(new(name, c));
                     i++;
                 }
                 else
@@ -180,13 +168,13 @@ public class RegExParser
                             switch (character)
                             {
                                 case '*':
-                                    operandStack.Push(new Graph(this.Name).ZeroPlus(operandStack.Pop()));
+                                    operandStack.Push(new Graph(name).ZeroPlus(operandStack.Pop()));
                                     break;
                                 case '&':
-                                    operandStack.Push(new Graph(this.Name).Concate(operandStack.Pop(), operandStack.Pop()));
+                                    operandStack.Push(new Graph(name).Concate(operandStack.Pop(), operandStack.Pop()));
                                     break;
                                 case '|':
-                                    operandStack.Push(new Graph(this.Name).Union(operandStack.Pop(), operandStack.Pop()));
+                                    operandStack.Push(new Graph(name).Union(operandStack.Pop(), operandStack.Pop()));
                                     break;
                                 default:
                                     break;

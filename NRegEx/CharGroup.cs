@@ -104,44 +104,44 @@ public class CharGroup
         0x30, 0x39, 0x41, 0x46, 0x61, 0x66,
     };
 
-    public static readonly Dictionary<string, CharGroup> PERL_GROUPS = new();
-    public static readonly Dictionary<string, CharGroup> POSIX_GROUPS = new();
-
-    static CharGroup()
+    public static readonly Dictionary<string, CharGroup> PERL_GROUPS = new()
     {
-        PERL_GROUPS.Add("\\d", new(+1, Code1));
-        PERL_GROUPS.Add("\\D", new(-1, Code1));
-        PERL_GROUPS.Add("\\s", new(+1, Code2));
-        PERL_GROUPS.Add("\\S", new(-1, Code2));
-        PERL_GROUPS.Add("\\w", new(+1, Code3));
-        PERL_GROUPS.Add("\\W", new(-1, Code3));
-        POSIX_GROUPS.Add("[:alnum:]", new(+1, Code4));
-        POSIX_GROUPS.Add("[:^alnum:]", new(-1, Code4));
-        POSIX_GROUPS.Add("[:alpha:]", new(+1, Code5));
-        POSIX_GROUPS.Add("[:^alpha:]", new(-1, Code5));
-        POSIX_GROUPS.Add("[:ascii:]", new(+1, Code6));
-        POSIX_GROUPS.Add("[:^ascii:]", new(-1, Code6));
-        POSIX_GROUPS.Add("[:blank:]", new(+1, Code7));
-        POSIX_GROUPS.Add("[:^blank:]", new(-1, Code7));
-        POSIX_GROUPS.Add("[:cntrl:]", new(+1, Code8));
-        POSIX_GROUPS.Add("[:^cntrl:]", new(-1, Code8));
-        POSIX_GROUPS.Add("[:digit:]", new(+1, Code9));
-        POSIX_GROUPS.Add("[:^digit:]", new(-1, Code9));
-        POSIX_GROUPS.Add("[:graph:]", new(+1, Code10));
-        POSIX_GROUPS.Add("[:^graph:]", new(-1, Code10));
-        POSIX_GROUPS.Add("[:lower:]", new(+1, Code11));
-        POSIX_GROUPS.Add("[:^lower:]", new(-1, Code11));
-        POSIX_GROUPS.Add("[:print:]", new(+1, Code12));
-        POSIX_GROUPS.Add("[:^print:]", new(-1, Code12));
-        POSIX_GROUPS.Add("[:punct:]", new(+1, Code13));
-        POSIX_GROUPS.Add("[:^punct:]", new(-1, Code13));
-        POSIX_GROUPS.Add("[:space:]", new(+1, Code14));
-        POSIX_GROUPS.Add("[:^space:]", new(-1, Code14));
-        POSIX_GROUPS.Add("[:upper:]", new(+1, Code15));
-        POSIX_GROUPS.Add("[:^upper:]", new(-1, Code15));
-        POSIX_GROUPS.Add("[:word:]", new(+1, Code16));
-        POSIX_GROUPS.Add("[:^word:]", new(-1, Code16));
-        POSIX_GROUPS.Add("[:xdigit:]", new(+1, Code17));
-        POSIX_GROUPS.Add("[:^xdigit:]", new(-1, Code17));
-    }
+        { "\\d", new(+1, Code1) },
+        { "\\D", new(-1, Code1) },
+        { "\\s", new(+1, Code2) },
+        { "\\S", new(-1, Code2) },
+        { "\\w", new(+1, Code3) },
+        { "\\W", new(-1, Code3) }
+    };
+    public static readonly Dictionary<string, CharGroup> POSIX_GROUPS = new()
+    {
+        { "[:alnum:]", new(+1, Code4) },
+        { "[:^alnum:]", new(-1, Code4) },
+        { "[:alpha:]", new(+1, Code5) },
+        { "[:^alpha:]", new(-1, Code5) },
+        { "[:ascii:]", new(+1, Code6) },
+        { "[:^ascii:]", new(-1, Code6) },
+        { "[:blank:]", new(+1, Code7) },
+        { "[:^blank:]", new(-1, Code7) },
+        { "[:cntrl:]", new(+1, Code8) },
+        { "[:^cntrl:]", new(-1, Code8) },
+        { "[:digit:]", new(+1, Code9) },
+        { "[:^digit:]", new(-1, Code9) },
+        { "[:graph:]", new(+1, Code10) },
+        { "[:^graph:]", new(-1, Code10) },
+        { "[:lower:]", new(+1, Code11) },
+        { "[:^lower:]", new(-1, Code11) },
+        { "[:print:]", new(+1, Code12) },
+        { "[:^print:]", new(-1, Code12) },
+        { "[:punct:]", new(+1, Code13) },
+        { "[:^punct:]", new(-1, Code13) },
+        { "[:space:]", new(+1, Code14) },
+        { "[:^space:]", new(-1, Code14) },
+        { "[:upper:]", new(+1, Code15) },
+        { "[:^upper:]", new(-1, Code15) },
+        { "[:word:]", new(+1, Code16) },
+        { "[:^word:]", new(-1, Code16) },
+        { "[:xdigit:]", new(+1, Code17) },
+        { "[:^xdigit:]", new(-1, Code17) }
+    };
 }

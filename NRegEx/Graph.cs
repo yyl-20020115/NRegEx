@@ -20,7 +20,7 @@ public record class Node
 
     public readonly static Dictionary<int, HashSet<int>> KnownInvertedSets = new();
 
-    public static int Nid = 0;
+    protected static int Nid = 0;
     public readonly int Id ;
     public readonly bool IsVirtual;
     public readonly bool Inverted;
@@ -29,7 +29,7 @@ public record class Node
     public readonly HashSet<Node> Inputs = new ();
     public readonly HashSet<Node> Outputs = new ();
     public Node(string name = "")
-        :this(Node.EOFChar)
+        :this(EOFChar)
     {
         this.Name = name;
         this.IsVirtual = true;

@@ -15,7 +15,7 @@ public class UnitTest1
 
     }
     [TestMethod]
-    public void TestMethod1()
+    public void TestMethod0()
     {
         var regexString0 = "(ab|c)*abb";
         var regex0 = new Regex(regexString0);
@@ -24,6 +24,17 @@ public class UnitTest1
         Console.WriteLine(regex0.Graph);
         var b = regex0.IsMatch("ccabb");
         Console.WriteLine(b);
+    }
+
+
+    [TestMethod]
+    public void TestMethod1()
+    {
+
+
+
+
+      
 
         var regexString1 = "a*";
         var regex1 = new Regex(regexString1);
@@ -31,7 +42,7 @@ public class UnitTest1
         Console.WriteLine(regex1.Graph);
 
         var regexString2 = "ab";
-        Regex regex2 = new Regex(regexString2);
+        var regex2 = new Regex(regexString2);
         Console.WriteLine(regex2.Pattern);
         Console.WriteLine(regex2.Graph);
 

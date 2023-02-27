@@ -1,8 +1,7 @@
 ﻿namespace NRegEx;
-public class RegExGraphBuilder
+public static class RegExGraphBuilder
 {
-    public RegExGraphBuilder() { }
-    public Graph Build(RegExNode node)
+    public static Graph Build(RegExNode node)
     {
         var graph = new Graph(node.Name);
         switch (node.Type)
@@ -16,21 +15,21 @@ public class RegExGraphBuilder
                 {
                     if (node.Children.Count != 1) throw new PatternSyntaxException(
                         nameof(RegExTokenType.OnePlus) + nameof(node));
-                    graph.OnePlus(this.Build(node.Children[0]));
+                    graph.OnePlus(Build(node.Children[0]));
                 }
                 break;
             case RegExTokenType.ZeroPlus:
                 {
                     if (node.Children.Count != 1) throw new PatternSyntaxException(
                         nameof(RegExTokenType.ZeroPlus) + nameof(node));
-                    graph.ZeroPlus(this.Build(node.Children[0]));
+                    graph.ZeroPlus(Build(node.Children[0]));
                 }
                 break;
             case RegExTokenType.ZeroOne:
                 {
                     if (node.Children.Count != 1) throw new PatternSyntaxException(
                         nameof(RegExTokenType.ZeroOne) + nameof(node));
-                    graph.ZeroOne(this.Build(node.Children[0]));
+                    graph.ZeroOne(Build(node.Children[0]));
                 }
                 break;
             case RegExTokenType.Literal:
@@ -57,7 +56,7 @@ public class RegExGraphBuilder
                 {
                     if (node.Children.Count == 0) throw new PatternSyntaxException(
                         nameof(RegExTokenType.Sequence) + nameof(node));
-                    graph.Concate(node.Children.Select(c => this.Build(c)));
+                    graph.Concate(node.Children.Select(c => Build(c)));
                 }
                 break;
 
@@ -65,14 +64,14 @@ public class RegExGraphBuilder
                 {
                     if (node.Children.Count == 0) throw new PatternSyntaxException(
                         nameof(RegExTokenType.Union) + nameof(node));
-                    graph.UnionWith(node.Children.Select(c => this.Build(c)));
+                    graph.UnionWith(node.Children.Select(c => Build(c)));
                 }
                 break;
             case RegExTokenType.Repeats:
                 {
                     if (node.Children.Count == 0) throw new PatternSyntaxException(
                         nameof(RegExTokenType.Union) + nameof(node));
-                    graph.ComposeRepeats(this.Build(node.Children[0]),
+                    graph.ComposeRepeats(Build(node.Children[0]),
                         node.Min.GetValueOrDefault(),
                         node.Max.GetValueOrDefault());
                 }

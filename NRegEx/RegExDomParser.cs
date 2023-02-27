@@ -65,6 +65,8 @@ public class RegExDomParser
     public string Pattern => this.Reader.Pattern;
     protected readonly Stack<RegExNode> TokenStack = new();
     protected int CaptureIndex = 0;
+    public static RegExNode Parse(string pattern, RegExParserOptions options) 
+        => new RegExDomParser(pattern, options).Parse();
     public RegExDomParser(string pattern, RegExParserOptions options)
     {
         this.Reader = new RegExPatternReader(

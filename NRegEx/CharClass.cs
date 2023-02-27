@@ -53,16 +53,9 @@ public class CharClass
     // performed on a given CharClass instance.
     public int[] ToArray()
     {
-        if (this.length == range.Length)
-        {
-            return range;
-        }
-        else
-        {
-            int[] r2 = new int[length];
-            Array.Copy(range, 0, r2, 0, length);
-            return r2;
-        }
+        var ret = new int[this.length];
+        Array.Copy(range, 0, ret, 0, length);
+        return ret;
     }
 
     // cleanClass() sorts the ranges (pairs of elements) of this CharClass,
@@ -398,15 +391,11 @@ public class CharClass
             // Cf. https://code.google.com/p/google-web-toolkit/issues/detail?id=3945
             if (lo == hi)
             {
-                builder.Append("0x");
-                builder.Append(string.Format("{0:x}", lo));
+                builder.Append($"0x{lo:x}");
             }
             else
             {
-                builder.Append("0x");
-                builder.Append(string.Format("{0:x}", lo));
-                builder.Append("-0x");
-                builder.Append(string.Format("{0:x}", hi));
+                builder.Append($"0x{lo:x}-0x{hi:x}");
             }
         }
         builder.Append(']');

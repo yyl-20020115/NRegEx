@@ -112,27 +112,25 @@ public class Regex
         => !string.IsNullOrEmpty(regex)
         && new Regex(regex).Graph.IsBacktracingFriendly();
 
-    protected string regex = "";
-    protected string name = "";
     protected Graph? graph;
-    public Graph Graph => graph ??= this.Build();
-    public string Pattern => regex;
-    public string Name => name;
-    public Regex(string regex, string? name = null)
+    public Graph Graph => this.graph ??= this.Build();
+    public readonly string Pattern;
+    public readonly string Name;
+    public Regex(string pattern, string? name = null)
     {
-        this.regex = regex;
-        this.name = name ?? this.regex;
+        this.Pattern = pattern;
+        this.Name = name ?? this.Pattern;
     }
 
-    protected Graph Build()
-        => RegExParser.FullParse(this.regex);
+    protected virtual Graph Build()
+        => RegExParser.FullParse(this.Pattern);
 
     public bool IsMatch(string input, int start = 0, int length = -1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
-        if (start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
+        if (start<0 || start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length;
-        if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "," + nameof(length));
+        if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
 
         var heads = this.Graph.Heads;
         var nodes = heads.ToHashSet();
@@ -164,9 +162,9 @@ public class Regex
     public Capture Match(string input, int start = 0, int length = -1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
-        if (start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
+        if (start<0 || start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length;
-        if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "," + nameof(length));
+        if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
         var s = start;
         var heads = this.Graph.Heads;
     repeat:

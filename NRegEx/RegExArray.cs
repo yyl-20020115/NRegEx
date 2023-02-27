@@ -1,6 +1,4 @@
-﻿using System.Text.RegularExpressions;
-
-namespace NRegEx;
+﻿namespace NRegEx;
 
 public class RegExArray
 {
@@ -22,7 +20,7 @@ public class RegExArray
         if (input == null) throw new ArgumentNullException(nameof(input));
         if (start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length;
-        if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "," + nameof(length));
+        if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
 
         var allGraph = new Graph();
         foreach (var r in this.Array)
@@ -65,7 +63,7 @@ public class RegExArray
         if (input == null) throw new ArgumentNullException(nameof(input));
         if (start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length;
-        if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "," + nameof(length));
+        if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
 
         var dict = new Dictionary<string, Capture>();
 
@@ -131,7 +129,7 @@ public class RegExArray
         if (input == null) throw new ArgumentNullException(nameof(input));
         if (start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length;
-        if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "," + nameof(length));
+        if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
 
         var lookups = new HashLookups<string, Capture>();
 
