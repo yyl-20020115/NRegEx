@@ -3,7 +3,7 @@
 namespace NRegEx;
 
 [Flags]
-public enum RegExTokenType: int
+public enum RegExTokenType : int
 {
     EOF = -1,
     Literal = 0,
@@ -33,13 +33,13 @@ public record class RegExNode(
     string Value = "",
     string Name = "",
     int? Min = null,
-    int? Max = null, 
-    int? CaptureIndex = null, 
+    int? Max = null,
+    int? CaptureIndex = null,
     bool? Negate = null,
     int[]? Runes = null,
-    RegExParserOptions Options = RegExParserOptions.None) 
+    RegExParserOptions Options = RegExParserOptions.None)
 {
-    public List<RegExNode> Children = new ();
+    public List<RegExNode> Children = new();
 }
 public class RegExDomParser
 {
@@ -59,31 +59,29 @@ public class RegExDomParser
     private const string ERR_MISSING_REPEAT_ARGUMENT = "missing argument to repetition operator";
     private const string ERR_TRAILING_BACKSLASH = "trailing backslash at end of expression";
     private const string ERR_DUPLICATE_NAMED_CAPTURE = "duplicate capture group name";
-
+    public readonly string Name;
     public readonly RegExPatternReader Reader;
     public RegExParserOptions Options;
     public string Pattern => this.Reader.Pattern;
-    protected readonly Stack<RegExNode> TokenStack = new();
+    protected readonly Stack<RegExNode> NodeStack = new();
     protected int CaptureIndex = 0;
-    public static RegExNode Parse(string pattern, RegExParserOptions options) 
-        => new RegExDomParser(pattern, options).Parse();
-    public RegExDomParser(string pattern, RegExParserOptions options)
+    public static RegExNode Parse(string name,string pattern, RegExParserOptions options)
+        => new RegExDomParser(name, pattern, options).Parse();
+    public RegExDomParser(string name,string pattern, RegExParserOptions options)
     {
+        this.Name = name;
         this.Reader = new RegExPatternReader(
             pattern ?? throw new ArgumentNullException(nameof(pattern)));
         this.Options = options;
     }
-    public bool HasMore => this.Peek() != -1;
     protected int Peek() => this.Reader.Peek();
     public RegExNode Parse()
     {
-        while (this.HasMore)
+        int c;
+        while (-1 != (c = this.Peek()))
         {
-            switch (this.Reader.Peek())
+            switch (c)
             {
-                default:
-                    this.Push(new(RegExTokenType.Literal, this.Reader.TakeString()));
-                    break;
                 case RegExTextReader.EOF:
                     this.Push(new());
                     break;
@@ -113,18 +111,18 @@ public class RegExDomParser
                     break;
                 case '*':
                     this.Push(new(RegExTokenType.ZeroPlus,
-                        this.Reader.TakeString(),"", 0, -1)
-                    { Children = new() { this.TokenStack.Pop() } });
+                        this.Reader.TakeString(), "", 0, -1)
+                    { Children = new() { this.NodeStack.Pop() } });
                     break;
                 case '+':
                     this.Push(new(RegExTokenType.OnePlus,
                         this.Reader.TakeString(), "", 1, -1)
-                    { Children = new() { this.TokenStack.Pop() } });
+                    { Children = new() { this.NodeStack.Pop() } });
                     break;
                 case '?':
                     this.Push(new(RegExTokenType.ZeroOne,
                         this.Reader.TakeString(), "", 0, 1)
-                    { Children = new() { this.TokenStack.Pop() } });
+                    { Children = new() { this.NodeStack.Pop() } });
                     break;
                 case '{':
                     {
@@ -140,7 +138,7 @@ public class RegExDomParser
                             this.Reader.Discard();
                             this.Push(new(RegExTokenType.Repeats,
                                 this.Reader.TakeString(), "", min, max)
-                            { Children = new() { this.TokenStack.Pop() } });
+                            { Children = new() { this.NodeStack.Pop() } });
                         }
                     }
                     break;
@@ -162,15 +160,19 @@ public class RegExDomParser
                 case '\\':
                     this.ParseBackslash(Reader);
                     break;
+                default:
+                    this.Push(new(RegExTokenType.Literal, this.Reader.TakeString()));
+                    break;
             }
             this.Concate();
             this.OverallAlternate();
         }
 
-        if (this.TokenStack.Count != 1)
+        if (this.NodeStack.Count != 1)
             throw new RegExSyntaxException(
                 RegExParser.ERR_MISSING_PAREN, this.Pattern);
-        return this.TokenStack.Pop();
+        
+        return this.NodeStack.Pop();
     }
 
     protected void ParseCloseParenthesis()
@@ -249,13 +251,13 @@ public class RegExDomParser
                 nodes.Add(top);
         }
         this.Push(
-            new(RegExTokenType.Union) { Children = nodes });
+            new(RegExTokenType.Union, Name: this.Peek() == -1 ? this.Name : "") { Children = nodes });
     }
-    protected void Push(RegExNode node) 
-        => this.TokenStack.Push(node);
-    protected RegExNode Pop() => this.TokenStack.Pop();
-    protected RegExNode Top => this.TokenStack.Peek();
-    protected int StackDepth => this.TokenStack.Count;
+    protected void Push(RegExNode node)
+        => this.NodeStack.Push(node);
+    protected RegExNode Pop() => this.NodeStack.Pop();
+    protected RegExNode Top => this.NodeStack.Peek();
+    protected int StackDepth => this.NodeStack.Count;
     private static int ParseInt(RegExPatternReader Reader)
     {
         int start = Reader.Position;
@@ -274,7 +276,7 @@ public class RegExDomParser
 
     protected (bool, int?, int?) ParseRepeat(RegExPatternReader Reader)
     {
-        if (!HasMore || !Reader.LookingAt("{")) goto failed;
+        if (this.Peek() == -1 || !Reader.LookingAt("{")) goto failed;
         Reader.Skip();
         int start = Reader.Position;
         int min = ParseInt(Reader); // (can be -2)
@@ -835,7 +837,7 @@ public class RegExDomParser
                             for (int j = 0; j < lit.Length;)
                             {
                                 int codepoint = char.ConvertToUtf32(lit, j);
-                                Push(new RegExNode(RegExTokenType.Literal, Options: Options, Runes: new int[] {codepoint}));
+                                Push(new RegExNode(RegExTokenType.Literal, Options: Options, Runes: new int[] { codepoint }));
                                 j += new Rune(codepoint).Utf16SequenceLength;
                             }
                             goto outswitch;
@@ -856,7 +858,7 @@ public class RegExDomParser
                 var cc2 = new CharClass();
                 if (ParseUnicodeClass(Reader, cc2))
                 {
-                    var re = new RegExNode(RegExTokenType.CharClass, Options: Options, Runes:cc2.ToArray());
+                    var re = new RegExNode(RegExTokenType.CharClass, Options: Options, Runes: cc2.ToArray());
                     Push(re);
                     goto outswitch;
                 }
@@ -875,7 +877,7 @@ public class RegExDomParser
             //Reuse(re);
 
             // Ordinary single-character escape.
-            this.Push(new RegExNode(RegExTokenType.Literal,Runes:new int[] { ParseEscape(Reader) }));
+            this.Push(new RegExNode(RegExTokenType.Literal, Runes: new int[] { ParseEscape(Reader) }));
         }
     outswitch:
         ;

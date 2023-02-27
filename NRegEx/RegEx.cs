@@ -112,18 +112,18 @@ public class Regex
         => !string.IsNullOrEmpty(regex)
         && new Regex(regex).Graph.IsBacktracingFriendly();
 
-    protected Graph? graph;
-    public Graph Graph => this.graph ??= this.Build();
+    public readonly Graph Graph;
     public readonly string Pattern;
     public readonly string Name;
     public Regex(string pattern, string? name = null)
     {
         this.Pattern = pattern;
         this.Name = name ?? this.Pattern;
+        this.Graph = this.Build();
     }
 
     protected virtual Graph Build()
-        => RegExParser.FullParse(this.Pattern);
+        => RegExParser.FullParse(this.Name,this.Pattern);
 
     public bool IsMatch(string input, int start = 0, int length = -1)
     {

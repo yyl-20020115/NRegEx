@@ -1,4 +1,6 @@
-﻿namespace NRegEx;
+﻿using System.Text;
+
+namespace NRegEx;
 
 public class RegExPatternReader
 {
@@ -15,15 +17,20 @@ public class RegExPatternReader
         this.Pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
     public void RewindTo(int pos) 
         => this.position = pos;
-    public int Peek() 
-        => char.ConvertToUtf32(Pattern, this.position);
+    public int Peek() => this.position < this.Pattern.Length
+            ? char.ConvertToUtf32((this.position < this.Pattern.Length - 1
+                ? this.Pattern[this.position..(this.position + 2)]
+                : this.Pattern[this.position..] + ' '), 0)
+            : -1;
+
     public void Skip(int n = 1) 
         => this.position += n;
     public void SkipString(string s) 
         => this.position += s.Length;
     public int Pop()
     {
-        this.position += (char.ConvertToUtf32(this.Pattern, this.position) is int r) && (r > char.MaxValue) ? 2 : 1;
+        var r = this.Peek();
+        this.position += r >= 0 ? new Rune(r).Utf16SequenceLength : 0;
         return r;
     }
     public string TakeString() 

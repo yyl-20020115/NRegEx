@@ -73,8 +73,8 @@ public static class RegExParser
             new []{ -1, -1, -1, -1, 0, 2 },
             new []{ 1, 1, 1, 1, 1, 1 },
             new []{ -1, -1, -1, -1, -1, -1 } };
-    public static Graph FullParse(string regex, RegExParserOptions options = RegExParserOptions.None)
-        => !string.IsNullOrEmpty(regex) ? RegExGraphBuilder.Build(RegExDomParser.Parse(regex, options)) : new();
+    public static Graph FullParse(string name, string regex, RegExParserOptions options = RegExParserOptions.None)
+        => !string.IsNullOrEmpty(regex) ? RegExGraphBuilder.Build(RegExDomParser.Parse(name, regex, options)) : new();
 
     public static string Invert(string input)
     {
@@ -127,17 +127,17 @@ public static class RegExParser
                 builder.Append(input_regex[i]);
             else
                 if (input_regex[i] == '|' || input_regex[i] == '*' || input_regex[i] == ')')
-                    builder.Append(input_regex[i]);
-                else
+                builder.Append(input_regex[i]);
+            else
                     if (i >= 1 && input_regex[i - 1] == '(' || input_regex[i - 1] == '|')
-                        builder.Append(input_regex[i]);
-                else
-                    builder.Append("&" + input_regex[i]);
+                builder.Append(input_regex[i]);
+            else
+                builder.Append("&" + input_regex[i]);
         return builder.ToString();
     }
 
-    
-    public static Graph SimpleParse(string regex,string name)
+
+    public static Graph SimpleParse(string regex, string name)
     {
         regex = Prepare(regex);
         if (regex.Length == 0)

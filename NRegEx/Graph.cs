@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace NRegEx;
 
@@ -41,7 +42,7 @@ public record class Node
         this.IsVirtual = false;
         this.Id = ++Nid;
         this.Inverted = false;
-        this.CharSet = new HashSet<int>(cs);
+        this.CharSet = new (cs);
     }
     public Node(bool inverted, params char[] cs)
         : this(inverted, cs.Select(c => (int)c).ToArray()) { }
@@ -88,13 +89,10 @@ public record class Node
             if (i < ns.Count - 1)
                 builder.Append(',');
         }
-        if (ns.Count == 0)
-            builder.Append(' ');
         return builder.ToString();
     }
-    public override string ToString() => "["+this.Id + "(inverted:" 
-        + this.Inverted +"):" + string.Join(',',this.CharSet)
-        +$" IN:{FormatNodes(this.Inputs)}  OUT:{FormatNodes(this.Outputs)}"+"]";
+    public override string ToString() 
+        => $"[({this.Id},{this.Inverted}):{string.Join(',',this.CharSet)} IN:{FormatNodes(this.Inputs)}  OUT:{FormatNodes(this.Outputs)}]";
 }
 public record class Edge
 {
@@ -134,8 +132,8 @@ public record class Graph
         }
         else
         {
-            this.Head = new(name);
-            this.Tail = new(name);
+            this.Nodes.Add(this.Head = new(name));
+            this.Nodes.Add(this.Tail = new(name));
         }
     }
     public Graph Compose(params Node[] nodes)
@@ -184,7 +182,7 @@ public record class Graph
         this.Edges.Add(new(head.Tail, tail.Head));
         this.Nodes.UnionWith(head.Nodes);
         this.Nodes.UnionWith(tail.Nodes);
-        this.Description = "(" + head.Description + " & " + tail.Description + ")";
+        this.Description = $"({head.Description} & {tail.Description})";
         return this;
     }
 
@@ -213,17 +211,12 @@ public record class Graph
     }
     public Graph UnionWith(Graph g0)
     {
-        if(this.Head==null) 
-            this.Nodes.Add(this.Head = new(this.Name));
-        if(this.Tail==null)
-            this.Nodes.Add(this.Tail = new(this.Name));
-        
         this.Edges.Add(new(this.Head, g0.Head));
         this.Edges.Add(new(g0.Tail, this.Tail));
         
         this.Edges.UnionWith(g0.Edges);
         this.Nodes.UnionWith(g0.Nodes);
-        this.Description = "(" + this.Description + " | " + g0.Description + ")";
+        this.Description = $"({this.Description} | {g0.Description})";
         return this;
     }
     public Graph Union(Graph g2, Graph g1)
@@ -372,5 +365,21 @@ public record class Graph
             heads = heads.SelectMany(h => h.Outputs).ToHashSet();
         } while (heads.Count > 0);
         return true;
+    }
+
+    public static StringBuilder ExportGraph(Graph graph, StringBuilder builder = null)
+    {
+        builder ??= new StringBuilder();
+
+        foreach(var node in graph.Nodes)
+        {
+            builder.AppendLine($"{node.Id};");
+        }
+        foreach(var edge in graph.Edges)
+        {
+            builder.AppendLine($"{edge.Head.Id}->{edge.Tail.Id};");
+        }
+
+        return builder;
     }
 }
