@@ -70,11 +70,12 @@ public class UnitTest1
     [TestMethod]
     public void TestMethod1()
     {
-        var regexString0 = "a|ab";
+        var regexString0 = "a|ab|c";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0.Graph);
         Assert.IsTrue(regex0.IsMatch("a"));
         Assert.IsTrue(regex0.IsMatch("ab"));
+        Assert.IsTrue(regex0.IsMatch("c"));
     }
     [TestMethod]
     public void TestMethod2()

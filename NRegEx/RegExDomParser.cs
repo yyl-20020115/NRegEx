@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Runtime.ConstrainedExecution;
+using System.Text;
 
 namespace NRegEx;
 
@@ -197,18 +198,11 @@ public class RegExDomParser
             {
                 case TokenTypes.Concate:
                     continue;
-                case TokenTypes.OpenParenthesis:
+                case TokenTypes.CloseParenthesis:
                     this.ProcessStack();
                     continue;
-                case TokenTypes.CloseParenthesis:
-                    var node = this.Pop();
-                    if (node.CaptureIndex == null)
-                        this.Push(node);
-                    else
-                        this.Push(new(
-                            TokenTypes.Capture)
-                        { Children = new() { node } });
-                    continue;
+                case TokenTypes.OpenParenthesis:
+                    goto final;
                 case TokenTypes.Alternate:
                     nlist.Add(nodes = new());
                     continue;
@@ -217,6 +211,7 @@ public class RegExDomParser
                     continue;
             }
         }
+        final:
         var alts = new RegExNode(TokenTypes.Union);
         foreach (var ds in nlist)
         {

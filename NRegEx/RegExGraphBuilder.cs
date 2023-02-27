@@ -7,12 +7,12 @@ public static class RegExGraphBuilder
     {
         builder ??= new StringBuilder();
         builder.AppendLine("digraph g {");
-        foreach (var node in graph.Nodes)
+        foreach (var node in graph.Nodes.OrderBy(n=>n.Id))
         {
             var label = (!string.IsNullOrEmpty(node.Name) ? $"[label=\"{node.Id}({node.Name})\"]" : "");
             builder.AppendLine($"\t{node.Id} {label};");
         }
-        foreach (var edge in graph.Edges)
+        foreach (var edge in graph.Edges.OrderBy(e=>e.Head.Id).OrderBy(e=>e.Tail.Id))
         {
             builder.AppendLine($"\t{edge.Head.Id}->{edge.Tail.Id};");
         }
