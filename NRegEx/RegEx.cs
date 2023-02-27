@@ -136,7 +136,7 @@ public class Regex
         var heads = this.Graph.Nodes.Where(n=>n.Inputs.Count==0);
         var nodes = heads.ToHashSet();
         var i = start;
-        var guard = new HashSet<Node>();
+        var guard = new BitSet(Graph.Nodes.Count);
         while (nodes.Count > 0 && i < length)
         {
             var c = input[i];
@@ -185,8 +185,7 @@ public class Regex
             {
                 foreach (var n in nodes)
                 {
-                    if (!guard.Add(n)) 
-                        return false; //found loop
+                    if (!guard.Add(n.Id)) return false; //found loop
                 }
             }
         }

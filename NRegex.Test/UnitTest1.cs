@@ -48,6 +48,28 @@ public class UnitTest1
         File.WriteAllText(dot, RegExGraphBuilder.ExportAsDot(graph).ToString());
         return RunProcess("dot.exe", $"-Grankdir=LR -T png {dot} -o {png}");
     }
+    [TestMethod]
+    public void TestBitSet()
+    {
+        var set = new BitSet(Random.Shared.Next(4096));
+        for(int i = 0; i < set.Count; i++)
+        {
+            Assert.IsFalse(set[i]);
+        }
+        for (int i = 0; i < set.Count; i++)
+        {
+            set[i] = true;
+        }
+        for (int i = 0; i < set.Count; i++)
+        {
+            Assert.IsTrue(set[i]);
+        }
+        set.Clear();
+        for (int i = 0; i < set.Count; i++)
+        {
+            Assert.IsFalse(set[i]);
+        }
+    }
 
 
     [TestMethod]

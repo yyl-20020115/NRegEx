@@ -1,6 +1,4 @@
-﻿using System.Text;
-
-namespace NRegEx;
+﻿namespace NRegEx;
 public record class Graph
 {
     protected static int Gid = 0;

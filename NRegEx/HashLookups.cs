@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-using System.Diagnostics.CodeAnalysis;
 
 namespace NRegEx;
 public interface Lookups<TKey, TValue>
