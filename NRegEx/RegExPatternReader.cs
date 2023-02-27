@@ -33,7 +33,7 @@ public class RegExPatternReader
         this.position += r >= 0 ? new Rune(r).Utf16SequenceLength : 0;
         return r;
     }
-    public string TakeString() 
+    public string Take() 
         => char.ConvertFromUtf32(this.Pop());
     public bool LookingAt(char c) 
         => Pattern[this.position] == c;

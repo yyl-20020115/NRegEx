@@ -4,7 +4,7 @@ namespace NRegEx;
 
 // Parser flags.
 [Flags]
-public enum RegExParserOptions : uint
+public enum ParserOptions : uint
 {
     None = 0,
     // Fold case during matching (case-insensitive).
@@ -46,23 +46,6 @@ public enum RegExParserOptions : uint
 
 public static class RegExParser
 {
-    // Unexpected error
-    public const string ERR_INTERNAL_ERROR = "regexp/syntax: internal error";
-
-    // Parse errors
-    public const string ERR_INVALID_CHAR_CLASS = "invalid character class";
-    public const string ERR_INVALID_CHAR_RANGE = "invalid character class range";
-    public const string ERR_INVALID_ESCAPE = "invalid escape sequence";
-    public const string ERR_INVALID_NAMED_CAPTURE = "invalid named capture";
-    public const string ERR_INVALID_PERL_OP = "invalid or unsupported Perl syntax";
-    public const string ERR_INVALID_REPEAT_OP = "invalid nested repetition operator";
-    public const string ERR_INVALID_REPEAT_SIZE = "invalid repeat count";
-    public const string ERR_MISSING_BRACKET = "missing closing ]";
-    public const string ERR_MISSING_PAREN = "missing closing )";
-    public const string ERR_MISSING_REPEAT_ARGUMENT = "missing argument to repetition operator";
-    public const string ERR_TRAILING_BACKSLASH = "trailing backslash at end of expression";
-    public const string ERR_DUPLICATE_NAMED_CAPTURE = "duplicate capture group name";
-
 
     public const char NullChar = char.MinValue;
     public static readonly string Operators = "*&|()" + NullChar;
@@ -73,7 +56,7 @@ public static class RegExParser
             new []{ -1, -1, -1, -1, 0, 2 },
             new []{ 1, 1, 1, 1, 1, 1 },
             new []{ -1, -1, -1, -1, -1, -1 } };
-    public static Graph Parse(string name, string regex, RegExParserOptions options = RegExParserOptions.None)
+    public static Graph Parse(string name, string regex, ParserOptions options = ParserOptions.None)
         => regex!=null ? RegExGraphBuilder.Build(RegExDomParser.Parse(name, regex, options)) : new();
 
     public static string Invert(string input)

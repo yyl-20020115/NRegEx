@@ -96,8 +96,8 @@ public class CharClass
     }
 
     // appendLiteral() appends the literal |x| to this CharClass.
-    public CharClass AppendLiteral(int x, RegExParserOptions flags)
-        => ((flags & RegExParserOptions.FOLD_CASE) != 0) ? AppendFoldedRange(x, x) : AppendRange(x, x);
+    public CharClass AppendLiteral(int x, ParserOptions flags)
+        => ((flags & ParserOptions.FOLD_CASE) != 0) ? AppendFoldedRange(x, x) : AppendRange(x, x);
 
     // appendRange() appends the range [lo-hi] (inclusive) to this CharClass.
     public CharClass AppendRange(int lo, int hi)

@@ -30,6 +30,14 @@ public record class Graph
             this.Nodes.Add(this.Tail = new(name));
         }
     }
+    public Graph TryComplete()
+    {
+        if (this.Edges.Count == 0)
+        {
+            this.Edges.Add(new(this.Head, this.Tail));
+        }
+        return this;
+    }
     public Graph ComposeLiteral(params Node[] sequence)
         => this.ComposeLiteral(sequence as IEnumerable<Node>);
 
