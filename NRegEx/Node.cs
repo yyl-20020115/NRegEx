@@ -63,7 +63,6 @@ public record class Node
         return this;
     }
     public bool? Hit(int c) => CharSet?.Contains(c);
-
     public static string FormatNodes(IEnumerable<Node> nodes) 
         => string.Join(',', nodes.Select(n => n.id).ToArray());
     public override string ToString() 

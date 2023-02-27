@@ -320,9 +320,12 @@ public record class Graph
                 collectings.UnionWith(GetFollowings(graph, node, visited));
             }
             followings = collectings.ToHashSet();
-            list.Add(collectings);
-            collectings = new();
-        }while(followings.Count > 0);
+            if (collectings.Count > 0)
+            {
+                list.Add(collectings);
+                collectings = new();
+            }
+        } while(followings.Count > 0);
         var hits = new HashSet<Node>();
         foreach(var line in list)
         {

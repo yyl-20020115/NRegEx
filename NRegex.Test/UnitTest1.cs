@@ -3,7 +3,6 @@ using NRegEx;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
 
 namespace NRegex.Test;
 
@@ -30,7 +29,7 @@ public class UnitTest1
         }
         return filePath;
     }
-    public static bool Run(string filePath, string argument)
+    public static bool RunProcess(string filePath, string argument)
     {
         var p = new Process();
 
@@ -43,7 +42,11 @@ public class UnitTest1
         }
         return false;
     }
-
+    public static void ExportAsDot(Graph graph, string png = "graph.png", string dot = "graph.dot")
+    {
+        File.WriteAllText(dot, RegExGraphBuilder.ExportAsDot(graph).ToString());
+        RunProcess("dot.exe", $"-T png {Path.Combine(Environment.CurrentDirectory, dot)} -o {Path.Combine(Environment.CurrentDirectory, png)}");
+    }
 
 
     [TestMethod]
@@ -55,32 +58,64 @@ public class UnitTest1
     [TestMethod]
     public void TestMethod0()
     {
-        var regexString0 = "ab";// "(ab|c)*abb";
+        var regexString0 = "abcd";
         var regex0 = new Regex(regexString0);
-        Debug.WriteLine(regex0);
-        Debug.WriteLine(regex0.Pattern);
-        Debug.WriteLine(regex0.Graph);
-        var builder = Graph.ExportAsDot(regex0.Graph);
-        File.WriteAllText("graph.dot", builder.ToString());
-        Run("dot.exe", $"-T png {Path.Combine(Environment.CurrentDirectory, "graph.dot")} -o {Path.Combine(Environment.CurrentDirectory, "graph.png")}");
+        ExportAsDot(regex0.Graph);
         //dot -T png  graph.dot -o graph.png
-        Assert.IsTrue(regex0.IsMatch("ab"));
+        Assert.IsTrue(regex0.IsMatch("abcd"));
     }
-
-
     [TestMethod]
     public void TestMethod1()
     {
-        var regexString1 = "a*";
-        var regex1 = new Regex(regexString1);
-        Debug.WriteLine(regex1.Pattern);
-        Debug.WriteLine(regex1.Graph);
+        var regexString0 = "a|b";
+        var regex0 = new Regex(regexString0);
+        ExportAsDot(regex0.Graph);
+        //dot -T png  graph.dot -o graph.png
+        Assert.IsTrue(regex0.IsMatch("a"));
+        Assert.IsTrue(regex0.IsMatch("b"));
+    }
+    [TestMethod]
+    public void TestMethod2()
+    {
+        var regexString0 = "a*";
+        var regex0 = new Regex(regexString0);
+        ExportAsDot(regex0.Graph);
+        //dot -T png  graph.dot -o graph.png
+        Assert.IsTrue(regex0.IsMatch(""));
+        Assert.IsTrue(regex0.IsMatch("a"));
+        Assert.IsTrue(regex0.IsMatch("aa"));
+        Assert.IsTrue(regex0.IsMatch("aaa"));
+    }
+    [TestMethod]
+    public void TestMethod3()
+    {
+        var regexString0 = "a+";
+        var regex0 = new Regex(regexString0);
+        ExportAsDot(regex0.Graph);
+        //dot -T png  graph.dot -o graph.png
+        Assert.IsFalse(regex0.IsMatch(""));
+        Assert.IsTrue(regex0.IsMatch("a"));
+        Assert.IsTrue(regex0.IsMatch("aa"));
+        Assert.IsTrue(regex0.IsMatch("aaa"));
+    }
+    [TestMethod]
+    public void TestMethod4()
+    {
+        var regexString0 = "a+";
+        var regex0 = new Regex(regexString0);
+        ExportAsDot(regex0.Graph);
+        //dot -T png  graph.dot -o graph.png
+        Assert.IsFalse(regex0.IsMatch(""));
+        Assert.IsTrue(regex0.IsMatch("a"));
+        Assert.IsTrue(regex0.IsMatch("aa"));
+        Assert.IsTrue(regex0.IsMatch("aaa"));
+    }
 
-        var regexString2 = "ab";
-        var regex2 = new Regex(regexString2);
-        Debug.WriteLine(regex2.Pattern);
-        Debug.WriteLine(regex2.Graph);
 
+
+    [TestMethod]
+    public void TestMethod8()
+    {
         var regexString3 = "a|b";
         var regex3 = new Regex(regexString3);
         Debug.WriteLine(regex3.Pattern);

@@ -75,7 +75,7 @@ public class RegExArray
 
         var s = start;
         var graph = new Graph().UnionWith(this.Array.Select(a => a.Graph));
-        var heads = graph.Heads;
+        var heads = graph.Nodes.Where(n => n.Inputs.Count == 0);
     repeat:
         var nodes = heads?.ToHashSet() ?? new();
         var last = nodes;
@@ -144,7 +144,8 @@ public class RegExArray
 
         var s = start;
         var graph = new Graph().UnionWith(this.Array.Select(a => a.Graph));
-        var heads = graph.Heads;
+
+        var heads = graph.Nodes.Where(n => n.Inputs.Count == 0);
     repeat:
         var nodes = heads.ToHashSet();
         var last = nodes;

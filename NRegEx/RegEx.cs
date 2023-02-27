@@ -131,8 +131,9 @@ public class Regex
         if (start < 0 || start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
+        if (this.Graph.Nodes.All(n => n.IsVirtual)) return true;
 
-        var heads = this.Graph.Heads;
+        var heads = this.Graph.Nodes.Where(n=>n.Inputs.Count==0);
         var nodes = heads.ToHashSet();
 
         var i = start;
@@ -192,7 +193,7 @@ public class Regex
         if (length < 0) length = input.Length;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
         var s = start;
-        var heads = this.Graph.Heads;
+        var heads = this.Graph.Nodes.Where(n => n.Inputs.Count == 0);
     repeat:
 
         var nodes = heads?.ToHashSet() ?? new();
