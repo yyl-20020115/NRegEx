@@ -197,6 +197,6 @@ public static class RegExGraphBuilder
         {
             graph.Edges.Add(new (graph.Head, graph.Tail));
         }
-        return graph;
+        return RecomposeIds(graph);
     }
 }
