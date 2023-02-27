@@ -8,7 +8,7 @@ public static class RegExGraphBuilder
         {
             case RegExTokenType.EOF:
                 {
-                    graph.Compose(new Node());
+                    graph.ComposeLiteral(new Node());
                 }
                 break;
             case RegExTokenType.OnePlus:
@@ -34,17 +34,17 @@ public static class RegExGraphBuilder
                 break;
             case RegExTokenType.Literal:
                 {
-                    graph.Compose(node.Value.Select(c => new Node(c)));
+                    graph.ComposeLiteral(node.Value.Select(c => new Node(c)));
                 }
                 break;
             case RegExTokenType.CharClass:
                 {
-                    graph.Compose(new Node().UnionWith(node.Runes ?? Array.Empty<int>()));
+                    graph.ComposeLiteral(new Node().UnionWith(node.Runes ?? Array.Empty<int>()));
                 }
                 break;
             case RegExTokenType.AnyCharIncludingNewLine:
                 {
-                    graph.Compose(new Node().UnionWith(Node.AllChars));
+                    graph.ComposeLiteral(new Node().UnionWith(Node.AllChars));
                 }
                 break;
             case RegExTokenType.AnyCharExcludingNewLine:

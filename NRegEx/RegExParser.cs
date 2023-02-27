@@ -73,7 +73,7 @@ public static class RegExParser
             new []{ -1, -1, -1, -1, 0, 2 },
             new []{ 1, 1, 1, 1, 1, 1 },
             new []{ -1, -1, -1, -1, -1, -1 } };
-    public static Graph FullParse(string name, string regex, RegExParserOptions options = RegExParserOptions.None)
+    public static Graph Parse(string name, string regex, RegExParserOptions options = RegExParserOptions.None)
         => !string.IsNullOrEmpty(regex) ? RegExGraphBuilder.Build(RegExDomParser.Parse(name, regex, options)) : new();
 
     public static string Invert(string input)

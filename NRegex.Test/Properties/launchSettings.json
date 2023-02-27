@@ -1,8 +1,7 @@
 {
   "profiles": {
-    "NGrep": {
+    "NRegex.Test": {
       "commandName": "Project",
-      "commandLineArgs": "-V -n -r test -i TextFile.txt",
       "workingDirectory": "$(ProjectDir)"
     }
   }

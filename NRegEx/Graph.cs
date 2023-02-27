@@ -1,5 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using System.Text;
+﻿using System.Text;
 
 namespace NRegEx;
 
@@ -38,12 +37,7 @@ public record class Node
     public Node(params char[] cs)
         : this(cs.Select(c => (int)c).ToArray()) { }
     public Node(params int[] cs)
-    {
-        this.IsVirtual = false;
-        this.Id = ++Nid;
-        this.Inverted = false;
-        this.CharSet = new (cs);
-    }
+        : this(false, cs) { }
     public Node(bool inverted, params char[] cs)
         : this(inverted, cs.Select(c => (int)c).ToArray()) { }
 
@@ -63,6 +57,7 @@ public record class Node
         {
             this.CharSet = new (cs);
         }
+        this.Name = "'" + string.Join(",", cs.Select(c => new Rune(c>=0?c:' ').ToString()).ToArray()) + "'";
     }
 
     public Node UnionWith(params int[] runes)
@@ -100,6 +95,10 @@ public record class Edge
     public readonly Node Tail;
     public Edge(Node Head,Node Tail)
     {
+        if(Head.Id==6 && Tail.Id == 5)
+        {
+
+        }
         this.Head = Head;
         this.Tail = Tail;
         this.Head.Outputs.Add(Tail);
@@ -136,23 +135,22 @@ public record class Graph
             this.Nodes.Add(this.Tail = new(name));
         }
     }
-    public Graph Compose(params Node[] nodes)
-        => this.Compose(nodes as IEnumerable<Node>);
+    public Graph ComposeLiteral(params Node[] sequence)
+        => this.ComposeLiteral(sequence as IEnumerable<Node>);
 
-    public Graph Compose(IEnumerable<Node> nodes)
-        => this.Compose(nodes.ToList());
+    public Graph ComposeLiteral(IEnumerable<Node> sequence)
+        => this.ComposeLiteral(sequence.ToList());
 
-    public Graph Compose(List<Node> nodes)
+    public Graph ComposeLiteral(List<Node> sequence)
     {        
-        for(int i= 0; i < nodes.Count; i++)
+        for(int i= 0; i < sequence.Count; i++)
         {
-            var _pre = i > 0 ? nodes[i - 1] : this.Head;
-            var node = nodes[i];
-            var next = (i < nodes.Count - 1) ? nodes[i + 1] : this.Tail;
-            _pre.Outputs.Add(node);
-            node.Inputs.Add(_pre);
-            node.Outputs.Add(next);
-            next.Inputs.Add(node);
+            var before = i <= 0 ? this.Head : sequence[i - 1];
+            var current = sequence[i];
+            var after = i >= sequence.Count - 1 ? this.Tail : sequence[i + 1];
+            this.Edges.Add(new (before, current));
+            this.Edges.Add(new(current, after));
+            this.Nodes.Add(current);
         }
         return this;
     }
@@ -162,17 +160,45 @@ public record class Graph
         => this.Concate(graphs.ToList());
     public Graph Concate(List<Graph> graphs)
     {
-        var head = this;
-        for(int i= 0; i < graphs.Count; i++)
+        if(graphs.Count == 0)
         {
-            var graph = graphs[i];
-            this.Concate(graph, head);
-            head = graph;
+            return this;
+        }
+        else if(graphs.Count == 1)
+        {
+            this.Edges.Clear();
+            this.Nodes.Clear();
+            this.Edges.UnionWith(graphs[0].Edges);
+            this.Nodes.UnionWith(graphs[0].Nodes);
+            this.Head = graphs[0].Head;
+            this.Tail = graphs[0].Tail;
+            return this;
+        }
+        else
+        {
+            this.Nodes.Clear();
+            this.Edges.Clear();
+
+            this.Head = graphs[0].Head;
+            this.Tail = graphs[^1].Tail;
+            this.Nodes.UnionWith(graphs[0].Nodes);
+            this.Nodes.UnionWith(graphs[^1].Nodes);
+            this.Edges.UnionWith(graphs[0].Edges);
+            this.Edges.UnionWith(graphs[^1].Edges);
+
+            for (int i = 1; i < graphs.Count-1; i++)
+            {
+                var before = graphs[i - 1];
+                var current = graphs[i + 0];
+                var after = graphs[i + 1];
+                this.Nodes.UnionWith(current.Nodes);
+                this.Edges.UnionWith(current.Edges);
+                this.Edges.Add(new Edge(before.Tail, current.Head));
+                this.Edges.Add(new Edge(current.Tail, after.Head));
+            }
         }
         return this;
     }
-    public Graph ConcateWith(Graph tail)
-        => Concate(tail, this);
     public Graph Concate(Graph tail, Graph head)
     {
         this.Head = head.Head;
@@ -209,14 +235,16 @@ public record class Graph
         }
         return this;
     }
-    public Graph UnionWith(Graph g0)
+    public Graph UnionWith(Graph g)
     {
-        this.Edges.Add(new(this.Head, g0.Head));
-        this.Edges.Add(new(g0.Tail, this.Tail));
+        this.Edges.Add(new(this.Head, g.Head));
+        this.Edges.Add(new(g.Tail, this.Tail));
         
-        this.Edges.UnionWith(g0.Edges);
-        this.Nodes.UnionWith(g0.Nodes);
-        this.Description = $"({this.Description} | {g0.Description})";
+        this.Edges.UnionWith(g.Edges);
+        this.Nodes.UnionWith(g.Nodes);
+        this.Description = !string.IsNullOrEmpty(Description) 
+            ? $"({this.Description} | {g.Description})"
+            : $"({g.Description})";
         return this;
     }
     public Graph Union(Graph g2, Graph g1)
@@ -250,7 +278,7 @@ public record class Graph
     public Graph ZeroOne(Graph g0)
     {
         this.Edges.Add(new(g0.Head, g0.Tail)); //direct pass
-        this.Description = "(" + g0.Description + ")?";
+        this.Description = $"({g0.Description})?";
         return this.EmbedOne(g0);
     }
     public Graph EmbedOne(Graph g0)
@@ -287,6 +315,8 @@ public record class Graph
     }
 
     public override string ToString() => $"H:{this.Head},T:{this.Tail}";
+
+
 
     protected HashSet<Node>? heads = null;
     public HashSet<Node> Heads => (this.heads ??= this.Compact());
@@ -334,7 +364,6 @@ public record class Graph
     }
 
 
-
     public bool IsBacktracingFriendly()
     {
         //对于支持回溯的RegEx引擎，
@@ -370,16 +399,17 @@ public record class Graph
     public static StringBuilder ExportGraph(Graph graph, StringBuilder builder = null)
     {
         builder ??= new StringBuilder();
-
+        builder.AppendLine($"digraph {(!string.IsNullOrEmpty(graph.Name) ? graph.Name:"g")}{{");
         foreach(var node in graph.Nodes)
         {
-            builder.AppendLine($"{node.Id};");
+            var label = (!string.IsNullOrEmpty(node.Name) ? $"[label=\"{node.Id}({node.Name})\"]" : "");
+            builder.AppendLine($"\t{node.Id} {label};");
         }
         foreach(var edge in graph.Edges)
         {
-            builder.AppendLine($"{edge.Head.Id}->{edge.Tail.Id};");
+            builder.AppendLine($"\t{edge.Head.Id}->{edge.Tail.Id};");
         }
-
+        builder.AppendLine("}");
         return builder;
     }
 }

@@ -123,7 +123,7 @@ public class Regex
     }
 
     protected virtual Graph Build()
-        => RegExParser.FullParse(this.Name,this.Pattern);
+        => RegExParser.Parse(this.Name,this.Pattern);
 
     public bool IsMatch(string input, int start = 0, int length = -1)
     {

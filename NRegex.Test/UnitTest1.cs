@@ -11,12 +11,30 @@ namespace NRegex.Test;
 public class UnitTest1
 {
 
+    public static string GetFullPath(string filePath)
+    {
+        var text = Environment.GetEnvironmentVariable("PATH");
+        if (!string.IsNullOrEmpty(text))
+        {
+            var paths = text.Split(";");
 
+            foreach (var path in paths)
+            {
+                var fp = Path.Combine(path, filePath);
+                if (File.Exists(fp))
+                {
+                    filePath = fp;
+                    break;
+                }
+            }
+        }
+        return filePath;
+    }
     public static bool Run(string filePath, string argument)
     {
         var p = new Process();
 
-        p.StartInfo.FileName = filePath;
+        p.StartInfo.FileName = GetFullPath(filePath);
         p.StartInfo.Arguments = argument;
         if (p.Start())
         {
@@ -33,24 +51,20 @@ public class UnitTest1
     {
         Assert.AreEqual(@"\|\(\)\[\]\{\}\^\$\*\+\?\\\.", Regex.Escape(@"|()[]{}^$*+?\."));
         Assert.AreEqual(@"|()[]{}^$*+?\.", Regex.Unescape(@"\|\(\)\[\]\{\}\^\$\*\+\?\\\."));
-
     }
     [TestMethod]
     public void TestMethod0()
     {
-        var regexString0 = "a";// "(ab|c)*abb";
+        var regexString0 = "ab";// "(ab|c)*abb";
         var regex0 = new Regex(regexString0);
         Debug.WriteLine(regex0);
         Debug.WriteLine(regex0.Pattern);
         Debug.WriteLine(regex0.Graph);
-        var builder = new StringBuilder();
-        builder.AppendLine("digraph g{");
-            Graph.ExportGraph(regex0.Graph, builder);
-        builder.AppendLine("}");
+        var builder = Graph.ExportGraph(regex0.Graph);
         File.WriteAllText("graph.dot", builder.ToString());
-        Run("dot.exe", "-T png  graph.dot -o graph.png");
+        Run("dot.exe", $"-T png {Path.Combine(Environment.CurrentDirectory, "graph.dot")} -o {Path.Combine(Environment.CurrentDirectory, "graph.png")}");
         //dot -T png  graph.dot -o graph.png
-        var b = regex0.IsMatch("a");
+        var b = regex0.IsMatch("ab");
         Debug.WriteLine(b);
     }
 

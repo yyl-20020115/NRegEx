@@ -26,7 +26,7 @@ public enum RegExTokenType : int
     Sequence = 17,      //.&.&.&...
     Alternate = 18,     // |
     Union = 19,         //..|..|.. = Alternate
-    OpenParenthesis = 19,     //(
+    OpenParenthesis = 20,     //(
 }
 public record class RegExNode(
     RegExTokenType Type = RegExTokenType.EOF,
@@ -162,12 +162,16 @@ public class RegExDomParser
                     break;
                 default:
                     this.Push(new(RegExTokenType.Literal, this.Reader.TakeString()));
-                    break;
+                    continue;
             }
             this.Concate();
             this.OverallAlternate();
         }
-
+        if (c == -1)
+        {
+            this.Concate();
+            this.OverallAlternate();
+        }
         if (this.NodeStack.Count != 1)
             throw new RegExSyntaxException(
                 RegExParser.ERR_MISSING_PAREN, this.Pattern);
