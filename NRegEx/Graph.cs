@@ -155,13 +155,13 @@ public record class Graph
     {
         this.Edges.Add(new(g.Head, g.Tail)); //direct pass
         this.Edges.Add(new(g.Tail, g.Head)); //back link
-        this.Description = "(" + g.Description + ")*";
+        this.Description = $"({g.Description})*";
         return this.EmbedOne(g);
     }
     public Graph OnePlus(Graph g)
     {
         this.Edges.Add(new(g.Tail, g.Head)); //back link
-        this.Description = "(" + g.Description + ")+";
+        this.Description = $"({g.Description})+";
         return this.EmbedOne(g);
     }
     public Graph ZeroOne(Graph g)
@@ -172,8 +172,6 @@ public record class Graph
     }
     public Graph EmbedOne(Graph g)
     {
-        this.Nodes.Add(this.Head = new (this.Name));
-        this.Nodes.Add(this.Tail = new (this.Name));
         this.Edges.Add(new(this.Head, g.Head));
         this.Edges.Add(new(g.Tail, this.Tail));
         this.Edges.UnionWith(g.Edges);

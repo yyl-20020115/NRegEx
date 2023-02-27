@@ -70,12 +70,11 @@ public class UnitTest1
     [TestMethod]
     public void TestMethod1()
     {
-        var regexString0 = "a|b";
+        var regexString0 = "a|ab";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0.Graph);
-        //dot -T png  graph.dot -o graph.png
         Assert.IsTrue(regex0.IsMatch("a"));
-        Assert.IsTrue(regex0.IsMatch("b"));
+        Assert.IsTrue(regex0.IsMatch("ab"));
     }
     [TestMethod]
     public void TestMethod2()
@@ -83,11 +82,11 @@ public class UnitTest1
         var regexString0 = "a*";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0.Graph);
-        //dot -T png  graph.dot -o graph.png
         Assert.IsTrue(regex0.IsMatch(""));
         Assert.IsTrue(regex0.IsMatch("a"));
         Assert.IsTrue(regex0.IsMatch("aa"));
         Assert.IsTrue(regex0.IsMatch("aaa"));
+        Assert.IsFalse(regex0.IsMatch("b"));
     }
     [TestMethod]
     public void TestMethod3()
@@ -95,11 +94,11 @@ public class UnitTest1
         var regexString0 = "a+";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0.Graph);
-        //dot -T png  graph.dot -o graph.png
         Assert.IsFalse(regex0.IsMatch(""));
         Assert.IsTrue(regex0.IsMatch("a"));
         Assert.IsTrue(regex0.IsMatch("aa"));
         Assert.IsTrue(regex0.IsMatch("aaa"));
+        Assert.IsFalse(regex0.IsMatch("b"));
     }
     [TestMethod]
     public void TestMethod4()
@@ -107,23 +106,15 @@ public class UnitTest1
         var regexString0 = "(a|b)+";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0.Graph);
-        //dot -T png  graph.dot -o graph.png
         Assert.IsFalse(regex0.IsMatch(""));
-        Assert.IsTrue(regex0.IsMatch("a"));
+        Assert.IsTrue(regex0.IsMatch("b"));
         Assert.IsTrue(regex0.IsMatch("aa"));
-        Assert.IsTrue(regex0.IsMatch("aaa"));
+        Assert.IsTrue(regex0.IsMatch("bbb"));
     }
-
-
 
     [TestMethod]
     public void TestMethod8()
     {
-        var regexString3 = "a|b";
-        var regex3 = new Regex(regexString3);
-        Debug.WriteLine(regex3.Pattern);
-        Debug.WriteLine(regex3.Graph);
-
         var regexString4 = "(a|b)*";
         var regex4 = new Regex(regexString4);
         Debug.WriteLine(regex4.Pattern);

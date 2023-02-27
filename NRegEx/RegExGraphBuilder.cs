@@ -59,15 +59,20 @@ public static class RegExGraphBuilder
         }
         return graph;
     }
+    public static bool HasPassThrough(Graph graph)
+        => HasPassThrough(graph.Tail,graph.Head);
+    public static bool HasPassThrough(Graph graph, Node[] nodes)
+        => HasPassThrough(graph.Tail, nodes);
+    public static bool HasPassThrough(Node tail,params Node[] nodes)
+        => HasPassThrough(tail,nodes.ToHashSet());
     /// <summary>
     /// Check if there is a way to pass through the whole graph
     /// </summary>
     /// <param name="graph"></param>
     /// <returns></returns>
-    public static bool HasPassThrough(Graph graph)
+    public static bool HasPassThrough(Node tail, HashSet<Node> nodes)
     {
-        var nodes = new HashSet<Node> { graph.Head };
-        var visited = nodes.ToHashSet();
+        var visited = new HashSet<Node>();
         do
         {
             var copies = nodes.ToArray();
@@ -76,7 +81,7 @@ public static class RegExGraphBuilder
             {
                 if (visited.Add(node))
                 {
-                    if (node == graph.Tail)
+                    if (node == tail)
                         return true;
                     else if (node.IsVirtual)
                         nodes.UnionWith(node.Outputs);
@@ -87,7 +92,9 @@ public static class RegExGraphBuilder
         return false;
     }
 
-    public static Graph Build(RegExNode node)
+    public static Graph Build(RegExNode node,int id = 0) 
+        => RecomposeIds(BuildInternal(node),id);
+    private static Graph BuildInternal(RegExNode node)
     {
         var graph = new Graph(node.Name);
         switch (node.Type)
@@ -100,19 +107,19 @@ public static class RegExGraphBuilder
             case TokenTypes.OnePlus:
                 {
                     if (node.Children.Count >= 1)
-                        graph.OnePlus(Build(node.Children[0]));
+                        graph.OnePlus(BuildInternal(node.Children[0]));
                 }
                 break;
             case TokenTypes.ZeroPlus:
                 {
                     if (node.Children.Count >= 1)
-                        graph.ZeroPlus(Build(node.Children[0]));
+                        graph.ZeroPlus(BuildInternal(node.Children[0]));
                 }
                 break;
             case TokenTypes.ZeroOne:
                 {
                     if (node.Children.Count >= 1)
-                        graph.ZeroOne(Build(node.Children[0]));
+                        graph.ZeroOne(BuildInternal(node.Children[0]));
                 }
                 break;
             case TokenTypes.Literal:
@@ -138,17 +145,17 @@ public static class RegExGraphBuilder
             case TokenTypes.Sequence:
                 {
                     if (node.Children.Count > 0)
-                        graph.Concate(node.Children.Select(c => Build(c)));
+                        graph.Concate(node.Children.Select(c => BuildInternal(c)));
                 }
                 break;
 
             case TokenTypes.Union:
                 if(node.Children.Count > 0)
-                    graph.UnionWith(node.Children.Select(c => Build(c)));
+                    graph.UnionWith(node.Children.Select(c => BuildInternal(c)));
                 break;
             case TokenTypes.Repeats:
                 if (node.Children.Count > 0)
-                    graph.ComposeRepeats(Build(node.Children[0]),
+                    graph.ComposeRepeats(BuildInternal(node.Children[0]),
                         node.Min.GetValueOrDefault(),
                         node.Max.GetValueOrDefault());
                 break;
@@ -203,6 +210,6 @@ public static class RegExGraphBuilder
                 }
                 break;
         }
-        return RecomposeIds(graph.TryComplete());
+        return graph.TryComplete();
     }
 }

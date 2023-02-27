@@ -128,14 +128,15 @@ public class Regex
     public bool IsMatch(string input, int start = 0, int length = -1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
-        if (start < 0 || start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
+        if (start < 0 || start > input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
-        if (RegExGraphBuilder.HasPassThrough(this.Graph)) return true;
+        if (length==0 && RegExGraphBuilder.HasPassThrough(this.Graph)) return true;
 
         var heads = this.Graph.Nodes.Where(n=>n.Inputs.Count==0);
         var nodes = heads.ToHashSet();
         var i = start;
+        var guard = new HashSet<Node>();
         while (nodes.Count > 0 && i < length)
         {
             var c = input[i];
@@ -159,6 +160,7 @@ public class Regex
             }
             if (hit)
             {
+                guard.Clear();
                 i++;
                 var any = false;
                 while (!any)
@@ -179,9 +181,18 @@ public class Regex
                     }
                 }
             }
+            else
+            {
+                foreach (var n in nodes)
+                {
+                    if (!guard.Add(n)) 
+                        return false; //found loop
+                }
+            }
         }
 
-        return i == input.Length && (nodes.Count == 0 || nodes.Any(n => n.Outputs.Count == 0));
+        return i == input.Length && RegExGraphBuilder.HasPassThrough(this.Graph,nodes.ToArray());
+        // (nodes.Count == 0 || nodes.Any(n => n.Outputs.Count == 0));
     }
     public Capture Match(string input, int start = 0, int length = -1)
     {
