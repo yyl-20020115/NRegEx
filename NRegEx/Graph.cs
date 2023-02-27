@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using System.Text;
+﻿using System.Text;
 
 namespace NRegEx;
 
@@ -249,33 +248,33 @@ public record class Graph
             : $"({g.Description})";
         return this;
     }
-    public Graph ZeroPlus(Graph g0)
+    public Graph ZeroPlus(Graph g)
     {
-        this.Edges.Add(new(g0.Head, g0.Tail)); //direct pass
-        this.Edges.Add(new(g0.Tail, g0.Head)); //back link
-        this.Description = "(" + g0.Description + ")*";
-        return this.EmbedOne(g0);
+        this.Edges.Add(new(g.Head, g.Tail)); //direct pass
+        this.Edges.Add(new(g.Tail, g.Head)); //back link
+        this.Description = "(" + g.Description + ")*";
+        return this.EmbedOne(g);
     }
-    public Graph OnePlus(Graph g0)
+    public Graph OnePlus(Graph g)
     {
-        this.Edges.Add(new(g0.Tail, g0.Head)); //back link
-        this.Description = "(" + g0.Description + ")+";
-        return this.EmbedOne(g0);
+        this.Edges.Add(new(g.Tail, g.Head)); //back link
+        this.Description = "(" + g.Description + ")+";
+        return this.EmbedOne(g);
     }
-    public Graph ZeroOne(Graph g0)
+    public Graph ZeroOne(Graph g)
     {
-        this.Edges.Add(new(g0.Head, g0.Tail)); //direct pass
-        this.Description = $"({g0.Description})?";
-        return this.EmbedOne(g0);
+        this.Edges.Add(new(g.Head, g.Tail)); //direct pass
+        this.Description = $"({g.Description})?";
+        return this.EmbedOne(g);
     }
-    public Graph EmbedOne(Graph g0)
+    public Graph EmbedOne(Graph g)
     {
         this.Nodes.Add(this.Head = new (this.Name));
         this.Nodes.Add(this.Tail = new (this.Name));
-        this.Edges.Add(new(this.Head, g0.Head));
-        this.Edges.Add(new(g0.Tail, this.Tail));
-        this.Edges.UnionWith(g0.Edges);
-        this.Nodes.UnionWith(g0.Nodes);
+        this.Edges.Add(new(this.Head, g.Head));
+        this.Edges.Add(new(g.Tail, this.Tail));
+        this.Edges.UnionWith(g.Edges);
+        this.Nodes.UnionWith(g.Nodes);
         return this;
     }
 
@@ -302,7 +301,6 @@ public record class Graph
     }
 
     public override string ToString() => $"H:{this.Head},T:{this.Tail}";
-
 
     protected HashSet<Node>? heads = null;
     public HashSet<Node> Heads => (this.heads ??= this.Compact());

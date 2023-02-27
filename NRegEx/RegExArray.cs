@@ -26,7 +26,7 @@ public class RegExArray
         foreach (var r in this.Array)
             allGraph.UnionWith(r.Graph);
 
-        var nodes = allGraph.Heads ?? new();
+        var nodes = allGraph.Heads?? new();
         var last = nodes;
         var i = start;
         while (nodes.Count > 0 && i < length)
