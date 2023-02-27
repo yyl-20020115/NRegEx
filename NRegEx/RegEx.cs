@@ -119,7 +119,7 @@ public class Regex
     {
         this.Pattern = pattern;
         this.Name = name ?? this.Pattern;
-        this.Graph = this.Build();
+        this.Graph = Graph.RebuldIds(this.Build());
     }
 
     protected virtual Graph Build()

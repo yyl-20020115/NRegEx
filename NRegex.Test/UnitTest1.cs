@@ -64,8 +64,7 @@ public class UnitTest1
         File.WriteAllText("graph.dot", builder.ToString());
         Run("dot.exe", $"-T png {Path.Combine(Environment.CurrentDirectory, "graph.dot")} -o {Path.Combine(Environment.CurrentDirectory, "graph.png")}");
         //dot -T png  graph.dot -o graph.png
-        var b = regex0.IsMatch("ab");
-        Debug.WriteLine(b);
+        Assert.IsTrue(regex0.IsMatch("ab"));
     }
 
 

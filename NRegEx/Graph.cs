@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.ComponentModel;
+using System.Text;
 
 namespace NRegEx;
 
@@ -21,10 +22,14 @@ public record class Node
     public readonly static Dictionary<int, HashSet<int>> KnownInvertedSets = new();
 
     protected static int Nid = 0;
-    public readonly int Id ;
+    protected int id;
     public readonly bool IsVirtual;
     public readonly bool Inverted;
     public string Name { get; set; } = string.Empty;
+
+    public int Id => id;
+
+    public int SetId(int id) => this.id = id;
     public readonly HashSet<int> CharSet = new();
     public readonly HashSet<Node> Inputs = new ();
     public readonly HashSet<Node> Outputs = new ();
@@ -45,7 +50,7 @@ public record class Node
     {
         this.IsVirtual = false;
         this.Name = "";
-        this.Id = ++Nid;
+        this.id = ++Nid;
         this.Inverted = inverted;
 
         if (this.Inverted)
@@ -95,10 +100,6 @@ public record class Edge
     public readonly Node Tail;
     public Edge(Node Head,Node Tail)
     {
-        if(Head.Id==6 && Tail.Id == 5)
-        {
-
-        }
         this.Head = Head;
         this.Tail = Tail;
         this.Head.Outputs.Add(Tail);
@@ -110,9 +111,9 @@ public record class Graph
 {
     protected static int Gid = 0;
 
-    protected readonly int id = 0;
+    protected int id = 0;
     public int Id => id;
-
+    public int SetId(int id) => this.id = id;
     public string? Description { get; protected set; }
     public readonly string Name;
 
@@ -174,6 +175,19 @@ public record class Graph
             this.Tail = graphs[0].Tail;
             return this;
         }
+        else if (graphs.Count == 2)
+        {
+            this.Nodes.Clear();
+            this.Edges.Clear();
+
+            this.Head = graphs[0].Head;
+            this.Tail = graphs[^1].Tail;
+            this.Nodes.UnionWith(graphs[0].Nodes);
+            this.Nodes.UnionWith(graphs[^1].Nodes);
+            this.Edges.UnionWith(graphs[0].Edges);
+            this.Edges.UnionWith(graphs[^1].Edges);
+            this.Edges.Add(new Edge(graphs[0].Tail, graphs[^1].Head));
+        }
         else
         {
             this.Nodes.Clear();
@@ -186,7 +200,7 @@ public record class Graph
             this.Edges.UnionWith(graphs[0].Edges);
             this.Edges.UnionWith(graphs[^1].Edges);
 
-            for (int i = 1; i < graphs.Count-1; i++)
+            for (int i = 1; i < graphs.Count - 1; i++)
             {
                 var before = graphs[i - 1];
                 var current = graphs[i + 0];
@@ -197,18 +211,6 @@ public record class Graph
                 this.Edges.Add(new Edge(current.Tail, after.Head));
             }
         }
-        return this;
-    }
-    public Graph Concate(Graph tail, Graph head)
-    {
-        this.Head = head.Head;
-        this.Tail = tail.Tail;
-        this.Edges.UnionWith(head.Edges);
-        this.Edges.UnionWith(tail.Edges);
-        this.Edges.Add(new(head.Tail, tail.Head));
-        this.Nodes.UnionWith(head.Nodes);
-        this.Nodes.UnionWith(tail.Nodes);
-        this.Description = $"({head.Description} & {tail.Description})";
         return this;
     }
 
@@ -245,21 +247,6 @@ public record class Graph
         this.Description = !string.IsNullOrEmpty(Description) 
             ? $"({this.Description} | {g.Description})"
             : $"({g.Description})";
-        return this;
-    }
-    public Graph Union(Graph g2, Graph g1)
-    {
-        this.Nodes.Add(this.Head = new (this.Name));
-        this.Nodes.Add(this.Tail = new (this.Name));
-        this.Edges.Add(new(this.Head, g1.Head));
-        this.Edges.Add(new(this.Head, g2.Head));
-        this.Edges.Add(new(g1.Tail, this.Tail));
-        this.Edges.Add(new(g2.Tail, this.Tail));
-        this.Edges.UnionWith(g1.Edges);
-        this.Edges.UnionWith(g2.Edges);
-        this.Nodes.UnionWith(g1.Nodes);
-        this.Nodes.UnionWith(g2.Nodes);
-        this.Description = "(" + g1.Description + " | " + g2.Description + ")";
         return this;
     }
     public Graph ZeroPlus(Graph g0)
@@ -315,7 +302,6 @@ public record class Graph
     }
 
     public override string ToString() => $"H:{this.Head},T:{this.Tail}";
-
 
 
     protected HashSet<Node>? heads = null;
@@ -411,5 +397,40 @@ public record class Graph
         }
         builder.AppendLine("}");
         return builder;
+    }
+
+    public static HashSet<Node> GetFollowings(Graph graph, Node current, HashSet<Node> visited) 
+        => graph.Edges.Where(e => e.Head == current && visited.Add(e.Tail)).Select(e => e.Tail).ToHashSet();
+    public static Graph RebuldIds(Graph graph, int id = 0)
+    {
+        var visited = new HashSet<Node>();
+        var current = graph.Head;
+
+        var followings = GetFollowings(graph, current, visited);
+        var list = new List<HashSet<Node>>
+        {
+            new() { current },
+            followings
+        };
+
+        var collectings = new HashSet<Node>();
+        do
+        {
+            foreach (var node in followings)
+            {
+                collectings.UnionWith(GetFollowings(graph, node, visited));
+            }
+            followings = collectings.ToHashSet();
+            list.Add(collectings);
+            collectings = new();
+        }while(followings.Count > 0);
+        foreach(var line in list)
+        {
+            foreach(var node in line)
+            {
+                node.SetId(id++);
+            }
+        }
+        return graph;
     }
 }
