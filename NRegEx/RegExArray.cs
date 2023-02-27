@@ -42,7 +42,13 @@ public class RegExArray
                 var hit = false;
                 foreach (var node in copies)
                 {
-                    if (node.Hit(c))
+                    var d = node.Hit(c);
+                    if (d == null)
+                    {
+                        nodes.UnionWith(node.Outputs);//this is virtual node
+                        continue;
+                    }
+                    else if (d.Value)
                     {
                         hit = true;
                         //needs all hits
@@ -81,15 +87,18 @@ public class RegExArray
             var copies = nodes.ToArray();
             last = nodes;
             nodes = new HashSet<Node>();
-            if (copies.All(copy => copy.IsVirtual))
-                nodes.UnionWith(copies.SelectMany(n => n.Outputs));
-            else
             {
                 var c = input[i];
                 var hit = false;
                 foreach (var node in copies)
                 {
-                    if (node.Hit(c))
+                    var d = node.Hit(c);
+                    if (d == null)
+                    {
+                        nodes.UnionWith(node.Outputs);//this is virtual node
+                        continue;
+                    }
+                    else if (d.Value)
                     {
                         hit = true;
                         //needs all hits
@@ -147,15 +156,18 @@ public class RegExArray
             var copies = nodes.ToArray();
             last = nodes;
             nodes = new HashSet<Node>();
-            if (copies.All(copy => copy.IsVirtual))
-                nodes.UnionWith(copies.SelectMany(n => n.Outputs));
-            else
             {
                 var c = input[i];
                 var hit = false;
                 foreach (var node in copies)
                 {
-                    if (node.Hit(c))
+                    var d = node.Hit(c);
+                    if (d == null)
+                    {
+                        nodes.UnionWith(node.Outputs);//this is virtual node
+                        continue;
+                    }
+                    else if (d.Value)
                     {
                         hit = true;
                         //needs all hits

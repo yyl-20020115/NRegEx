@@ -1,111 +1,6 @@
 ﻿using System.Text;
 
 namespace NRegEx;
-
-public record class Node
-{
-    public const int EOFChar = -1;
-    public const int NewLineChar = '\n';
-    public const int ReturnChar = '\r';
-
-    public readonly static HashSet<int> AllChars = Enumerable.Range(
-                    char.MinValue,
-                    char.MaxValue - char.MinValue + 1).ToHashSet();
-    public readonly static HashSet<int> WordChars = Enumerable.Range(
-                    char.MinValue,
-                    char.MaxValue - char.MinValue + 1).Where(i => char.IsLetter((char)i)).ToHashSet();
-    public readonly static HashSet<int> NonWordChars = Enumerable.Range(
-                    char.MinValue,
-                    char.MaxValue - char.MinValue + 1).Where(i => !char.IsLetter((char)i)).ToHashSet();
-
-    public readonly static Dictionary<int, HashSet<int>> KnownInvertedSets = new();
-
-    protected static int Nid = 0;
-    protected int id;
-    public readonly bool IsVirtual;
-    public readonly bool Inverted;
-    public string Name { get; set; } = string.Empty;
-
-    public int Id => id;
-
-    public int SetId(int id) => this.id = id;
-    public readonly HashSet<int> CharSet = new();
-    public readonly HashSet<Node> Inputs = new ();
-    public readonly HashSet<Node> Outputs = new ();
-    public Node(string name = "")
-        :this(EOFChar)
-    {
-        this.Name = name;
-        this.IsVirtual = true;
-    }
-    public Node(params char[] cs)
-        : this(cs.Select(c => (int)c).ToArray()) { }
-    public Node(params int[] cs)
-        : this(false, cs) { }
-    public Node(bool inverted, params char[] cs)
-        : this(inverted, cs.Select(c => (int)c).ToArray()) { }
-
-    public Node(bool inverted, params int[] cs)
-    {
-        this.IsVirtual = false;
-        this.Name = "";
-        this.id = ++Nid;
-        this.Inverted = inverted;
-
-        if (this.Inverted)
-        {
-            this.CharSet = new (AllChars);
-            this.CharSet.ExceptWith(cs);
-        }
-        else
-        {
-            this.CharSet = new (cs);
-        }
-        this.Name = "'" + string.Join(",", cs.Select(c => new Rune(c>=0?c:' ').ToString()).ToArray()) + "'";
-    }
-
-    public Node UnionWith(params int[] runes)
-        => this.UnionWith(runes as IEnumerable<int>);
-    public Node UnionWith(IEnumerable<int> runes)
-    {
-        this.CharSet.UnionWith(runes);
-        return this;
-    }
-    public bool Hit(int c)
-    {
-        var cx = this.CharSet.Contains(c);
-        return Inverted ? !cx : cx;
-    }
-
-    public static string FormatNodes(IEnumerable<Node?> nodes)
-    {
-        var builder = new StringBuilder();
-        var ns = new List<Node?>(nodes);
-        for(int i = 0; i < ns.Count; i++)
-        {
-            var node = ns[i];
-            builder.Append(node?.Id);
-            if (i < ns.Count - 1)
-                builder.Append(',');
-        }
-        return builder.ToString();
-    }
-    public override string ToString() 
-        => $"[({this.Id},{this.Inverted}):{string.Join(',',this.CharSet)} IN:{FormatNodes(this.Inputs)}  OUT:{FormatNodes(this.Outputs)}]";
-}
-public record class Edge
-{
-    public readonly Node Head;
-    public readonly Node Tail;
-    public Edge(Node Head,Node Tail)
-    {
-        this.Head = Head;
-        this.Tail = Tail;
-        this.Head.Outputs.Add(Tail);
-        this.Tail.Inputs.Add(Head);
-    }
-
-}
 public record class Graph
 {
     protected static int Gid = 0;
@@ -126,7 +21,7 @@ public record class Graph
         this.id = ++Gid;
         if (cs.Length>0)
         {
-            this.Nodes.Add(this.Head = this.Tail = new Node(cs) with { Name = name });
+            this.Nodes.Add(this.Head = this.Tail = new Node(cs));
             this.Description = this.Head.ToString();
         }
         else
@@ -315,10 +210,14 @@ public record class Graph
         do
         {
             heads.UnionWith(nodes.Where(n => !n.IsVirtual));
+
             var virtuals = nodes.Where(n => n.IsVirtual).ToHashSet();
+            
             nodes = virtuals.SelectMany(n => n.Outputs).ToHashSet();
+            
             virtuals.ToList().ForEach(v =>
                 v.Outputs.ToList().ForEach(o => o.Inputs.Remove(v)));
+            
             this.Nodes.ExceptWith(virtuals);
             nodes.ExceptWith(visited);
             visited.UnionWith(nodes);
@@ -347,40 +246,44 @@ public record class Graph
         return heads;
     }
 
-
-    public bool IsBacktracingFriendly()
+    //TODO:
+    public static bool IsBacktracingFriendly(Graph graph)
     {
         //对于支持回溯的RegEx引擎，
         //  1.如果相继&的两个node之间具有交集，则有可能出现回溯灾难。
         //  2.如果前一个是{0,n}后一个和前一个无交集，则有可能出现回溯灾难。
         //本引擎不处理回溯灾难
-        var heads = this.Nodes.Where(n => n.Inputs.Count == 0).ToHashSet();
-        var copies = heads.ToHashSet();
+        var nodeSets = new Dictionary<Node, HashSet<int>>();
+        var nodes = graph.Nodes.Where(n => n.Inputs.Count == 0).ToHashSet();
+        nodes = nodes.SelectMany(n => n.Outputs).ToHashSet();
+
+        //TODO:
+        var copies = nodes.ToHashSet();
         do
         {
-            foreach (var head in heads)
-                if (head.IsVirtual)
-                    head.CharSet.UnionWith(
-                        head.Inputs.SelectMany(i => i.CharSet));
+            foreach (var node in nodes)
+            {
+                nodeSets[node] 
+                    = new (node.Inputs.SelectMany(i => i.CharSet ?? new()));
+            }
+            nodes = nodes.SelectMany(h => h.Outputs).ToHashSet();
+        } while (nodes.Count > 0);
 
-            heads = heads.SelectMany(h => h.Outputs).ToHashSet();
-        } while (heads.Count > 0);
-
-        heads = copies;
+        nodes = copies;
         do
         {
-            foreach (var head in heads)
+            foreach (var node in nodes)
                 //a&b: a and b's charset shares elements
-                if (head.Inputs.Count == 1
-                    && head.CharSet.Overlaps(head.Inputs.Single().CharSet))
+                if (node.Inputs.Count == 1
+                    && node.CharSet.Overlaps(node.Inputs.Single().CharSet))
                     return false;
 
-            heads = heads.SelectMany(h => h.Outputs).ToHashSet();
-        } while (heads.Count > 0);
+            nodes = nodes.SelectMany(h => h.Outputs).ToHashSet();
+        } while (nodes.Count > 0);
         return true;
     }
 
-    public static StringBuilder ExportGraph(Graph graph, StringBuilder builder = null)
+    public static StringBuilder ExportAsDot(Graph graph, StringBuilder? builder = null)
     {
         builder ??= new StringBuilder();
         builder.AppendLine($"digraph {(!string.IsNullOrEmpty(graph.Name) ? graph.Name:"g")}{{");
@@ -399,15 +302,13 @@ public record class Graph
 
     public static HashSet<Node> GetFollowings(Graph graph, Node current, HashSet<Node> visited) 
         => graph.Edges.Where(e => e.Head == current && visited.Add(e.Tail)).Select(e => e.Tail).ToHashSet();
-    public static Graph RebuldIds(Graph graph, int id = 0)
+    public static Graph RecomposeIds(Graph graph, int id = 0)
     {
         var visited = new HashSet<Node>();
-        var current = graph.Head;
-
-        var followings = GetFollowings(graph, current, visited);
+        var followings = GetFollowings(graph, graph.Head, visited);
         var list = new List<HashSet<Node>>
         {
-            new() { current },
+            new() { graph.Head },
             followings
         };
 
@@ -422,11 +323,15 @@ public record class Graph
             list.Add(collectings);
             collectings = new();
         }while(followings.Count > 0);
+        var hits = new HashSet<Node>();
         foreach(var line in list)
         {
             foreach(var node in line)
             {
-                node.SetId(id++);
+                if (hits.Add(node))
+                {
+                    node.SetId(id++);
+                }
             }
         }
         return graph;

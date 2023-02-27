@@ -110,7 +110,7 @@ public class Regex
     /// <returns></returns>
     public static bool IsBacktracingFriendly(string regex)
         => !string.IsNullOrEmpty(regex)
-        && new Regex(regex).Graph.IsBacktracingFriendly();
+        && Graph.IsBacktracingFriendly(new Regex(regex).Graph);
 
     public readonly Graph Graph;
     public readonly string Pattern;
@@ -119,7 +119,7 @@ public class Regex
     {
         this.Pattern = pattern;
         this.Name = name ?? this.Pattern;
-        this.Graph = Graph.RebuldIds(this.Build());
+        this.Graph = Graph.RecomposeIds(this.Build());
     }
 
     protected virtual Graph Build()
@@ -128,7 +128,7 @@ public class Regex
     public bool IsMatch(string input, int start = 0, int length = -1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
-        if (start<0 || start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
+        if (start < 0 || start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
 
@@ -140,20 +140,46 @@ public class Regex
         {
             var copies = nodes.ToArray();
             nodes.Clear();
-            if (copies.All(copy => copy.IsVirtual))
-                nodes.UnionWith(copies.SelectMany(n => n.Outputs));
-            else
             {
                 var c = input[i];
                 var hit = false;
                 foreach (var node in copies)
-                    if (node.Hit(c))
+                {
+                    var d = node.Hit(c);
+                    if (d == null)
+                    {
+                        nodes.UnionWith(node.Outputs);
+                        continue;
+                    }
+                    else if (d.Value)
                     {
                         hit = true;
                         //needs all hits
                         nodes.UnionWith(node.Outputs);
                     }
-                if (hit) i++;
+                }
+                if (hit)
+                {
+                    i++;
+                    var any = false;
+                    while (!any)
+                    {
+                        copies = nodes.ToArray();
+                        nodes.Clear();
+                        foreach (var node in copies)
+                        {
+                            if (node.IsVirtual)
+                            {
+                                any = true;
+                                nodes.UnionWith(node.Outputs);
+                            }
+                            else
+                            {
+                                nodes.Add(node);
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -176,23 +202,46 @@ public class Regex
         {
             var copies = nodes.ToArray();
             nodes.Clear();
-            if (copies.All(copy => copy.IsVirtual))
-                nodes.UnionWith(copies.SelectMany(n => n.Outputs));
-            else
             {
                 var c = input[i];
                 var hit = false;
                 foreach (var node in copies)
-                    if (node.Hit(c))
+                {
+                    var d = node.Hit(c);
+                    if (d == null)
+                    {
+                        nodes.UnionWith(node.Outputs);
+                        continue;
+                    }
+                    else if (d.Value)
                     {
                         hit = true;
                         //needs all hits
                         nodes.UnionWith(node.Outputs);
                     }
+                }
                 if (hit)
                 {
                     m++;
                     i++;
+                    var any = false;
+                    while (!any)
+                    {
+                        copies = nodes.ToArray();
+                        nodes.Clear();
+                        foreach (var node in copies)
+                        {
+                            if (node.IsVirtual)
+                            {
+                                any = true;
+                                nodes.UnionWith(node.Outputs);
+                            }
+                            else
+                            {
+                                nodes.Add(node);
+                            }
+                        }
+                    }
                 }
                 else
                 {

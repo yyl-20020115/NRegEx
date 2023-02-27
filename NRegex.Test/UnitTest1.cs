@@ -60,7 +60,7 @@ public class UnitTest1
         Debug.WriteLine(regex0);
         Debug.WriteLine(regex0.Pattern);
         Debug.WriteLine(regex0.Graph);
-        var builder = Graph.ExportGraph(regex0.Graph);
+        var builder = Graph.ExportAsDot(regex0.Graph);
         File.WriteAllText("graph.dot", builder.ToString());
         Run("dot.exe", $"-T png {Path.Combine(Environment.CurrentDirectory, "graph.dot")} -o {Path.Combine(Environment.CurrentDirectory, "graph.png")}");
         //dot -T png  graph.dot -o graph.png
