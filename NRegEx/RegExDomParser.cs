@@ -243,6 +243,7 @@ public class RegExDomParser
         this.Concate();
         if (!this.SwapAlternate())
             this.Push(new(RegExTokenType.Alternate, alt));
+        this.Reader.SkipString(alt);
     }
     protected void OverallAlternate()
     {

@@ -6,8 +6,7 @@ public static class RegExGraphBuilder
     public static StringBuilder ExportAsDot(Graph graph, StringBuilder? builder = null)
     {
         builder ??= new StringBuilder();
-        builder.AppendLine($"digraph {(!string.IsNullOrEmpty(graph.Name) ? graph.Name : "g")}{{");
-        builder.AppendLine("[]");
+        builder.AppendLine("digraph g {");
         foreach (var node in graph.Nodes)
         {
             var label = (!string.IsNullOrEmpty(node.Name) ? $"[label=\"{node.Id}({node.Name})\"]" : "");
@@ -59,6 +58,33 @@ public static class RegExGraphBuilder
             }
         }
         return graph;
+    }
+    /// <summary>
+    /// Check if there is a way to pass through the whole graph
+    /// </summary>
+    /// <param name="graph"></param>
+    /// <returns></returns>
+    public static bool HasPassThrough(Graph graph)
+    {
+        var nodes = new HashSet<Node> { graph.Head };
+        var visited = nodes.ToHashSet();
+        do
+        {
+            var copies = nodes.ToArray();
+            nodes.Clear();
+            foreach(var node in copies)
+            {
+                if (visited.Add(node))
+                {
+                    if (node == graph.Tail)
+                        return true;
+                    else if (node.IsVirtual)
+                        nodes.UnionWith(node.Outputs);
+                }
+            }
+        } while (nodes.Count > 0);
+
+        return false;
     }
 
     public static Graph Build(RegExNode node)

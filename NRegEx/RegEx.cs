@@ -119,7 +119,7 @@ public class Regex
     {
         this.Pattern = pattern;
         this.Name = name ?? this.Pattern;
-        this.Graph = (this.Build());
+        this.Graph = this.Build();
     }
 
     protected virtual Graph Build()
@@ -131,53 +131,50 @@ public class Regex
         if (start < 0 || start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
-        if (this.Graph.Nodes.All(n => n.IsVirtual)) return true;
+        if (RegExGraphBuilder.HasPassThrough(this.Graph)) return true;
 
         var heads = this.Graph.Nodes.Where(n=>n.Inputs.Count==0);
         var nodes = heads.ToHashSet();
-
         var i = start;
         while (nodes.Count > 0 && i < length)
         {
+            var c = input[i];
+            var hit = false;
             var copies = nodes.ToArray();
             nodes.Clear();
+            foreach (var node in copies)
             {
-                var c = input[i];
-                var hit = false;
-                foreach (var node in copies)
+                var d = node.Hit(c);
+                if (d == null)
                 {
-                    var d = node.Hit(c);
-                    if (d == null)
-                    {
-                        nodes.UnionWith(node.Outputs);
-                        continue;
-                    }
-                    else if (d.Value)
-                    {
-                        hit = true;
-                        //needs all hits
-                        nodes.UnionWith(node.Outputs);
-                    }
+                    nodes.UnionWith(node.Outputs);
+                    continue;
                 }
-                if (hit)
+                else if (d.Value)
                 {
-                    i++;
-                    var any = false;
-                    while (!any)
+                    hit = true;
+                    //needs all hits
+                    nodes.UnionWith(node.Outputs);
+                }
+            }
+            if (hit)
+            {
+                i++;
+                var any = false;
+                while (!any)
+                {
+                    copies = nodes.ToArray();
+                    nodes.Clear();
+                    foreach (var node in copies)
                     {
-                        copies = nodes.ToArray();
-                        nodes.Clear();
-                        foreach (var node in copies)
+                        if (node.IsVirtual)
                         {
-                            if (node.IsVirtual)
-                            {
-                                any = true;
-                                nodes.UnionWith(node.Outputs);
-                            }
-                            else
-                            {
-                                nodes.Add(node);
-                            }
+                            any = true;
+                            nodes.UnionWith(node.Outputs);
+                        }
+                        else
+                        {
+                            nodes.Add(node);
                         }
                     }
                 }

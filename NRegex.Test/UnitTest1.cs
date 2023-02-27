@@ -9,7 +9,6 @@ namespace NRegex.Test;
 [TestClass]
 public class UnitTest1
 {
-
     public static string GetFullPath(string filePath)
     {
         var text = Environment.GetEnvironmentVariable("PATH");
@@ -29,7 +28,7 @@ public class UnitTest1
         }
         return filePath;
     }
-    public static bool RunProcess(string filePath, string argument)
+    public static int RunProcess(string filePath, string argument)
     {
         var p = new Process();
 
@@ -38,14 +37,16 @@ public class UnitTest1
         if (p.Start())
         {
             p.WaitForExit();
-            return true;
+            return p.ExitCode;
         }
-        return false;
+        return -1;
     }
-    public static void ExportAsDot(Graph graph, string png = "graph.png", string dot = "graph.dot")
+    public static int ExportAsDot(Graph graph, string png = "graph.png", string dot = "graph.dot")
     {
+        dot = Path.Combine(Environment.CurrentDirectory, dot);
+        png = Path.Combine(Environment.CurrentDirectory, png);
         File.WriteAllText(dot, RegExGraphBuilder.ExportAsDot(graph).ToString());
-        RunProcess("dot.exe", $"-T png {Path.Combine(Environment.CurrentDirectory, dot)} -o {Path.Combine(Environment.CurrentDirectory, png)}");
+        return RunProcess("dot.exe", $"-Grankdir=LR -T png {dot} -o {png}");
     }
 
 
@@ -62,8 +63,10 @@ public class UnitTest1
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0.Graph);
         //dot -T png  graph.dot -o graph.png
+        Assert.IsFalse(regex0.IsMatch("bcda"));
         Assert.IsTrue(regex0.IsMatch("abcd"));
     }
+
     [TestMethod]
     public void TestMethod1()
     {
@@ -101,7 +104,7 @@ public class UnitTest1
     [TestMethod]
     public void TestMethod4()
     {
-        var regexString0 = "a+";
+        var regexString0 = "(a|b)+";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0.Graph);
         //dot -T png  graph.dot -o graph.png
