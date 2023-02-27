@@ -250,7 +250,7 @@ public record class Graph
         return heads;
     }
 
-    //TODO:
+    /*
     public static bool IsBacktracingFriendly(Graph graph)
     {
         //对于支持回溯的RegEx引擎，
@@ -286,5 +286,5 @@ public record class Graph
         } while (nodes.Count > 0);
         return true;
     }
-
+    */
 }

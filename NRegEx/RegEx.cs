@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Collections;
+using System.Text;
 
 namespace NRegEx;
 
@@ -108,9 +109,9 @@ public class Regex
     /// </summary>
     /// <param name="regex"></param>
     /// <returns></returns>
-    public static bool IsBacktracingFriendly(string regex)
-        => !string.IsNullOrEmpty(regex)
-        && Graph.IsBacktracingFriendly(new Regex(regex).Graph);
+    //public static bool IsBacktracingFriendly(string regex)
+    //    => !string.IsNullOrEmpty(regex)
+    //    && Graph.IsBacktracingFriendly(new Regex(regex).Graph);
 
     public readonly Graph Graph;
     public readonly string Pattern;
@@ -136,7 +137,7 @@ public class Regex
         var heads = this.Graph.Nodes.Where(n=>n.Inputs.Count==0);
         var nodes = heads.ToHashSet();
         var i = start;
-        var guard = new BitSet(Graph.Nodes.Count);
+        var guard = new BitArray(Graph.Nodes.Count);
         while (nodes.Count > 0 && i < length)
         {
             var c = input[i];
@@ -160,7 +161,7 @@ public class Regex
             }
             if (hit)
             {
-                guard.Clear();
+                guard.SetAll(false);
                 i++;
                 var any = false;
                 while (!any)
@@ -185,7 +186,9 @@ public class Regex
             {
                 foreach (var n in nodes)
                 {
-                    if (!guard.Add(n.Id)) return false; //found loop
+                    if (guard[n.Id]) return false;
+                    guard[n.Id] = true;
+                    //if (!guard.Add(n.Id)) return false; //found loop
                 }
             }
         }

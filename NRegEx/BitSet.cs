@@ -2,10 +2,12 @@
 
 namespace NRegEx;
 
-public sealed record BitSet(int Count = 64) : ISet<int>
+public class BitSet : ISet<int>
 {
     public const int BitsPerByte = 8;
     public const int BitsPerLong = sizeof(long) * BitsPerByte;
+    public static long[] CreateBuffer(int count) => new long[(count + BitsPerLong - 1) / BitsPerLong];
+
     public static int GetLastAlignedInnerIndex(int Count) => (Count - 1) % BitsPerLong;
     public static int GetLastAlignedStoreIndex(int Count) => (Count - 1) / BitsPerLong;
     public static int TrimLast(long[] Bits, int Count)
@@ -24,52 +26,72 @@ public sealed record BitSet(int Count = 64) : ISet<int>
         }
         return Count;
     }
-    public readonly long[] BitsBuffer
-        = new long[(Count + BitsPerLong - 1) / BitsPerLong];
+    public long[] Buffer => this.buffer;
+    protected long[] buffer;
     public bool this[int index]
     {
         get => index >= 0 && index < Count
-            ? 0 != (this.BitsBuffer[index / BitsPerLong] & (1 << index % BitsPerLong))
+            ? 0 != (this.buffer[index / BitsPerLong] & (1 << index % BitsPerLong))
             : throw new IndexOutOfRangeException(nameof(index))
             ;
         set
         {
             if (index >= 0 && index < Count)
                 if (value)
-                    this.BitsBuffer[index / BitsPerLong] |= (1L << index % BitsPerLong);
+                    this.buffer[index / BitsPerLong] |= (1L << index % BitsPerLong);
                 else
-                    this.BitsBuffer[index / BitsPerLong] &= ~(1L << index % BitsPerLong);
+                    this.buffer[index / BitsPerLong] &= ~(1L << index % BitsPerLong);
             else
                 throw new IndexOutOfRangeException(nameof(index));
         }
     }
-    public int Count { get; private set; } = Count;
-    public bool IsReadOnly => false;
+    public virtual int Count { get => count; protected set => this.count = value; }
+    protected int count = 0;
+    public virtual bool IsReadOnly => false;
+    public BitSet(int count = 0, bool defValue = false)
+    {
+        this.buffer = CreateBuffer(this.count = count);
+        if (defValue)
+        {
+            for (int i = 0; i < this.buffer.Length; i++)
+                this.buffer[i] = ~0L;
+        }
+    }
     public BitSet(IEnumerable<int> e)
-        : this((e is ICollection c) ? c.Count : (e.Max(e => e) + 1))
+        : this((e.Max(m => m) + 1))
     {
         if (e is BitSet s)
-            this.Count = TrimLast(
-                this.BitsBuffer = (long[])s.BitsBuffer.Clone(), s.Count);
+            this.count = TrimLast(
+                this.buffer = (long[])s.buffer.Clone(), s.count);
         else
             foreach (var i in e)
-                if (i >= 0 && i < Count)
+                if (i >= 0 && i < count)
                     this[i] = true;
                 else throw new ArgumentOutOfRangeException(
-                    $"elements in e should be within [0..{Count}]");
+                    $"elements in e should be within [0..{count}]");
     }
-    public bool Add(int item) => item < 0 || item >= this.Count
+    public BitSet(int[] e)
+        : this((e.Max(m => m) + 1))
+    {
+        foreach (var i in e)
+            if (i >= 0 && i < count)
+                this[i] = true;
+            else throw new ArgumentOutOfRangeException(
+                $"elements in e should be within [0..{count}]");
+    }
+
+    public bool Add(int item) => item < 0 || item >= this.count
             ? throw new ArgumentOutOfRangeException(nameof(item))
             : this[item] ? false : (this[item] = true);
     void ICollection<int>.Add(int item) => this.Add(item);
-    public bool Remove(int item) 
-        => item < 0 || item >= Count 
-        ? throw new ArgumentOutOfRangeException(nameof(item)) 
+    public bool Remove(int item)
+        => item < 0 || item >= count
+        ? throw new ArgumentOutOfRangeException(nameof(item))
         : !(this[item] = false);
     public void Clear()
-        => Array.Clear(this.BitsBuffer, 0, this.BitsBuffer.Length);
+        => Array.Clear(this.buffer, 0, this.buffer.Length);
     public bool Contains(int item)
-        => item >= 0 && item < this.Count && this[item];
+        => this[item];
     public void CopyTo(int[] array, int arrayIndex)
     {
         for (int i = 0; i < Count; i++)
@@ -86,7 +108,7 @@ public sealed record BitSet(int Count = 64) : ISet<int>
     }
     public IEnumerator<int> GetEnumerator()
     {
-        for (int i = 0; i < Count; i++)
+        for (int i = 0; i < count; i++)
         {
             while (!this[i]) i++;
             yield return i;
@@ -96,23 +118,23 @@ public sealed record BitSet(int Count = 64) : ISet<int>
         => ((IEnumerable<int>)this).GetEnumerator();
     public void ExceptWith(IEnumerable<int> other)
     {
-        foreach (var i in other) if (i >= 0 && i < this.Count) this[i] = false;
+        foreach (var i in other) if (i >= 0 && i < this.count) this[i] = false;
     }
     public void UnionWith(IEnumerable<int> other)
     {
-        foreach (var i in other) if (i >= 0 && i < this.Count) this[i] = true;
+        foreach (var i in other) if (i >= 0 && i < this.count) this[i] = true;
     }
     public bool SetEquals(IEnumerable<int> other)
     {
         var otherSet = new BitSet(other);
-        if (this.Count != otherSet.Count) return false;
-        for (int i = 0; i < this.BitsBuffer.Length; i++) 
-            if (this.BitsBuffer[i] != otherSet.BitsBuffer[i]) return false;
+        if (this.count != otherSet.count) return false;
+        for (int i = 0; i < this.buffer.Length; i++)
+            if (this.buffer[i] != otherSet.buffer[i]) return false;
         return true;
     }
     public bool Overlaps(IEnumerable<int> other)
     {
-        foreach (var i in other) if (i >= 0 && i < this.Count && this[i]) return true;
+        foreach (var i in other) if (i >= 0 && i < this.count && this[i]) return true;
         return false;
     }
     public bool IsSupersetOf(IEnumerable<int> other)
@@ -125,11 +147,11 @@ public sealed record BitSet(int Count = 64) : ISet<int>
     public void IntersectWith(IEnumerable<int> other)
     {
         if (other is BitSet that)
-            for (int i = 0, count = Math.Min(this.BitsBuffer.Length, that.BitsBuffer.Length); i < count; i++)
-                this.BitsBuffer[i] &= that.BitsBuffer[i];
+            for (int i = 0, count = Math.Min(this.buffer.Length, that.buffer.Length); i < count; i++)
+                this.buffer[i] &= that.buffer[i];
         else
             foreach (var i in other)
-                if (i >= 0 && i < this.Count) this[i] &= true;
+                if (i >= 0 && i < this.count) this[i] &= true;
     }
     public bool IsProperSubsetOf(IEnumerable<int> other)
       => this.IsSubsetOf(other) &&
