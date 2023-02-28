@@ -4,7 +4,7 @@ namespace NRegEx;
 
 // Parser flags.
 [Flags]
-public enum ParserOptions : uint
+public enum Options : uint
 {
     None = 0,
     // Fold case during matching (case-insensitive).
@@ -86,7 +86,7 @@ public record class RegExNode(
     int? CaptureIndex = null,
     bool? Negate = null,
     int[]? Runes = null,
-    ParserOptions Options = ParserOptions.None,
+    Options Options = Options.None,
     TokenOptions TokenOptions = TokenOptions.Normal,
     bool Inverted = false)
 {
@@ -111,18 +111,15 @@ public class RegExDomParser
     private const string ERR_DUPLICATE_NAMED_CAPTURE = "duplicate capture group name";
     public readonly string Name;
     public readonly RegExPatternReader Reader;
-    public ParserOptions Options;
+    public Options Options;
     protected readonly Dictionary<string, int> namedGroups = new();
     public string Pattern => this.Reader.Pattern;
     protected readonly Stack<RegExNode> NodeStack = new();
     protected int CaptureIndex = 0;
-    public static Graph Build(string name, string regex,int id = 0, ParserOptions options = ParserOptions.None)
-        => regex != null ? RegExGraphBuilder.Build(
-            Parse(name, regex, options),id, (options & ParserOptions.FOLD_CASE)== ParserOptions.FOLD_CASE) : new();
 
-    public static RegExNode Parse(string name, string pattern, ParserOptions options = ParserOptions.None)
+    public static RegExNode Parse(string name, string pattern, Options options = Options.None)
         => new RegExDomParser(name, pattern, options).Parse();
-    public RegExDomParser(string name, string pattern, ParserOptions options)
+    public RegExDomParser(string name, string pattern, Options options)
     {
         this.Name = name;
         this.Reader = new RegExPatternReader(
@@ -165,21 +162,21 @@ public class RegExDomParser
                     continue;
                 case '^':
                     this.Push(new(
-                        ((this.Options & ParserOptions.ONE_LINE) != ParserOptions.None)
+                        ((this.Options & Options.ONE_LINE) != Options.None)
                         ? TokenTypes.BeginLine
                         : TokenTypes.BeginText
                         , this.Reader.Take()));
                     break;
                 case '$':
                     this.Push(new(
-                        ((this.Options & ParserOptions.ONE_LINE) != ParserOptions.None)
+                        ((this.Options & Options.ONE_LINE) != Options.None)
                         ? TokenTypes.EndLine
                         : TokenTypes.EndText
                         , this.Reader.Take()));
                     continue;
                 case '.':
                     this.Push(new(
-                        ((this.Options & ParserOptions.DOT_NL) != ParserOptions.None)
+                        ((this.Options & Options.DOT_NL) != Options.None)
                         ? TokenTypes.AnyCharExcludingNewLine
                         : TokenTypes.AnyCharExcludingNewLine
                         , this.Reader.Take()));
@@ -215,7 +212,7 @@ public class RegExDomParser
                     }
                     continue;
                 case '(':
-                    if (((this.Options & ParserOptions.PERL) != ParserOptions.None) &&
+                    if (((this.Options & Options.PERL) != Options.None) &&
                         this.Reader.LookingAt("(?"))
                         this.ParsePerlFlags(Reader);
                     else
@@ -442,19 +439,19 @@ public class RegExDomParser
                     goto exit;
                 // Flags.
                 case 'i':
-                    flags |= ParserOptions.FOLD_CASE;
+                    flags |= Options.FOLD_CASE;
                     sawFlag = true;
                     break;
                 case 'm':
-                    flags &= ~ParserOptions.ONE_LINE;
+                    flags &= ~Options.ONE_LINE;
                     sawFlag = true;
                     break;
                 case 's':
-                    flags |= ParserOptions.DOT_NL;
+                    flags |= Options.DOT_NL;
                     sawFlag = true;
                     break;
                 case 'U':
-                    flags |= ParserOptions.NON_GREEDY;
+                    flags |= Options.NON_GREEDY;
                     sawFlag = true;
                     break;
 
@@ -501,7 +498,7 @@ public class RegExDomParser
     private bool ParseUnicodeClass(RegExPatternReader Reader, CharClass cc)
     {
         int startPos = Reader.Position;
-        if ((Options & ParserOptions.UNICODE_GROUPS) == 0
+        if ((Options & Options.UNICODE_GROUPS) == 0
             || (!Reader.LookingAt("\\p") && !Reader.LookingAt("\\P")))
             return false;
         Reader.Skip(1); // '\\'
@@ -553,7 +550,7 @@ public class RegExDomParser
         var fold = pair.second; // fold-equivalent table
 
         // Variation of CharClass.appendGroup() for tables.
-        if ((Options & ParserOptions.FOLD_CASE) == 0 || fold == null)
+        if ((Options & Options.FOLD_CASE) == 0 || fold == null)
             cc.AppendTableWithSign(tab, sign);
         else
         {
@@ -616,7 +613,7 @@ public class RegExDomParser
 
             // If character class does not match \n, add it here,
             // so that negation later will do the right thing.
-            if ((this.Options & ParserOptions.CLASS_NL) == 0)
+            if ((this.Options & Options.CLASS_NL) == 0)
                 cc.AppendRange('\n', '\n');
         }
 
@@ -625,7 +622,7 @@ public class RegExDomParser
         {
             // POSIX: - is only okay unescaped as first or last in class.
             // Perl: - is okay anywhere.
-            if (Reader.HasMore && Reader.LookingAt('-') && (Options & ParserOptions.PERL_X) == 0 && !first)
+            if (Reader.HasMore && Reader.LookingAt('-') && (Options & Options.PERL_X) == 0 && !first)
             {
                 var s = Reader.Rest;
                 if (s.Equals("-") || !s.StartsWith("-]"))
@@ -673,7 +670,7 @@ public class RegExDomParser
                         throw new PatternSyntaxException(ERR_INVALID_CHAR_RANGE, Reader.From(beforePos));
                 }
             }
-            if ((Options & ParserOptions.FOLD_CASE) == 0)
+            if ((Options & Options.FOLD_CASE) == 0)
                 cc.AppendRange(lo, hi);
             else
                 cc.AppendFoldedRange(lo, hi);
@@ -826,7 +823,7 @@ public class RegExDomParser
     private bool ParsePerlClassEscape(RegExPatternReader Reader, CharClass cc)
     {
         int beforePos = Reader.Position;
-        if ((Options & ParserOptions.PERL_X) == 0
+        if ((Options & Options.PERL_X) == 0
             || !Reader.HasMore || Reader.Pop() != '\\'
             || // consume '\\'
             !Reader.HasMore)
@@ -837,7 +834,7 @@ public class RegExDomParser
             return false;
         if (g == null)
             return false;
-        cc.AppendGroup(g, (Options & ParserOptions.FOLD_CASE) != 0);
+        cc.AppendGroup(g, (Options & Options.FOLD_CASE) != 0);
         return true;
     }
 
@@ -858,7 +855,7 @@ public class RegExDomParser
         Reader.SkipString(name);
         if (!CharGroup.POSIX_GROUPS.TryGetValue(name, out var g))
             throw new PatternSyntaxException(ERR_INVALID_CHAR_RANGE, name);
-        cc.AppendGroup(g, (Options & ParserOptions.FOLD_CASE) != 0);
+        cc.AppendGroup(g, (Options & Options.FOLD_CASE) != 0);
         return true;
     }
 
@@ -866,7 +863,7 @@ public class RegExDomParser
     {
         int savedPos = Reader.Position;
         Reader.Skip(1); // '\\'
-        if ((this.Options & ParserOptions.PERL_X) != 0 && Reader.HasMore)
+        if ((this.Options & Options.PERL_X) != 0 && Reader.HasMore)
         {
             int c = Reader.Pop();
             switch ((char)c)

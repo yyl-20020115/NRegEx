@@ -35,13 +35,13 @@ public class Node
     //                0, Unicode.MAX_RUNE).Where(i => !IsRuneSurrogate(i) && !IsRuneLetter(i)).ToHashSet());
 
     protected static int Nid = 0;
-    protected int id = Nid ++;
+    protected int id = Nid++;
     public bool IsLink => this.CharSet == null || this.CharSet.Count == 0;
     protected bool inverted;
     protected string name = "";
-    public bool IsBridge 
-        => this.IsLink 
-        && this.Inputs.Count == 1 
+    public bool IsBridge
+        => this.IsLink
+        && this.Inputs.Count == 1
         && this.Outputs.Count == 1;
 
     public int Id => id;
@@ -51,7 +51,7 @@ public class Node
     public BitArray? CharSet => charSet;
     public int[]? CharsArray => charsArray;
 
-    public Node Copy() => new ()
+    public Node Copy() => new()
     {
         name = name,
         inverted = inverted,
@@ -63,11 +63,11 @@ public class Node
     public int SetId(int id) => this.id = id;
     protected BitArray? charSet = null;
     protected int[]? charsArray;
-    public readonly HashSet<Node> Inputs = new ();
-    public readonly HashSet<Node> Outputs = new ();
+    public readonly HashSet<Node> Inputs = new();
+    public readonly HashSet<Node> Outputs = new();
     public Node(string name = "") => Name = name;
     public Node(params Rune[] runes)
-        : this(runes.Select(r=>r.Value).ToArray()) { }
+        : this(runes.Select(r => r.Value).ToArray()) { }
     public Node(params char[] chars)
         : this(chars.Select(c => (int)c).ToArray()) { }
     public Node(params int[] chars)
@@ -77,7 +77,7 @@ public class Node
 
     public Node(bool inverted, params int[] chars)
     {
-        if (chars!=null && chars.Length > 0)
+        if (chars != null && chars.Length > 0)
         {
             this.Inverted = inverted;
             this.charsArray = chars;
@@ -89,16 +89,23 @@ public class Node
             this.Name = $"'[{(this.Inverted ? '-' : '+')}]" + st + "'";
         }
     }
-    public Node FetchNodes(HashSet<Node> outputs)
+    public Node FetchNodes(HashSet<Node> outputs, bool deep = true)
     {
-        FetchNodes(this,outputs);
+        if (!deep)
+        {
+            outputs.UnionWith(this.Outputs);
+        }
+        else
+        {
+            FetchNodes(this, outputs, deep);
+        }
         return this;
     }
-    protected static void FetchNodes(Node node, HashSet<Node> outputs)
+    protected static void FetchNodes(Node node, HashSet<Node> outputs, bool deep = true)
     {
-        FetchNodes(node.Outputs, outputs);
+        FetchNodes(node.Outputs, outputs, deep);
     }
-    protected static void FetchNodes(HashSet<Node> inputs, HashSet<Node> outputs)
+    protected static void FetchNodes(HashSet<Node> inputs, HashSet<Node> outputs, bool deep = true)
     {
         foreach (var node in inputs)
         {
@@ -110,9 +117,9 @@ public class Node
             {
                 outputs.Add(node);
             }
-            else
+            else if(deep)
             {
-                FetchNodes(node.Outputs, outputs);
+                FetchNodes(node.Outputs, outputs, deep);
             }
         }
     }
@@ -121,14 +128,14 @@ public class Node
         => this.UnionWith(runes as IEnumerable<int>);
     public Node UnionWith(IEnumerable<int> runes)
     {
-        foreach(var i in runes)
+        foreach (var i in runes)
         {
             this.charSet?.Set(i, true);
         }
         return this;
     }
     protected bool TryHitCore(int c)
-        => this.charSet!=null && c >= 0 && c < this.charSet.Count && this.charSet.Get(c);
+        => this.charSet != null && c >= 0 && c < this.charSet.Count && this.charSet.Get(c);
 
     protected bool TryHitCoreWithInverted(int c)
     {
@@ -136,17 +143,17 @@ public class Node
         return this.Inverted ? (!hit) : hit;
     }
 
-    public bool? TryHit(int c) 
+    public bool? TryHit(int c)
         => this.CharSet == null
         ? null
         : this.TryHitCoreWithInverted(c);
 
-    public static string FormatNodes(IEnumerable<Node> nodes) 
+    public static string FormatNodes(IEnumerable<Node> nodes)
         => string.Join(',', nodes.Select(n => n.id).ToArray());
     public static string FormatCharset(BitArray chars)
     {
         var builder = new StringBuilder();
-        for(int i = 0;i<chars.Count;i++)
+        for (int i = 0; i < chars.Count; i++)
         {
             if (chars[i])
             {
@@ -161,6 +168,6 @@ public class Node
         }
         return builder.ToString();
     }
-    public override string ToString() 
-        => $"[{this.Id}({(this.Inverted?'T':'F')}){(this.charSet !=null? ":"+FormatCharset(this.charSet):"")}]";
+    public override string ToString()
+        => $"[{this.Id}({(this.Inverted ? 'T' : 'F')}){(this.charSet != null ? ":" + FormatCharset(this.charSet) : "")}]";
 }

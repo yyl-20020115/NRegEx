@@ -111,19 +111,20 @@ public class Regex
     //public static bool IsBacktracingFriendly(string regex)
     //    => !string.IsNullOrEmpty(regex)
     //    && Graph.IsBacktracingFriendly(new Regex(regex).Graph);
-
+    public readonly RegExNode Node;
     public readonly Graph Graph;
+    public readonly Options Options;
     public readonly string Pattern;
     public readonly string Name;
-    public Regex(string pattern, string? name = null)
+    public Regex(string pattern, string? name = null, Options options = Options.None)
     {
         this.Pattern = pattern;
         this.Name = name ?? this.Pattern;
-        this.Graph = this.Build();
+        this.Options = options;
+        this.Node = RegExDomParser.Parse(this.Name, this.Pattern, this.Options);
+        this.Graph = RegExGraphBuilder.Build(this.Node,0,
+            (this.Options & Options.FOLD_CASE) == Options.FOLD_CASE);
     }
-
-    protected virtual Graph Build()
-        => RegExDomParser.Build(this.Name,this.Pattern);
 
     public bool IsCompletelyMatch(string input, int start = 0, int length = -1)
     {
@@ -145,16 +146,14 @@ public class Regex
             foreach (var node in copies)
             {
                 var d = node.TryHit(c);
-                if (d == null)
+                if (!d.HasValue)
                 {
-                    node.FetchNodes(nodes);
-                    continue;
+                    node.FetchNodes(nodes, true);
                 }
                 else if (d.Value)
                 {
                     hit = true;
-                    //needs all hits
-                    nodes.UnionWith(node.Outputs);
+                    node.FetchNodes(nodes, false);
                 }
             }
             i += hit ? 1 : 0;
