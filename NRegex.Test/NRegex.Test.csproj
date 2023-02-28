@@ -8,6 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="bin\**" />
+    <EmbeddedResource Remove="bin\**" />
+    <None Remove="bin\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="ApiTestUtils.cs" />
     <Compile Remove="CharClassTest.cs" />
     <Compile Remove="CharUtils.cs" />
@@ -28,10 +34,6 @@
     <Compile Remove="RegexpHashcodeEqualsTest.cs" />
     <Compile Remove="SimplifyTest.cs" />
     <Compile Remove="StrConv.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="bin\Debug\net6.0\graph.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -64,7 +66,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="bin\Debug\net6.0\graph.dot" />
+    <Folder Include="Graphs\" />
   </ItemGroup>
 
 </Project>

@@ -7,8 +7,13 @@ using System.IO;
 namespace NRegex.Test;
 
 [TestClass]
-public class UnitTest1
+public class BasicUnitTests
 {
+    static BasicUnitTests()
+    {
+        Environment.CurrentDirectory =
+            Path.Combine(Environment.CurrentDirectory, "..\\..\\..\\Graphs\\");
+    }
     public static string GetFullPath(string filePath)
     {
         var text = Environment.GetEnvironmentVariable("PATH");
@@ -41,8 +46,12 @@ public class UnitTest1
         }
         return -1;
     }
-    public static int ExportAsDot(Graph graph, string png = "graph.png", string dot = "graph.dot")
+    public static int ExportAsDot(Graph graph, string? png = null, string? dot = null)
     {
+        var fnn = new StackTrace()?.GetFrame(1)?.GetMethod()?.Name;
+        fnn ??= "graph";
+        png ??= fnn + ".png";
+        dot ??= fnn + ".dot";
         dot = Path.Combine(Environment.CurrentDirectory, dot);
         png = Path.Combine(Environment.CurrentDirectory, png);
         File.WriteAllText(dot, RegExGraphBuilder.ExportAsDot(graph).ToString());
