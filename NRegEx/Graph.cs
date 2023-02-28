@@ -151,7 +151,7 @@ public record class Graph
     }
     public Graph ZeroPlus(Graph g)
     {
-        this.Edges.Add(new(g.Head, g.Tail)); //direct pass
+        this.Edges.Add(new(this.Head, this.Tail)); //direct pass
         this.Edges.Add(new(g.Tail, g.Head)); //back link
         this.Description = $"({g.Description})*";
         return this.EmbedOne(g);
@@ -164,7 +164,7 @@ public record class Graph
     }
     public Graph ZeroOne(Graph g)
     {
-        this.Edges.Add(new(g.Head, g.Tail)); //direct pass
+        this.Edges.Add(new(this.Head, this.Tail)); //direct pass
         this.Description = $"({g.Description})?";
         return this.EmbedOne(g);
     }
