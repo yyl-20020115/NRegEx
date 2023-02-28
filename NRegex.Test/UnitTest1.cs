@@ -105,6 +105,16 @@ public class UnitTest1
     [TestMethod]
     public void TestMethod4()
     {
+        var regexString0 = "a?";
+        var regex0 = new Regex(regexString0);
+        ExportAsDot(regex0.Graph);
+        Assert.IsTrue(regex0.IsMatch(""));
+        Assert.IsTrue(regex0.IsMatch("a"));
+        Assert.IsFalse(regex0.IsMatch("aa"));
+    }
+    [TestMethod]
+    public void TestMethod5()
+    {
         var regexString0 = "(a|b)+";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0.Graph);
@@ -113,7 +123,18 @@ public class UnitTest1
         Assert.IsTrue(regex0.IsMatch("aa"));
         Assert.IsTrue(regex0.IsMatch("bbb"));
     }
-
+    [TestMethod]
+    public void TestMethod6()
+    {
+        var regexString0 = "(a|b)*";
+        var regex0 = new Regex(regexString0);
+        ExportAsDot(regex0.Graph);
+        Assert.IsTrue(regex0.IsMatch(""));
+        Assert.IsTrue(regex0.IsMatch("a"));
+        Assert.IsTrue(regex0.IsMatch("b"));
+        Assert.IsTrue(regex0.IsMatch("aa"));
+        Assert.IsTrue(regex0.IsMatch("bbb"));
+    }
     [TestMethod]
     public void TestMethod8()
     {
