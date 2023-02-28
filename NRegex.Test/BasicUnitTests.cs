@@ -1,8 +1,8 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NRegEx;
 using System;
-using System.Diagnostics;
 using System.IO;
+using System.Diagnostics;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace NRegex.Test;
 
@@ -14,7 +14,7 @@ public class BasicUnitTests
         Environment.CurrentDirectory =
             Path.Combine(Environment.CurrentDirectory, "..\\..\\..\\Graphs\\");
     }
-    public static string GetFullPath(string filePath)
+    public static string GetApplicationFullPath(string filePath)
     {
         var text = Environment.GetEnvironmentVariable("PATH");
         if (!string.IsNullOrEmpty(text))
@@ -37,7 +37,7 @@ public class BasicUnitTests
     {
         var p = new Process();
 
-        p.StartInfo.FileName = GetFullPath(filePath);
+        p.StartInfo.FileName = GetApplicationFullPath(filePath);
         p.StartInfo.Arguments = argument;
         if (p.Start())
         {
@@ -46,7 +46,13 @@ public class BasicUnitTests
         }
         return -1;
     }
-    public static int ExportAsDot(Graph graph, string? png = null, string? dot = null)
+
+    public static int ExportAsDot(Regex regex, string? png = null, string? dot = null)
+        => ExportAsDot(regex.Graph, png, dot);
+
+    public static int ExportAsDot(Graph graph, string? png = null, string? dot = null) 
+        => ExportAsDot(RegExGraphBuilder.ExportAsDot(graph).ToString(), png, dot);
+    public static int ExportAsDot(string content, string? png = null, string? dot = null)
     {
         var fnn = new StackTrace()?.GetFrame(1)?.GetMethod()?.Name;
         fnn ??= "graph";
@@ -54,7 +60,7 @@ public class BasicUnitTests
         dot ??= fnn + ".dot";
         dot = Path.Combine(Environment.CurrentDirectory, dot);
         png = Path.Combine(Environment.CurrentDirectory, png);
-        File.WriteAllText(dot, RegExGraphBuilder.ExportAsDot(graph).ToString());
+        File.WriteAllText(dot, content);
         return RunProcess("dot.exe", $"-Grankdir=LR -T png {dot} -o {png}");
     }
 
@@ -69,7 +75,7 @@ public class BasicUnitTests
     {
         var regexString0 = "abcd";
         var regex0 = new Regex(regexString0);
-        ExportAsDot(regex0.Graph);
+        ExportAsDot(regex0);
         //dot -T png  graph.dot -o graph.png
         Assert.IsFalse(regex0.IsMatch("bcda"));
         Assert.IsTrue(regex0.IsMatch("abcd"));
@@ -80,7 +86,7 @@ public class BasicUnitTests
     {
         var regexString0 = "a|ab|c";
         var regex0 = new Regex(regexString0);
-        ExportAsDot(regex0.Graph);
+        ExportAsDot(regex0);
         Assert.IsTrue(regex0.IsMatch("a"));
         Assert.IsTrue(regex0.IsMatch("ab"));
         Assert.IsTrue(regex0.IsMatch("c"));
@@ -90,7 +96,7 @@ public class BasicUnitTests
     {
         var regexString0 = "a*";
         var regex0 = new Regex(regexString0);
-        ExportAsDot(regex0.Graph);
+        ExportAsDot(regex0);
         Assert.IsTrue(regex0.IsMatch(""));
         Assert.IsTrue(regex0.IsMatch("a"));
         Assert.IsTrue(regex0.IsMatch("aa"));
@@ -102,7 +108,7 @@ public class BasicUnitTests
     {
         var regexString0 = "a+";
         var regex0 = new Regex(regexString0);
-        ExportAsDot(regex0.Graph);
+        ExportAsDot(regex0);
         Assert.IsFalse(regex0.IsMatch(""));
         Assert.IsTrue(regex0.IsMatch("a"));
         Assert.IsTrue(regex0.IsMatch("aa"));
@@ -114,7 +120,7 @@ public class BasicUnitTests
     {
         var regexString0 = "a?";
         var regex0 = new Regex(regexString0);
-        ExportAsDot(regex0.Graph);
+        ExportAsDot(regex0);
         Assert.IsTrue(regex0.IsMatch(""));
         Assert.IsTrue(regex0.IsMatch("a"));
         Assert.IsFalse(regex0.IsMatch("aa"));
@@ -124,7 +130,7 @@ public class BasicUnitTests
     {
         var regexString0 = "(a|b)+";
         var regex0 = new Regex(regexString0);
-        ExportAsDot(regex0.Graph);
+        ExportAsDot(regex0);
         Assert.IsFalse(regex0.IsMatch(""));
         Assert.IsTrue(regex0.IsMatch("b"));
         Assert.IsTrue(regex0.IsMatch("aa"));
@@ -135,7 +141,7 @@ public class BasicUnitTests
     {
         var regexString0 = "(a|b)*";
         var regex0 = new Regex(regexString0);
-        ExportAsDot(regex0.Graph);
+        ExportAsDot(regex0);
         Assert.IsTrue(regex0.IsMatch(""));
         Assert.IsTrue(regex0.IsMatch("a"));
         Assert.IsTrue(regex0.IsMatch("b"));
@@ -145,31 +151,31 @@ public class BasicUnitTests
     [TestMethod]
     public void TestMethod7()
     {
-        var regexString5 = "1(0|1)*101";
-        var regex5 = new Regex(regexString5);
-        ExportAsDot(regex5.Graph);
-        Assert.IsFalse(regex5.IsMatch(""));
-        Assert.IsTrue(regex5.IsMatch("1101"));
-        Assert.IsTrue(regex5.IsMatch("11101"));
-        Assert.IsTrue(regex5.IsMatch("1111101"));
-        Assert.IsTrue(regex5.IsMatch("1000000101"));
+        var regexString0 = "1(0|1)*101";
+        var regex0 = new Regex(regexString0);
+        ExportAsDot(regex0);
+        Assert.IsFalse(regex0.IsMatch(""));
+        Assert.IsTrue(regex0.IsMatch("1101"));
+        Assert.IsTrue(regex0.IsMatch("11101"));
+        Assert.IsTrue(regex0.IsMatch("1111101"));
+        Assert.IsTrue(regex0.IsMatch("1000000101"));
     }
     [TestMethod]
     public void TestMethod8()
     {
-        var regexString6 = "0*10*10*10*";
-        var regex6 = new Regex(regexString6);
-        ExportAsDot(regex6.Graph);
-        Assert.IsFalse(regex6.IsMatch(""));
-        Assert.IsTrue(regex6.IsMatch("00010010001000"));
+        var regexString0 = "0*10*10*10*";
+        var regex0 = new Regex(regexString0);
+        ExportAsDot(regex0);
+        Assert.IsFalse(regex0.IsMatch(""));
+        Assert.IsTrue(regex0.IsMatch("00010010001000"));
     }
     [TestMethod]
     public void TestMethod9()
     {
-        var regexString7 = "1(1010*|1(010)*1)*0";
-        var regex7 = new Regex(regexString7);
-        ExportAsDot(regex7.Graph);
-        Assert.IsFalse(regex7.IsMatch(""));
-        Assert.IsTrue(regex7.IsMatch("110100101000"));
+        var regexString0 = "1(1010*|1(010)*1)*0";
+        var regex0 = new Regex(regexString0);
+        ExportAsDot(regex0);
+        Assert.IsFalse(regex0.IsMatch(""));
+        Assert.IsTrue(regex0.IsMatch("110100101000"));
     }
 }
