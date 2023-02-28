@@ -1,97 +1,6 @@
 ﻿using System.Text;
 
 namespace NRegEx;
-
-// Parser flags.
-[Flags]
-public enum Options : uint
-{
-    None = 0,
-    // Fold case during matching (case-insensitive).
-    FOLD_CASE = 0x01,
-    // Treat pattern as a literal string instead of a regexp.
-    LITERAL = 0x02,
-    // Allow character classes like [^a-z] and [[:space:]] to match newline.
-    CLASS_NL = 0x04,
-    // Allow '.' to match newline.
-    DOT_NL = 0x08,
-    // Treat ^ and $ as only matching at beginning and end of text, not
-    // around embedded newlines.  (Perl's default).
-    ONE_LINE = 0x10,
-    // Make repetition operators default to non-greedy.
-    NON_GREEDY = 0x20,
-    // allow Perl extensions:
-    //   non-capturing parens - (?: )
-    //   non-greedy operators - *? +? ?? {}?
-    //   flag edits - (?i) (?-i) (?i: )
-    //     i - FoldCase
-    //     m - !OneLine
-    //     s - DotNL
-    //     U - NonGreedy
-    //   line ends: \A \z
-    //   \Q and \E to disable/enable metacharacters
-    //   (?P<name>expr) for named captures
-    // \C (any byte) is not supported.
-    PERL_X = 0x40,
-    // Allow \p{Han}, \P{Han} for Unicode group and negation.
-    UNICODE_GROUPS = 0x80,
-    // Regexp END_TEXT was $, not \z.  Internal use only.
-    WAS_DOLLAR = 0x100,
-    MATCH_NL = CLASS_NL | DOT_NL,
-    // As close to Perl as possible.
-    PERL = CLASS_NL | ONE_LINE | PERL_X | UNICODE_GROUPS,
-    // POSIX syntax.
-    POSIX = 0,
-}
-
-[Flags]
-public enum TokenTypes : int
-{
-    EOF = -1,
-    Literal = 0,
-    CharClass = 1,
-    FoldCase = 2, //NOT USED
-    AnyCharExcludingNewLine = 3,
-    AnyCharIncludingNewLine = 4,
-    BeginLine = 5,
-    EndLine = 6,
-    BeginText = 7,
-    EndText = 8,
-    WordBoundary = 9,
-    NotWordBoundary = 10,
-    Capture = 11,       //NOT USED
-    ZeroPlus = 12,      //*
-    OnePlus = 13,       //+
-    ZeroOne = 14,       //?
-    Repeats = 15,
-    Concate = 16,       //& = Sequence
-    Sequence = 17,      //.&.&.&...
-    Alternate = 18,     // |
-    Union = 19,         //..|..|.. = Alternate
-    OpenParenthesis = 20,     //(
-    CloseParenthesis = 21,     //)
-}
-public enum TokenOptions : uint
-{
-    Normal = 0,
-    Lazy = 1,
-    Possessive = 2,
-}
-public record class RegExNode(
-    TokenTypes Type = TokenTypes.EOF,
-    string Value = "",
-    string Name = "",
-    int? Min = null,
-    int? Max = null,
-    int? CaptureIndex = null,
-    bool? Negate = null,
-    int[]? Runes = null,
-    Options Options = Options.None,
-    TokenOptions TokenOptions = TokenOptions.Normal,
-    bool Inverted = false)
-{
-    public List<RegExNode> Children = new();
-}
 public class RegExDomParser
 {
     // Unexpected error
@@ -143,13 +52,14 @@ public class RegExDomParser
         int c;
         while (-1 != (c = this.Reader.Peek()))
         {
+            int Position = this.Reader.Position;
             switch (c)
             {
                 default:
-                    this.Push(new(TokenTypes.Literal, this.Reader.Take()));
+                    this.Push(new(TokenTypes.Literal, this.Reader.Take(),Position:Position));
                     continue;
                 case RegExTextReader.EOF:
-                    this.Push(new());
+                    this.Push(new(TokenTypes.EOF, "\0", Position:Position));
                     continue;
                 case '\\':
                     this.ParseBackslash(Reader);

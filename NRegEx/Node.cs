@@ -39,6 +39,7 @@ public class Node
     public bool IsLink => this.CharSet == null || this.CharSet.Count == 0;
     protected bool inverted;
     protected string name = "";
+    protected Graph? parent = null;
     public bool IsBridge
         => this.IsLink
         && this.Inputs.Count == 1
@@ -51,13 +52,16 @@ public class Node
     public BitArray? CharSet => charSet;
     public int[]? CharsArray => charsArray;
 
-    public Node Copy() => new()
+    public Graph? Parent { get => parent; set => parent = value; }
+
+    public Node Copy(Graph? parent = null) => new()
     {
         name = name,
         inverted = inverted,
         charsArray = charsArray,
         charSet = charSet,
-        id = id
+        id = id,
+        parent = parent ?? this.parent
     };
 
     public int SetId(int id) => this.id = id;
@@ -117,7 +121,7 @@ public class Node
             {
                 outputs.Add(node);
             }
-            else if(deep)
+            else if (deep)
             {
                 FetchNodes(node.Outputs, outputs, deep);
             }

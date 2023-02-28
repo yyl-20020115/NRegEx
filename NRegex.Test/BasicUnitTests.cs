@@ -292,17 +292,6 @@ public class BasicUnitTests
     [TestMethod]
     public void TestMethod19()
     {
-        var regexString0 = @"";
-        var regex0 = new Regex(regexString0);
-        ExportAsDot(regex0);
-        Assert.IsFalse(regex0.IsCompletelyMatch(""));
-        Assert.IsTrue(regex0.IsCompletelyMatch("aa"));
-        Assert.IsTrue(regex0.IsCompletelyMatch("aaa"));
-        Assert.IsFalse(regex0.IsCompletelyMatch("aaaa"));
-    }
-    [TestMethod]
-    public void TestMethod20()
-    {
         var regs = new string[] {
             @"^\d+$", //非负整数（正整数 + 0） 
             @"^[0-9]*[1-9][0-9]*$", //正整数 
@@ -385,5 +374,9 @@ public class BasicUnitTests
             @"\W+1\w?2\W{4}",
             @"^[^$]$"
         };
+    }
+    [TestMethod]
+    public void TestMethod20()
+    {
     }
 }

@@ -3,7 +3,7 @@ public class Graph
 {
     protected static int Gid = 0;
 
-    protected int id = 0;
+    protected int id = Gid++;
     public int Id => id;
     public int SetId(int id) => this.id = id;
     public string? Description { get; protected set; }
@@ -13,39 +13,42 @@ public class Graph
     public readonly HashSet<Edge> Edges = new();
     public Node Head;
     public Node Tail;
+    public RegExNode? SourceNode = null;
     public Graph(string name = "",params char[] cs )
     {
         this.Name = name;
-        this.id = ++Gid;
         if (cs.Length>0)
         {
-            this.Nodes.Add(this.Head = this.Tail = new Node(cs));
+            this.Nodes.Add(this.Head 
+                = this.Tail 
+                = new (cs) { Parent = this });
             this.Description = this.Head.ToString();
         }
         else
         {
-            this.Nodes.Add(this.Head = new(name));
-            this.Nodes.Add(this.Tail = new(name));
+            this.Nodes.Add(this.Head = new(name) { Parent = this });
+            this.Nodes.Add(this.Tail = new(name) { Parent = this });
         }
     }
     public Graph Copy()
     {
-        var copy = new Graph(this.Name) { id = id };
+        var graph = new Graph(this.Name) 
+            { SourceNode = SourceNode };
         foreach (var node in this.Nodes)
         {
-            copy.Nodes.Add(node.Copy());
+            graph.Nodes.Add(node.Copy(graph));
         }
-        copy.Head = copy.Nodes.First(n => n.Id == this.Head.Id);
-        copy.Tail = copy.Nodes.First(n => n.Id == this.Tail.Id);
+        graph.Head = graph.Nodes.First(n => n.Id == this.Head.Id);
+        graph.Tail = graph.Nodes.First(n => n.Id == this.Tail.Id);
         foreach(var edge in this.Edges)
         {
-            copy.Edges.Add(new (
-                copy.Nodes.First(n => n.Id == edge.Head.Id),
-                copy.Nodes.First(n => n.Id == edge.Tail.Id)
+            graph.Edges.Add(new (
+                graph.Nodes.First(n => n.Id == edge.Head.Id),
+                graph.Nodes.First(n => n.Id == edge.Tail.Id)
                 ));
         }
 
-        return copy;
+        return graph;
     }
     public Graph TryComplete()
     {
@@ -216,7 +219,7 @@ public class Graph
         {
             var g = graph.Copy();
             all.Add(g);
-            if (i > min) others.Add(g);
+            if (i >= min) others.Add(g);
         }
 
         this.Concate(all, plus);

@@ -105,6 +105,7 @@ public static class RegExGraphBuilder
             }
         }
 
+        graph.Nodes.RemoveWhere(n => !graph.Edges.Any(e => e.Head == n || e.Tail == n));
 
         return graph;
     }
@@ -145,12 +146,12 @@ public static class RegExGraphBuilder
         => Recompose(BuildInternal(node, caseInsensitive),id);
     private static Graph BuildInternal(RegExNode node, bool caseInsensitive = false)
     {
-        var graph = new Graph(node.Name);
+        var graph = new Graph(node.Name) { SourceNode = node };
         switch (node.Type)
         {
             case TokenTypes.EOF:
                 {
-                    graph.ComposeLiteral(new Node());
+                    graph.ComposeLiteral(new Node() { Parent = graph});
                 }
                 break;
             case TokenTypes.OnePlus:
@@ -174,24 +175,29 @@ public static class RegExGraphBuilder
             case TokenTypes.Literal:
                 {
                     graph.ComposeLiteral(node.Value.Select(c => 
-                        caseInsensitive? new Node(char.ToLower(c),char.ToUpper(c)):new Node(c)));
+                        caseInsensitive 
+                        ? new Node(char.ToLower(c),char.ToUpper(c)) { Parent = graph } 
+                        : new Node(c) { Parent = graph }));
                 }
                 break;
             case TokenTypes.CharClass:
                 {
-                    graph.ComposeLiteral(new Node(node.Inverted, node.Runes ?? Array.Empty<int>()));
+                    graph.ComposeLiteral(new Node(node.Inverted, 
+                        node.Runes ?? Array.Empty<int>()) { Parent = graph });
                 }
                 break;
             case TokenTypes.AnyCharIncludingNewLine:
                 {
                     //inverted empty means everything
-                    graph.ComposeLiteral(new Node(true, Array.Empty<int>()));
+                    graph.ComposeLiteral(new Node(true, 
+                        Array.Empty<int>()) { Parent = graph });
                 }
                 break;
             case TokenTypes.AnyCharExcludingNewLine:
                 {
                     //\r\n excluded
-                    graph.UnionWith(new Node(true, Node.ReturnChar, Node.NewLineChar));
+                    graph.UnionWith(new Node(true,
+                        Node.ReturnChar, Node.NewLineChar) { Parent = graph });
                 }
                 break;
             case TokenTypes.Sequence:
@@ -213,32 +219,32 @@ public static class RegExGraphBuilder
                 break;
             case TokenTypes.BeginLine:
                 {
-                    graph.Head.UnionWith(RegExTextReader.BEGIN_LINE);
+                    graph.UnionWith(new Node(false, RegExTextReader.BEGIN_LINE) { Parent = graph });
                 }
                 break;
             case TokenTypes.EndLine:
                 {
-                    graph.Head.UnionWith(RegExTextReader.END_LINE);
+                    graph.UnionWith(new Node(false, RegExTextReader.END_LINE) { Parent = graph });
                 }
                 break;
             case TokenTypes.BeginText:
                 {
-                    graph.Head.UnionWith(RegExTextReader.BEGIN_TEXT);
+                    graph.UnionWith(new Node(false, RegExTextReader.BEGIN_TEXT) { Parent = graph });
                 }
                 break;
             case TokenTypes.EndText:
                 {
-                    graph.Head.UnionWith(RegExTextReader.END_TEXT);
+                    graph.UnionWith(new Node(false, RegExTextReader.END_TEXT) { Parent = graph });
                 }
                 break;
             case TokenTypes.WordBoundary:
                 {
-                    graph.Head.UnionWith(RegExTextReader.WORD_BOUNDARY);
+                    graph.UnionWith(new Node(false, RegExTextReader.WORD_BOUNDARY) { Parent = graph });
                 }
                 break;
             case TokenTypes.NotWordBoundary:
                 {
-                    graph.UnionWith(new Node(true,RegExTextReader.WORD_BOUNDARY));
+                    graph.UnionWith(new Node(true,RegExTextReader.WORD_BOUNDARY) { Parent = graph });
                 }
                 break;
         }
