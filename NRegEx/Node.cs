@@ -14,10 +14,10 @@ public record class Node
                     char.MaxValue - char.MinValue + 1).ToHashSet();
     public readonly static HashSet<int> WordChars = Enumerable.Range(
                     char.MinValue,
-                    char.MaxValue - char.MinValue + 1).Where(i => char.IsLetter((char)i)).ToHashSet();
+                    char.MaxValue - char.MinValue + 1).Where(i => !char.IsSurrogate((char)i) && char.IsLetter((char)i)).ToHashSet();
     public readonly static HashSet<int> NonWordChars = Enumerable.Range(
                     char.MinValue,
-                    char.MaxValue - char.MinValue + 1).Where(i => !char.IsLetter((char)i)).ToHashSet();
+                    char.MaxValue - char.MinValue + 1).Where(i => !char.IsSurrogate((char)i) && !char.IsLetter((char)i)).ToHashSet();
     //public static bool IsRuneSurrogate(int i)
     //=> i >= char.MinValue && i <= char.MaxValue && char.IsSurrogate((char)i);
     //public static bool IsRuneLetter(int i)
@@ -36,7 +36,7 @@ public record class Node
 
     protected static int Nid = 0;
     protected int id;
-    public bool IsVirtual => this.CharSet==null || this.CharSet.Count == 0;
+    public bool IsVirtual => this.CharSet == null || this.CharSet.Count == 0;
 
     public readonly bool Inverted;
     public readonly string Name;
@@ -63,22 +63,18 @@ public record class Node
         this.id = ++Nid;
         if (chars!=null && chars.Length > 0)
         {
+            IEnumerable<int> source;
             if(this.Inverted = inverted)
             {
                 this.CharSet = new BitArray(AllChars.Count);
-                foreach (var c in AllChars.Except(chars))
-                {
-                    this.CharSet[c] = true;
-                }
+                source = AllChars.Except(chars);
             }
             else
             {
                 this.CharSet = new BitArray(chars.Max(m => m) + 1);
-                foreach(var c in chars)
-                {
-                    this.CharSet[c] = true; 
-                }
+                source = chars;
             }
+            foreach (var c in source) this.CharSet[c] = true;
 
             this.Name = "'" + string.Join(",", chars.Select(c => new Rune(c >= 0 ? c : ' ').ToString()).ToArray()) + "'";
         }
