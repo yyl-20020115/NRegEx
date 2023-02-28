@@ -7,4 +7,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="BitSet.cs" />
+    <Compile Remove="ResizableBitSet.cs" />
+  </ItemGroup>
+
 </Project>

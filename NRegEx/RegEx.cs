@@ -186,9 +186,8 @@ public class Regex
             {
                 foreach (var n in nodes)
                 {
-                    if (guard[n.Id]) return false;
+                    if (guard[n.Id]) return false; //found loop
                     guard[n.Id] = true;
-                    //if (!guard.Add(n.Id)) return false; //found loop
                 }
             }
         }
