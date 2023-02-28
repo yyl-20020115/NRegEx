@@ -55,11 +55,9 @@ public record class Graph
         }
         return this;
     }
-    public Graph Concate(params Graph[] graphs)
-        => Concate(graphs as IEnumerable<Graph>);
-    public Graph Concate(IEnumerable<Graph> graphs)
+    public Graph Concate(IEnumerable<Graph> graphs, bool plus = false)
         => this.Concate(graphs.ToList());
-    public Graph Concate(List<Graph> graphs)
+    public Graph Concate(List<Graph> graphs, bool plus = false)
     {
         if(graphs.Count == 0)
         {
@@ -73,7 +71,6 @@ public record class Graph
             this.Nodes.UnionWith(graphs[0].Nodes);
             this.Head = graphs[0].Head;
             this.Tail = graphs[0].Tail;
-            return this;
         }
         else if (graphs.Count == 2)
         {
@@ -111,6 +108,12 @@ public record class Graph
                 this.Edges.Add(new (current.Tail, after.Head));
             }
         }
+        if (plus)
+        {
+            //back to self
+            this.Edges.Add(new(graphs[^1].Tail, graphs[^1].Head));
+        }
+
         return this;
     }
 
@@ -182,22 +185,19 @@ public record class Graph
 
     public Graph ComposeRepeats(Graph graph, int min, int max)
     {
-        min = min <= 0 ? 0 : min;
-        max = max <= 0 ? 0 : max;
+        var plus = max < 0;
 
-        var fols = new List<Graph>();
+        min = min <= 0 ? 0 : min;
+        max = max <= 0 ? min : max;
+
+        var followings = new List<Graph>();
         for (int i = 0; i < max; i++)
         {
-            var ng = graph with { };
-            fols.Add(ng);
-            if (i >= min && i < max - 1)
-            {
-                ng.Tail.Outputs.Add(this.Tail);
-                this.Tail.Inputs.Add(ng.Tail);
-            }
+            var follower = graph with { };
+            followings.Add(follower);
         }
 
-        this.Concate(fols);
+        this.Concate(followings, plus);
 
         return this;
     }

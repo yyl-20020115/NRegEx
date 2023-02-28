@@ -187,7 +187,7 @@ public class Regex
                     var d = node.TryHit(c);
                     if (d == null)
                     {
-                        this.FetchNodes(node.Outputs, nodes);
+                        node.FetchNodes(nodes);
                         continue;
                     }
                     else if (d.Value)

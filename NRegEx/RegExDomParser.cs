@@ -112,6 +112,7 @@ public class RegExDomParser
     public readonly string Name;
     public readonly RegExPatternReader Reader;
     public ParserOptions Options;
+    protected readonly Dictionary<string, int> namedGroups = new();
     public string Pattern => this.Reader.Pattern;
     protected readonly Stack<RegExNode> NodeStack = new();
     protected int CaptureIndex = 0;
@@ -414,14 +415,15 @@ public class RegExDomParser
                 throw new PatternSyntaxException(
                     ERR_INVALID_NAMED_CAPTURE, s[..end]); // "(?P<name>"
             }
-            var re = new RegExNode(TokenTypes.OpenParenthesis, Value: name, CaptureIndex: ++this.CaptureIndex);
+            var node = new RegExNode(TokenTypes.OpenParenthesis, Value: name, CaptureIndex: ++this.CaptureIndex);
             // Like ordinary capture, but named.
-            //if (namedGroup.ContainsKey(name))
-            //{
-            //    throw new PatternSyntaxException(ERR_DUPLICATE_NAMED_CAPTURE, name);
-            //}
-            //namedGroups.Add(name, this.CaptureIndex);
-            //re.name = name;
+            if (namedGroups.ContainsKey(name))
+            {
+                throw new PatternSyntaxException(ERR_DUPLICATE_NAMED_CAPTURE, name);
+            }
+            namedGroups.Add(name, this.CaptureIndex);
+
+            this.Push(node);
             return;
         }
 
@@ -499,7 +501,8 @@ public class RegExDomParser
     private bool ParseUnicodeClass(RegExPatternReader Reader, CharClass cc)
     {
         int startPos = Reader.Position;
-        if ((Options & ParserOptions.UNICODE_GROUPS) == 0 || (!Reader.LookingAt("\\p") && !Reader.LookingAt("\\P")))
+        if ((Options & ParserOptions.UNICODE_GROUPS) == 0
+            || (!Reader.LookingAt("\\p") && !Reader.LookingAt("\\P")))
             return false;
         Reader.Skip(1); // '\\'
                         // Committed to parse or throw exception.
@@ -544,9 +547,8 @@ public class RegExDomParser
             name = name.Substring(1);
         }
 
-        var pair = UnicodeTable(name);
-        if (pair == null)
-            throw new PatternSyntaxException(ERR_INVALID_CHAR_RANGE, Reader.From(startPos));
+        var pair = UnicodeTable(name)
+            ?? throw new PatternSyntaxException(ERR_INVALID_CHAR_RANGE, Reader.From(startPos));
         var tab = pair.first;
         var fold = pair.second; // fold-equivalent table
 
@@ -679,8 +681,6 @@ public class RegExDomParser
         Reader.Skip(1); // ']'
 
         cc.CleanClass();
-        //if (sign < 0)
-        //    cc.NegateClass();
 
         Push(new RegExNode(TokenTypes.CharClass, Options: this.Options, Runes: cc.GetRunes(), Inverted: sign < 0));
     }
@@ -854,7 +854,7 @@ public class RegExDomParser
         int i = cls.IndexOf(":]");
         if (i < 0)
             return false;
-        var name = cls.Substring(0, i + 2 - 0); // "[:alnum:]"
+        var name = cls[..(i + 2)]; // "[:alnum:]"
         Reader.SkipString(name);
         if (!CharGroup.POSIX_GROUPS.TryGetValue(name, out var g))
             throw new PatternSyntaxException(ERR_INVALID_CHAR_RANGE, name);
@@ -872,13 +872,13 @@ public class RegExDomParser
             switch ((char)c)
             {
                 case 'A':
-                    this.Push(new RegExNode(TokenTypes.BeginText, Options: Options));
+                    this.Push(new (TokenTypes.BeginText, Options: Options));
                     goto outswitch;
                 case 'b':
-                    this.Push(new RegExNode(TokenTypes.WordBoundary, Options: Options));
+                    this.Push(new (TokenTypes.WordBoundary, Options: Options));
                     goto outswitch;
                 case 'B':
-                    this.Push(new RegExNode(TokenTypes.NotWordBoundary, Options: Options));
+                    this.Push(new (TokenTypes.NotWordBoundary, Options: Options));
                     goto outswitch;
                 case 'C':
                     //NOTICE:use any char instead
@@ -895,16 +895,18 @@ public class RegExDomParser
                             lit = lit[..i];
                         Reader.SkipString(lit);
                         Reader.SkipString("\\E");
+                        var cps = new List<int>();
                         for (int j = 0; j < lit.Length;)
                         {
                             int codepoint = char.ConvertToUtf32(lit, j);
-                            Push(new RegExNode(TokenTypes.Literal, Options: Options, Runes: new int[] { codepoint }));
+                            cps.Add(codepoint);
                             j += new Rune(codepoint).Utf16SequenceLength;
                         }
+                        Push(new(TokenTypes.Literal, Options: Options, Runes: cps.ToArray()));
                         goto outswitch;
                     }
                 case 'z':
-                    this.Push(new RegExNode(TokenTypes.EndText, Options: Options));
+                    this.Push(new (TokenTypes.EndText, Options: Options));
                     goto outswitch;
                 default:
                     Reader.RewindTo(savedPos);
@@ -917,8 +919,7 @@ public class RegExDomParser
                 var cc2 = new CharClass();
                 if (ParseUnicodeClass(Reader, cc2))
                 {
-                    var re = new RegExNode(TokenTypes.CharClass, Options: Options, Runes: cc2.ToArray());
-                    Push(re);
+                    Push(new (TokenTypes.CharClass, Options: Options, Runes: cc2.GetRunes()));
                     goto outswitch;
                 }
             }
@@ -927,8 +928,7 @@ public class RegExDomParser
             var cc = new CharClass();
             if (ParsePerlClassEscape(Reader, cc))
             {
-                var re = new RegExNode(TokenTypes.CharClass, Options: Options, Runes: cc.ToArray());
-                Push(re);
+                Push(new (TokenTypes.CharClass, Options: Options, Runes: cc.GetRunes()));
                 goto outswitch;
             }
 
@@ -936,7 +936,7 @@ public class RegExDomParser
             //Reuse(re);
 
             // Ordinary single-character escape.
-            this.Push(new RegExNode(TokenTypes.Literal, Runes: new int[] { ParseEscape(Reader) }));
+            this.Push(new (TokenTypes.Literal, Runes: new int[] { ParseEscape(Reader) }));
         }
     outswitch:
         ;

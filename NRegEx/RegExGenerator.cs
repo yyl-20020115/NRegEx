@@ -43,7 +43,7 @@ public class RegExGenerator
         var heads = graph.Nodes.Where(n => n.Inputs.Count == 0);
         var nodes = heads.ToHashSet();
         var path = new List<Node> { graph.Head };
-        
+        //TODO:
         while (nodes.Count>0)
         {
             //random walk to tail
