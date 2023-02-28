@@ -37,18 +37,32 @@ public class Node
     protected static int Nid = 0;
     protected int id;
     public bool IsLink => this.CharSet == null || this.CharSet.Count == 0;
-    public readonly bool Inverted;
-    public readonly string Name ="";
+    protected bool inverted;
+    protected string name = "";
     public bool IsBridge 
         => this.IsLink 
         && this.Inputs.Count == 1 
         && this.Outputs.Count == 1;
 
     public int Id => id;
+    public bool Inverted { get => inverted; protected set => inverted = value; }
+    public string Name { get => name; protected set => name = value; }
+
+    public BitArray? CharSet => charSet;
+    public int[]? CharsArray => charsArray;
+
+    public Node Copy() => new ()
+    {
+        name = name,
+        inverted = inverted,
+        charsArray = charsArray,
+        charSet = charSet,
+        id = id
+    };
 
     public int SetId(int id) => this.id = id;
-    public readonly BitArray? CharSet = null;
-    public readonly int[]? CharsArray;
+    protected BitArray? charSet = null;
+    protected int[]? charsArray;
     public readonly HashSet<Node> Inputs = new ();
     public readonly HashSet<Node> Outputs = new ();
     public Node(string name = "") => Name = name;
@@ -67,9 +81,9 @@ public class Node
         if (chars!=null && chars.Length > 0)
         {
             this.Inverted = inverted;
-            this.CharsArray = chars;
-            this.CharSet = new BitArray(chars.Max(m => m) + 1);
-            foreach (var c in chars) this.CharSet[c] = true;
+            this.charsArray = chars;
+            this.charSet = new BitArray(chars.Max(m => m) + 1);
+            foreach (var c in chars) this.charSet[c] = true;
             var ts = chars.Select(c => new Rune(c >= 0 ? c : ' ').ToString());
             var tt = string.Join(",", ts.ToArray());
             var st = Utils.EscapeString(tt, true).PadRight(16)[..16].TrimEnd();
@@ -110,12 +124,12 @@ public class Node
     {
         foreach(var i in runes)
         {
-            this.CharSet?.Set(i, true);
+            this.charSet?.Set(i, true);
         }
         return this;
     }
     protected bool TryHitCore(int c)
-        => this.CharSet!=null && c >= 0 && c < this.CharSet.Count && this.CharSet.Get(c);
+        => this.charSet!=null && c >= 0 && c < this.charSet.Count && this.charSet.Get(c);
 
     protected bool TryHitCoreWithInverted(int c)
     {
@@ -149,5 +163,5 @@ public class Node
         return builder.ToString();
     }
     public override string ToString() 
-        => $"[{this.Id}({(this.Inverted?'T':'F')}){(this.CharSet!=null? ":"+FormatCharset(this.CharSet):"")}]";
+        => $"[{this.Id}({(this.Inverted?'T':'F')}){(this.charSet !=null? ":"+FormatCharset(this.charSet):"")}]";
 }

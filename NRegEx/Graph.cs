@@ -1,5 +1,5 @@
 ﻿namespace NRegEx;
-public record class Graph
+public class Graph
 {
     protected static int Gid = 0;
 
@@ -27,6 +27,25 @@ public record class Graph
             this.Nodes.Add(this.Head = new(name));
             this.Nodes.Add(this.Tail = new(name));
         }
+    }
+    public Graph Copy()
+    {
+        var copy = new Graph(this.Name) { id = id };
+        foreach (var node in this.Nodes)
+        {
+            copy.Nodes.Add(node.Copy());
+        }
+        copy.Head = copy.Nodes.First(n => n.Id == this.Head.Id);
+        copy.Tail = copy.Nodes.First(n => n.Id == this.Tail.Id);
+        foreach(var edge in this.Edges)
+        {
+            copy.Edges.Add(new (
+                copy.Nodes.First(n => n.Id == edge.Head.Id),
+                copy.Nodes.First(n => n.Id == edge.Tail.Id)
+                ));
+        }
+
+        return copy;
     }
     public Graph TryComplete()
     {
@@ -193,8 +212,7 @@ public record class Graph
         var followings = new List<Graph>();
         for (int i = 0; i < max; i++)
         {
-            var follower = graph with { };
-            followings.Add(follower);
+            followings.Add(graph.Copy());
         }
 
         this.Concate(followings, plus);
