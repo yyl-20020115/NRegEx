@@ -74,7 +74,7 @@ public class CharClass
         int w = 2; // write index
         for (int i = 2; i < length; i += 2)
         {
-            int lo = range[i];
+            int lo = range[i + 0];
             int hi = range[i + 1];
             if (lo <= range[w - 1] + 1)
             {
@@ -86,7 +86,7 @@ public class CharClass
                 continue;
             }
             // new disjoint range
-            range[w] = lo;
+            range[w + 0] = lo;
             range[w + 1] = hi;
             w += 2;
         }
@@ -288,10 +288,10 @@ public class CharClass
         int w = 0; // write index
         for (int i = 0; i < length; i += 2)
         {
-            int lo = range[i], hi = range[i + 1];
+            int lo = range[i + 0], hi = range[i + 1];
             if (nextLo <= lo - 1)
             {
-                range[w] = nextLo;
+                range[w + 0] = nextLo;
                 range[w + 1] = lo - 1;
                 w += 2;
             }
@@ -404,4 +404,17 @@ public class CharClass
 
     public override string ToString()
         => CharClassToString(range, length);
+
+    public int[] GetRunes()
+    {
+        var list = new List<int>();
+        for(int i = 0; i < this.length; i+=2)
+        {
+            int lo = this.range[i + 0];
+            int hi = this.range[i + 1];
+            list.AddRange(Enumerable.Range(lo, hi - lo + 1));
+        }
+
+        return list.ToArray();
+    }
 }

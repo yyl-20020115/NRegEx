@@ -1,7 +1,4 @@
-﻿using System.Collections;
-using System.Diagnostics;
-using System.Text;
-using System.Xml.Linq;
+﻿using System.Text;
 
 namespace NRegEx;
 
@@ -99,9 +96,9 @@ public class Regex
         => new Regex(pattern).Replace(input, evaluator, count, start);
 
     public static bool IsMatch(string input, string pattern, int start = 0, int length = -1)
-        => new Regex(pattern).IsMatch(input, start, length);
+        => new Regex(pattern).IsCompletelyMatch(input, start, length);
     public static Capture Match(string input, string pattern, int start = 0, int length = -1)
-        => new Regex(pattern).Match(input, start, length);
+        => new Regex(pattern).CompletelyMatch(input, start, length);
     public static List<Capture> Matches(string input, string pattern, int start = 0, int length = -1)
         => new Regex(pattern).Matches(input, start, length);
     /// <summary>
@@ -146,7 +143,7 @@ public class Regex
             }
         }
     }
-    public bool IsMatch(string input, int start = 0, int length = -1)
+    public bool IsCompletelyMatch(string input, int start = 0, int length = -1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
         if (start < 0 || start > input.Length) throw new ArgumentOutOfRangeException(nameof(start));
@@ -183,7 +180,7 @@ public class Regex
 
         return i == input.Length && RegExGraphBuilder.HasPassThrough(this.Graph,nodes.ToArray());
     }
-    public Capture Match(string input, int start = 0, int length = -1)
+    public Capture CompletelyMatch(string input, int start = 0, int length = -1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
         if (start<0 || start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
@@ -241,7 +238,7 @@ public class Regex
         var captures = new List<Capture>();
         while (true)
         {
-            var capture = this.Match(input, start, length);
+            var capture = this.CompletelyMatch(input, start, length);
             if (null == capture)
                 break;
             else

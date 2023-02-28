@@ -84,8 +84,8 @@ public class BasicUnitTests
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0);
         //dot -T png  graph.dot -o graph.png
-        Assert.IsFalse(regex0.IsMatch("bcda"));
-        Assert.IsTrue(regex0.IsMatch("abcd"));
+        Assert.IsFalse(regex0.IsCompletelyMatch("bcda"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("abcd"));
     }
 
     [TestMethod]
@@ -94,9 +94,9 @@ public class BasicUnitTests
         var regexString0 = "a|ab|c";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0);
-        Assert.IsTrue(regex0.IsMatch("a"));
-        Assert.IsTrue(regex0.IsMatch("ab"));
-        Assert.IsTrue(regex0.IsMatch("c"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("a"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("ab"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("c"));
     }
     [TestMethod]
     public void TestMethod02()
@@ -104,11 +104,11 @@ public class BasicUnitTests
         var regexString0 = "a*";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0);
-        Assert.IsTrue(regex0.IsMatch(""));
-        Assert.IsTrue(regex0.IsMatch("a"));
-        Assert.IsTrue(regex0.IsMatch("aa"));
-        Assert.IsTrue(regex0.IsMatch("aaa"));
-        Assert.IsFalse(regex0.IsMatch("b"));
+        Assert.IsTrue(regex0.IsCompletelyMatch(""));
+        Assert.IsTrue(regex0.IsCompletelyMatch("a"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("aa"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("aaa"));
+        Assert.IsFalse(regex0.IsCompletelyMatch("b"));
     }
     [TestMethod]
     public void TestMethod03()
@@ -116,11 +116,11 @@ public class BasicUnitTests
         var regexString0 = "a+";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0);
-        Assert.IsFalse(regex0.IsMatch(""));
-        Assert.IsTrue(regex0.IsMatch("a"));
-        Assert.IsTrue(regex0.IsMatch("aa"));
-        Assert.IsTrue(regex0.IsMatch("aaa"));
-        Assert.IsFalse(regex0.IsMatch("b"));
+        Assert.IsFalse(regex0.IsCompletelyMatch(""));
+        Assert.IsTrue(regex0.IsCompletelyMatch("a"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("aa"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("aaa"));
+        Assert.IsFalse(regex0.IsCompletelyMatch("b"));
     }
     [TestMethod]
     public void TestMethod04()
@@ -128,9 +128,9 @@ public class BasicUnitTests
         var regexString0 = "a?";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0);
-        Assert.IsTrue(regex0.IsMatch(""));
-        Assert.IsTrue(regex0.IsMatch("a"));
-        Assert.IsFalse(regex0.IsMatch("aa"));
+        Assert.IsTrue(regex0.IsCompletelyMatch(""));
+        Assert.IsTrue(regex0.IsCompletelyMatch("a"));
+        Assert.IsFalse(regex0.IsCompletelyMatch("aa"));
     }
     [TestMethod]
     public void TestMethod05()
@@ -138,10 +138,10 @@ public class BasicUnitTests
         var regexString0 = "(a|b)+";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0);
-        Assert.IsFalse(regex0.IsMatch(""));
-        Assert.IsTrue(regex0.IsMatch("b"));
-        Assert.IsTrue(regex0.IsMatch("aa"));
-        Assert.IsTrue(regex0.IsMatch("bbb"));
+        Assert.IsFalse(regex0.IsCompletelyMatch(""));
+        Assert.IsTrue(regex0.IsCompletelyMatch("b"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("aa"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("bbb"));
     }
     [TestMethod]
     public void TestMethod06()
@@ -149,11 +149,11 @@ public class BasicUnitTests
         var regexString0 = "(a|b)*";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0);
-        Assert.IsTrue(regex0.IsMatch(""));
-        Assert.IsTrue(regex0.IsMatch("a"));
-        Assert.IsTrue(regex0.IsMatch("b"));
-        Assert.IsTrue(regex0.IsMatch("aa"));
-        Assert.IsTrue(regex0.IsMatch("bbb"));
+        Assert.IsTrue(regex0.IsCompletelyMatch(""));
+        Assert.IsTrue(regex0.IsCompletelyMatch("a"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("b"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("aa"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("bbb"));
     }
     [TestMethod]
     public void TestMethod07()
@@ -161,11 +161,11 @@ public class BasicUnitTests
         var regexString0 = "1(0|1)*101";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0);
-        Assert.IsFalse(regex0.IsMatch(""));
-        Assert.IsTrue(regex0.IsMatch("1101"));
-        Assert.IsTrue(regex0.IsMatch("11101"));
-        Assert.IsTrue(regex0.IsMatch("1111101"));
-        Assert.IsTrue(regex0.IsMatch("1000000101"));
+        Assert.IsFalse(regex0.IsCompletelyMatch(""));
+        Assert.IsTrue(regex0.IsCompletelyMatch("1101"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("11101"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("1111101"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("1000000101"));
     }
     [TestMethod]
     public void TestMethod08()
@@ -173,8 +173,8 @@ public class BasicUnitTests
         var regexString0 = "0*10*10*10*";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0);
-        Assert.IsFalse(regex0.IsMatch(""));
-        Assert.IsTrue(regex0.IsMatch("00010010001000"));
+        Assert.IsFalse(regex0.IsCompletelyMatch(""));
+        Assert.IsTrue(regex0.IsCompletelyMatch("00010010001000"));
     }
     [TestMethod]
     public void TestMethod09()
@@ -182,8 +182,8 @@ public class BasicUnitTests
         var regexString0 = "1(1010*|1(010)*1)*0";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0);
-        Assert.IsFalse(regex0.IsMatch(""));
-        Assert.IsTrue(regex0.IsMatch("110100101000"));
+        Assert.IsFalse(regex0.IsCompletelyMatch(""));
+        Assert.IsTrue(regex0.IsCompletelyMatch("110100101000"));
     }
     [TestMethod]
     public void TestMethod10()
@@ -191,9 +191,9 @@ public class BasicUnitTests
         var regexString0 = ".";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0);
-        Assert.IsTrue(regex0.IsMatch("a"));
-        Assert.IsFalse(regex0.IsMatch("ab"));
-        Assert.IsFalse(regex0.IsMatch(""));
+        Assert.IsTrue(regex0.IsCompletelyMatch("a"));
+        Assert.IsFalse(regex0.IsCompletelyMatch("ab"));
+        Assert.IsFalse(regex0.IsCompletelyMatch(""));
     }
     [TestMethod]
     public void TestMethod11()
@@ -201,8 +201,8 @@ public class BasicUnitTests
         var regexString0 = ".*";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0);
-        Assert.IsTrue(regex0.IsMatch(""));
-        Assert.IsTrue(regex0.IsMatch("abcdef"));
+        Assert.IsTrue(regex0.IsCompletelyMatch(""));
+        Assert.IsTrue(regex0.IsCompletelyMatch("abcdef"));
 
     }
     [TestMethod]
@@ -211,8 +211,95 @@ public class BasicUnitTests
         var regexString0 = ".+";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0);
-        Assert.IsFalse(regex0.IsMatch(""));
-        Assert.IsTrue(regex0.IsMatch("abcdef"));
+        Assert.IsFalse(regex0.IsCompletelyMatch(""));
+        Assert.IsTrue(regex0.IsCompletelyMatch("abcdef"));
 
     }
+    [TestMethod]
+    public void TestMethod13()
+    {
+        var regexString0 = "a{2}";
+        var regex0 = new Regex(regexString0);
+        ExportAsDot(regex0);
+        Assert.IsFalse(regex0.IsCompletelyMatch(""));
+        Assert.IsTrue(regex0.IsCompletelyMatch("aa"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("aaa"));
+        Assert.IsFalse(regex0.IsCompletelyMatch("aaaa"));
+
+    }
+    [TestMethod]
+    public void TestMethod14()
+    {
+        var regexString0 = "a{2,}";
+        var regex0 = new Regex(regexString0);
+        ExportAsDot(regex0);
+        Assert.IsFalse(regex0.IsCompletelyMatch(""));
+        Assert.IsTrue(regex0.IsCompletelyMatch("aa"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("aaa"));
+        Assert.IsFalse(regex0.IsCompletelyMatch("aaaa"));
+
+    }
+    [TestMethod]
+    public void TestMethod15()
+    {
+        var regexString0 = "a{2,3}";
+        var regex0 = new Regex(regexString0);
+        ExportAsDot(regex0);
+        Assert.IsFalse(regex0.IsCompletelyMatch(""));
+        Assert.IsTrue(regex0.IsCompletelyMatch("aa"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("aaa"));
+        Assert.IsFalse(regex0.IsCompletelyMatch("aaaa"));
+
+    }
+    [TestMethod]
+    public void TestMethod16()
+    {
+        var regexString0 = "[a-zA-Z0-9_]";
+        var regex0 = new Regex(regexString0);
+        ExportAsDot(regex0);
+        Assert.IsFalse(regex0.IsCompletelyMatch(""));
+        Assert.IsTrue(regex0.IsCompletelyMatch("a"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("A"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("_"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("8"));
+        Assert.IsFalse(regex0.IsCompletelyMatch("aaaa"));
+    }
+    [TestMethod]
+    public void TestMethod17()
+    {
+        var regexString0 = "[^a-zA-Z0-9_]";
+        var regex0 = new Regex(regexString0);
+        ExportAsDot(regex0);
+        Assert.IsFalse(regex0.IsCompletelyMatch(""));
+        Assert.IsFalse(regex0.IsCompletelyMatch("a"));
+        Assert.IsFalse(regex0.IsCompletelyMatch("A"));
+        Assert.IsFalse(regex0.IsCompletelyMatch("_"));
+        Assert.IsFalse(regex0.IsCompletelyMatch("8"));
+        Assert.IsFalse(regex0.IsCompletelyMatch("aaaa"));
+    }
+    [TestMethod]
+    public void TestMethod18()
+    {
+        var regexString0 = @"\b\B\cx\d\D\f\n\r\s\S\t\v\w\W\xn\num\n\nm\nml\un";
+        var regex0 = new Regex(regexString0);
+        ExportAsDot(regex0);
+        Assert.IsFalse(regex0.IsCompletelyMatch(""));
+        Assert.IsTrue(regex0.IsCompletelyMatch("aa"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("aaa"));
+        Assert.IsFalse(regex0.IsCompletelyMatch("aaaa"));
+
+    }
+
+    [TestMethod]
+    public void TestMethod19()
+    {
+        var regexString0 = @"";
+        var regex0 = new Regex(regexString0);
+        ExportAsDot(regex0);
+        Assert.IsFalse(regex0.IsCompletelyMatch(""));
+        Assert.IsTrue(regex0.IsCompletelyMatch("aa"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("aaa"));
+        Assert.IsFalse(regex0.IsCompletelyMatch("aaaa"));
+    }
+
 }

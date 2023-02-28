@@ -87,7 +87,8 @@ public record class RegExNode(
     bool? Negate = null,
     int[]? Runes = null,
     ParserOptions Options = ParserOptions.None,
-    TokenOptions TokenOptions = TokenOptions.Normal)
+    TokenOptions TokenOptions = TokenOptions.Normal,
+    bool Inverted = false)
 {
     public List<RegExNode> Children = new();
 }
@@ -228,19 +229,21 @@ public class RegExDomParser
                     this.ProcessCloseParenthesis(ref level);
                     continue;
                 case '{':
-                    this.Reader.Enter();
-                    var (found, min, max) = this.ParseRepeat(this.Reader);
-                    if (!found)
                     {
-                        this.Reader.Leave();
-                        this.Push(new(TokenTypes.Literal, this.Reader.Take()));
-                    }
-                    else
-                    {
-                        this.Reader.Discard();
-                        this.Push(new(TokenTypes.Repeats,
-                            this.Reader.Take(), "", min, max)
-                        { Children = new() { this.NodeStack.Pop() } });
+                        this.Reader.Enter();
+                        var (found, min, max, text) = this.ParseRepeat(this.Reader);
+                        if (!found)
+                        {
+                            this.Reader.Leave();
+                            this.Push(new(TokenTypes.Literal, this.Reader.Take()));
+                        }
+                        else
+                        {
+                            this.Reader.Discard();
+                            this.Push(new(TokenTypes.Repeats,
+                                text ?? "", "", min, max)
+                            { Children = new() { this.NodeStack.Pop() } });
+                        }
                     }
                     continue;
                 case '[':
@@ -329,10 +332,12 @@ public class RegExDomParser
         return int.TryParse(n, out var r) ? r : -1;
     }
 
-    protected (bool, int?, int?) ParseRepeat(RegExPatternReader Reader)
+    protected (bool, int?, int?, string?) ParseRepeat(RegExPatternReader Reader)
     {
         if (this.Reader.Peek() == -1 || !Reader.LookingAt("{")) goto failed;
+        var p = Reader.Position;
         Reader.Skip();
+        var s = Reader.Pattern;
         int start = Reader.Position;
         int min = ParseInt(Reader); // (can be -2)
         if (min == -1) goto failed;
@@ -344,17 +349,18 @@ public class RegExDomParser
         {
             Reader.Skip(); // ','
             if (!Reader.HasMore) goto failed;
-            if (Reader.LookingAt('}')) goto failed;
+            if (Reader.LookingAt('}')) { max = -1; goto exit; }
             else if ((max = ParseInt(Reader)) == -1) goto failed;
         }
         if (!Reader.HasMore || !Reader.LookingAt('}'))
             goto failed;
+    exit:
         Reader.Skip(1); // '}'
         if (min < 0 || min > 1000 || max == -2 || max > 1000 || (max >= 0 && min > max))
             throw new RegExSyntaxException(ERR_INVALID_REPEAT_SIZE, Reader.From(start));
-        return (true, min, max); // success
+        return (true, min, max, s[p..Reader.Position]); // success
     failed:
-        return (false, null, null);
+        return (false, null, null, null);
     }
 
     // isValidCaptureName reports whether name
@@ -673,9 +679,10 @@ public class RegExDomParser
         Reader.Skip(1); // ']'
 
         cc.CleanClass();
-        if (sign < 0)
-            cc.NegateClass();
-        Push(new RegExNode(TokenTypes.CharClass, Options: this.Options, Runes: cc.ToArray()));
+        //if (sign < 0)
+        //    cc.NegateClass();
+
+        Push(new RegExNode(TokenTypes.CharClass, Options: this.Options, Runes: cc.GetRunes(), Inverted: sign < 0));
     }
     // parseClassChar parses a character class character and returns it.
     // wholeClassPos is the position of the start of the entire class "[...".

@@ -3,9 +3,11 @@ public class RegExTextReader
 {
     public const int EOF = -1;
     public const int UNICODE_LIMIT = 0x10ffff;
-    public const int BEGIN_TEXT = UNICODE_LIMIT + 1;
-    public const int END_TEXT = UNICODE_LIMIT + 2;
     public const int WORD_BOUNDARY = UNICODE_LIMIT + 1;
+    public const int BEGIN_TEXT = UNICODE_LIMIT + 2;
+    public const int END_TEXT = UNICODE_LIMIT + 3;
+    public const int BEGIN_LINE = UNICODE_LIMIT + BEGIN_TEXT + 2;
+    public const int END_LINE = UNICODE_LIMIT + END_TEXT + 2;
 
     public readonly TextReader Reader;
     protected enum ReaderStates : uint
@@ -17,15 +19,38 @@ public class RegExTextReader
     }
     protected ReaderStates State = ReaderStates.NotStarted;
 
-    public RegExTextReader(TextReader reader) 
-        => this.Reader = reader;
+    public readonly bool LineMode;
+    public RegExTextReader(TextReader reader, bool lineMode )
+    {
+        this.Reader = reader;
+        this.LineMode = lineMode;
+    }
 
     public bool HasMore => this.Peek() != EOF;
 
+    protected bool LastEndLine = true;
+    protected int TryPeek()
+    {
+        int c = this.Reader.Peek();
+
+        if (this.LineMode)
+        {
+            if (c == '\n')
+            {
+                this.LastEndLine = true;
+                return END_LINE;
+            }
+            else if(this.LastEndLine)
+            {
+                return BEGIN_LINE;
+            }
+        }
+        return c == EOF ? END_TEXT : c;
+    }
     public int Peek() => this.State switch
     {
-        ReaderStates.NotStarted => BEGIN_TEXT,
-        ReaderStates.InProgress => (this.Reader.Peek() is int c)?(c == EOF ? END_TEXT : c) : EOF ,
+        ReaderStates.NotStarted => this.LineMode ? BEGIN_LINE : BEGIN_TEXT,
+        ReaderStates.InProgress => this.TryPeek(),
         ReaderStates.PastEOF => EOF,
         _ => EOF,
     };
@@ -35,12 +60,16 @@ public class RegExTextReader
         {
             case ReaderStates.NotStarted:
                 this.State = ReaderStates.InProgress;
-                return BEGIN_TEXT;
+                return this.LineMode ? BEGIN_LINE : BEGIN_TEXT;
             case ReaderStates.InProgress:
                 if ((this.Read() is int c) && c == EOF)
                 {
                     State = ReaderStates.PastEOF;
-                    c = END_TEXT;
+                    c = this.LineMode ? END_LINE : END_TEXT;
+                }
+                if (c != '\n')
+                {
+                    this.LastEndLine = false;
                 }
                 return c;
             case ReaderStates.PastEOF:

@@ -179,16 +179,18 @@ public static class RegExGraphBuilder
                 break;
             case TokenTypes.CharClass:
                 {
-                    graph.ComposeLiteral(new Node(node.Runes ?? Array.Empty<int>()));
+                    graph.ComposeLiteral(new Node(node.Inverted, node.Runes ?? Array.Empty<int>()));
                 }
                 break;
             case TokenTypes.AnyCharIncludingNewLine:
                 {
-                    graph.ComposeLiteral(new Node(Node.AllChars.ToArray()));
+                    //inverted empty means everything
+                    graph.ComposeLiteral(new Node(true, Array.Empty<int>()));
                 }
                 break;
             case TokenTypes.AnyCharExcludingNewLine:
                 {
+                    //\r\n excluded
                     graph.UnionWith(new Node(true, Node.ReturnChar, Node.NewLineChar));
                 }
                 break;
@@ -211,52 +213,32 @@ public static class RegExGraphBuilder
                 break;
             case TokenTypes.BeginLine:
                 {
-                    graph.Head.UnionWith(Node.NewLineChar);
-                    graph.Tail.UnionWith(Node.AllChars);
+                    graph.Head.UnionWith(RegExTextReader.BEGIN_LINE);
                 }
                 break;
             case TokenTypes.EndLine:
                 {
-                    graph.Head.UnionWith(Node.AllChars);
-                    graph.Tail.UnionWith(Node.NewLineChar);
+                    graph.Head.UnionWith(RegExTextReader.END_LINE);
                 }
                 break;
             case TokenTypes.BeginText:
                 {
-                    graph.Head.UnionWith(Node.EOFChar);
-                    graph.Tail.UnionWith(Node.AllChars);
+                    graph.Head.UnionWith(RegExTextReader.BEGIN_TEXT);
                 }
                 break;
             case TokenTypes.EndText:
                 {
-                    graph.Head.UnionWith(Node.AllChars);
-                    graph.Tail.UnionWith(Node.EOFChar);
+                    graph.Head.UnionWith(RegExTextReader.END_TEXT);
                 }
                 break;
             case TokenTypes.WordBoundary:
                 {
-                    var g1 = new Graph();
-                    var g2 = new Graph();
-                    g1.Head.UnionWith(Node.WordChars);
-                    g1.Tail.UnionWith(Node.NonWordChars);
-
-                    g2.Head.UnionWith(Node.NonWordChars);
-                    g2.Tail.UnionWith(Node.WordChars);
-
-                    graph.UnionWith(g1, g2);
+                    graph.Head.UnionWith(RegExTextReader.WORD_BOUNDARY);
                 }
                 break;
             case TokenTypes.NotWordBoundary:
                 {
-                    var g1 = new Graph();
-                    var g2 = new Graph();
-                    g1.Head.UnionWith(Node.WordChars);
-                    g1.Tail.UnionWith(Node.WordChars);
-
-                    g2.Head.UnionWith(Node.NonWordChars);
-                    g2.Tail.UnionWith(Node.NonWordChars);
-
-                    graph.UnionWith(g1, g2);
+                    graph.UnionWith(new Node(true,RegExTextReader.WORD_BOUNDARY));
                 }
                 break;
         }
