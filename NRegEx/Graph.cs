@@ -86,7 +86,7 @@ public record class Graph
             this.Nodes.UnionWith(graphs[^1].Nodes);
             this.Edges.UnionWith(graphs[0].Edges);
             this.Edges.UnionWith(graphs[^1].Edges);
-            this.Edges.Add(new Edge(graphs[0].Tail, graphs[^1].Head));
+            this.Edges.Add(new (graphs[0].Tail, graphs[^1].Head));
         }
         else
         {
@@ -107,8 +107,8 @@ public record class Graph
                 var after = graphs[i + 1];
                 this.Nodes.UnionWith(current.Nodes);
                 this.Edges.UnionWith(current.Edges);
-                this.Edges.Add(new Edge(before.Tail, current.Head));
-                this.Edges.Add(new Edge(current.Tail, after.Head));
+                this.Edges.Add(new (before.Tail, current.Head));
+                this.Edges.Add(new (current.Tail, after.Head));
             }
         }
         return this;
@@ -129,11 +129,10 @@ public record class Graph
     {
         for (int i = 0; i < nodes.Count; i++)
         {
-            var n = nodes[i];
-            this.Head.Outputs.Add(n);
-            n.Inputs.Add(this.Head);
-            n.Outputs.Add(this.Tail);
-            this.Tail.Inputs.Add(n);
+            var node = nodes[i];
+            this.Nodes.Add(node);
+            this.Edges.Add(new Edge(this.Head, node));
+            this.Edges.Add(new Edge(node, this.Tail));
         }
         return this;
     }

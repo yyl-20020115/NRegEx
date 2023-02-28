@@ -69,7 +69,10 @@ public class Node
             this.Inverted = inverted;
             this.CharSet = new BitArray(chars.Max(m => m) + 1);
             foreach (var c in chars) this.CharSet[c] = true;
-            this.Name = "'" + string.Join(",", chars.Select(c => new Rune(c >= 0 ? c : ' ').ToString()).ToArray()) + "'";
+            var ts = chars.Select(c => new Rune(c >= 0 ? c : ' ').ToString());
+            var tt = string.Join(",", ts.ToArray());
+            var st = Utils.EscapeString(tt, true).PadRight(16)[..16].TrimEnd();
+            this.Name = $"'[{(this.Inverted ? '-' : '+')}]" + st + "'";
         }
         else 
         {

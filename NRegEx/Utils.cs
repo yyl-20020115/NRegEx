@@ -32,34 +32,68 @@ public static class Utils
 
     private const string METACHARACTERS = @"\.+*?()|[]{}^$";
 
+
+    public static string EscapeString(string s, bool doubleSlash = false)
+    {
+        var builder = new StringBuilder();
+        foreach(var c in StringToRunes(s))
+        {
+            EscapeRune(c, builder,doubleSlash);
+        }
+        return builder.ToString();
+    }
     // Appends a RE2 literal to |out| for rune |rune|,
     // with regexp metacharacters escaped.
-    public static void EscapeRune(StringBuilder result, int rune)
+    public static StringBuilder EscapeRune(int rune, StringBuilder? builder = null, bool doubleSlash=false)
     {
+        builder ??= new();
+        var slashes = doubleSlash ? "\\\\" : "\\";
+
         if (Unicode.IsPrint(rune))
         {
             var r = new Rune(rune);
             var m = METACHARACTERS.EnumerateRunes().ToList();
             if (m.IndexOf(r) >= 0)
-                result.Append('\\');
-            result.Append(r.ToString());
-            return;
+                builder.Append(slashes);
+            builder.Append(r.ToString());
+            return builder;
         }
-
-        result.Append(rune switch
+        if (doubleSlash)
         {
-            '"' => ("\\\""),
-            '\\' => ("\\\\"),
-            '\t' => ("\\t"),
-            '\n' => ("\\n"),
-            '\r' => ("\\r"),
-            '\b' => ("\\b"),
-            '\f' => ("\\f"),
-            _ => (rune < 0x100
-                  ? (@"\x" + (string.Format("{0:x}", rune) is string t && t.Length == 1 ? "0" : "") 
-                            + string.Format("{0:x}", rune))
-                  : (@"\x{" + string.Format("{0:x}", rune) + "}")),
-        });
+            builder.Append(rune switch
+            {
+                '"' => ("\\\\\""),
+                '\\' => ("\\\\\\\\"),
+                '\t' => ("\\\\t"),
+                '\n' => ("\\\\n"),
+                '\r' => ("\\\\r"),
+                '\b' => ("\\\\b"),
+                '\f' => ("\\\\f"),
+                _ => (rune < 0x100
+                      ? (@"\\x" + (string.Format("{0:x}", rune) is string t && t.Length == 1 ? "0" : "")
+                                + string.Format("{0:x}", rune))
+                      : (@"\\x{" + string.Format("{0:x}", rune) + "}")),
+            });
+        }
+        else
+        {
+            builder.Append(rune switch
+            {
+                '"' => ("\\\""),
+                '\\' => ("\\\\"),
+                '\t' => ("\\t"),
+                '\n' => ("\\n"),
+                '\r' => ("\\r"),
+                '\b' => ("\\b"),
+                '\f' => ("\\f"),
+                _ => (rune < 0x100
+                      ? (@"\x" + (string.Format("{0:x}", rune) is string t && t.Length == 1 ? "0" : "")
+                                + string.Format("{0:x}", rune))
+                      : (@"\x{" + string.Format("{0:x}", rune) + "}")),
+            });
+
+        }
+        return builder;
     }
 
     // Returns the array of runes in the specified Java UTF-16 string.

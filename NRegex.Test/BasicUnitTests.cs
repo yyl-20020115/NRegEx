@@ -188,11 +188,31 @@ public class BasicUnitTests
     [TestMethod]
     public void TestMethod10()
     {
-
+        var regexString0 = ".";
+        var regex0 = new Regex(regexString0);
+        ExportAsDot(regex0);
+        Assert.IsTrue(regex0.IsMatch("a"));
+        Assert.IsFalse(regex0.IsMatch("ab"));
+        Assert.IsFalse(regex0.IsMatch(""));
     }
     [TestMethod]
     public void TestMethod11()
     {
+        var regexString0 = ".*";
+        var regex0 = new Regex(regexString0);
+        ExportAsDot(regex0);
+        Assert.IsTrue(regex0.IsMatch(""));
+        Assert.IsTrue(regex0.IsMatch("abcdef"));
+
+    }
+    [TestMethod]
+    public void TestMethod12()
+    {
+        var regexString0 = ".+";
+        var regex0 = new Regex(regexString0);
+        ExportAsDot(regex0);
+        Assert.IsFalse(regex0.IsMatch(""));
+        Assert.IsTrue(regex0.IsMatch("abcdef"));
 
     }
 }
