@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Diagnostics;
 using System.Text;
+using System.Xml.Linq;
 
 namespace NRegEx;
 
@@ -127,6 +128,24 @@ public class Regex
     protected virtual Graph Build()
         => RegExParser.Parse(this.Name,this.Pattern);
 
+    protected void FetchNodes(HashSet<Node> inputs, HashSet<Node> outputs)
+    {
+        foreach (var node in inputs)
+        {
+            if (outputs.Contains(node))
+            {
+                continue;
+            }
+            else if (!node.IsVirtual)
+            {
+                outputs.Add(node);
+            }
+            else 
+            {
+                this.FetchNodes(node.Outputs, outputs);
+            }
+        }
+    }
     public bool IsMatch(string input, int start = 0, int length = -1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
@@ -149,37 +168,20 @@ public class Regex
                 var d = node.Hit(c);
                 if (d == null)
                 {
-                    nodes.UnionWith(node.Outputs);
+                    this.FetchNodes(node.Outputs, nodes);
                     continue;
                 }
                 else if (d.Value)
                 {
-                    Debug.WriteLine($"Hit('{c}') at ({i}):{node.Id}");
                     hit = true;
                     //needs all hits
                     nodes.UnionWith(node.Outputs);
                 }
             }
-            Debug.WriteLine($"Nodes:{string.Join(',',nodes)}");
-            if (hit)
-            {
-                i++;
-                Debug.WriteLine($"Step at i={i},Length={input.Length}");
-                if (i == input.Length)
-                {
-                    copies = nodes.ToArray();
-                    nodes.Clear();
-                    foreach (var node in copies)
-                    {
-                        nodes.UnionWith(node.Outputs);
-                    }
-                    break;
-                }
-            }     
+            i += hit ? 1 : 0;
         }
 
         return i == input.Length && RegExGraphBuilder.HasPassThrough(this.Graph,nodes.ToArray());
-        // (nodes.Count == 0 || nodes.Any(n => n.Outputs.Count == 0));
     }
     public Capture Match(string input, int start = 0, int length = -1)
     {

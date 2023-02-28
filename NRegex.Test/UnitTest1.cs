@@ -140,8 +140,10 @@ public class UnitTest1
         var regex5 = new Regex(regexString5);
         ExportAsDot(regex5.Graph);
         Assert.IsFalse(regex5.IsMatch(""));
+        Assert.IsTrue(regex5.IsMatch("1101"));
         Assert.IsTrue(regex5.IsMatch("11101"));
         Assert.IsTrue(regex5.IsMatch("1111101"));
+        Assert.IsTrue(regex5.IsMatch("1000000101"));
     }
     [TestMethod]
     public void TestMethod8()
@@ -151,7 +153,6 @@ public class UnitTest1
         ExportAsDot(regex6.Graph);
         Assert.IsFalse(regex6.IsMatch(""));
         Assert.IsTrue(regex6.IsMatch("00010010001000"));
-
     }
     [TestMethod]
     public void TestMethod9()

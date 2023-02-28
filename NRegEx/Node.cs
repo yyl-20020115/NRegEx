@@ -119,5 +119,5 @@ public record class Node
         return builder.ToString();
     }
     public override string ToString() 
-        => $"[({this.Id},{(this.Inverted?'T':'F')}):{FormatCharset(this.CharSet??new(0))} IN:{FormatNodes(this.Inputs)}  OUT:{FormatNodes(this.Outputs)}]";
+        => $"[{this.Id}({(this.Inverted?'T':'F')}){(this.CharSet!=null? ":"+FormatCharset(this.CharSet):"")}]";
 }
