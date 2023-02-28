@@ -166,8 +166,7 @@ public class RegExDomParser
                     }
                     continue;
                 case ')':
-                    level--;
-                    this.Push(new(TokenTypes.CloseParenthesis));
+                    this.ProcessCloseParenthesis(ref level);
                     continue;
             }
         }
@@ -184,6 +183,15 @@ public class RegExDomParser
 
         return this.NodeStack.Pop();
     }
+    protected void ProcessCloseParenthesis(ref int level)
+    {
+        this.Reader.Skip();
+        this.ProcessStack();
+        var result = this.Pop();
+        var open = this.Pop();
+        this.Push(result);
+        level--;
+    }
     protected void ProcessStack()
     {
         var nodes = new List<RegExNode>();
@@ -191,18 +199,14 @@ public class RegExDomParser
         {
             nodes
         };
-        while (this.StackDepth > 0)
+        while (this.StackDepth > 0
+            && this.Peek().Type< TokenTypes.OpenParenthesis)
         {
             var top = this.Pop();
             switch (top.Type)
             {
                 case TokenTypes.Concate:
                     continue;
-                case TokenTypes.CloseParenthesis:
-                    this.ProcessStack();
-                    continue;
-                case TokenTypes.OpenParenthesis:
-                    goto final;
                 case TokenTypes.Alternate:
                     nlist.Add(nodes = new());
                     continue;
@@ -211,7 +215,6 @@ public class RegExDomParser
                     continue;
             }
         }
-        final:
         var alts = new RegExNode(TokenTypes.Union);
         foreach (var ds in nlist)
         {
