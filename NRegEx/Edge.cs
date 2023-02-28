@@ -14,4 +14,5 @@ public class Edge
     public override int GetHashCode() => Head.GetHashCode() ^ Tail.GetHashCode();
     public override bool Equals(object? obj)
         => obj is Edge e ? this.Head == e.Head && this.Tail == e.Tail : base.Equals(obj);
+    public override string ToString() => $"[{this.Head}->{this.Tail}]";
 }

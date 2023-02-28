@@ -35,7 +35,7 @@ public class Node
     //                0, Unicode.MAX_RUNE).Where(i => !IsRuneSurrogate(i) && !IsRuneLetter(i)).ToHashSet());
 
     protected static int Nid = 0;
-    protected int id;
+    protected int id = Nid ++;
     public bool IsLink => this.CharSet == null || this.CharSet.Count == 0;
     protected bool inverted;
     protected string name = "";
@@ -77,7 +77,6 @@ public class Node
 
     public Node(bool inverted, params int[] chars)
     {
-        this.id = ++Nid;
         if (chars!=null && chars.Length > 0)
         {
             this.Inverted = inverted;

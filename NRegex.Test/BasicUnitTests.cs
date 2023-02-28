@@ -223,8 +223,7 @@ public class BasicUnitTests
         ExportAsDot(regex0);
         Assert.IsFalse(regex0.IsCompletelyMatch(""));
         Assert.IsTrue(regex0.IsCompletelyMatch("aa"));
-        Assert.IsTrue(regex0.IsCompletelyMatch("aaa"));
-        Assert.IsFalse(regex0.IsCompletelyMatch("aaaa"));
+        Assert.IsFalse(regex0.IsCompletelyMatch("aaa"));
 
     }
     [TestMethod]
@@ -236,7 +235,7 @@ public class BasicUnitTests
         Assert.IsFalse(regex0.IsCompletelyMatch(""));
         Assert.IsTrue(regex0.IsCompletelyMatch("aa"));
         Assert.IsTrue(regex0.IsCompletelyMatch("aaa"));
-        Assert.IsFalse(regex0.IsCompletelyMatch("aaaa"));
+        Assert.IsTrue(regex0.IsCompletelyMatch("aaaa"));
 
     }
     [TestMethod]

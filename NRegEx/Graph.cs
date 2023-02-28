@@ -75,7 +75,7 @@ public class Graph
         return this;
     }
     public Graph Concate(IEnumerable<Graph> graphs, bool plus = false)
-        => this.Concate(graphs.ToList());
+        => this.Concate(graphs.ToList(),plus);
     public Graph Concate(List<Graph> graphs, bool plus = false)
     {
         if(graphs.Count == 0)
@@ -127,6 +127,7 @@ public class Graph
                 this.Edges.Add(new (current.Tail, after.Head));
             }
         }
+
         if (plus)
         {
             //back to self
@@ -209,13 +210,21 @@ public class Graph
         min = min <= 0 ? 0 : min;
         max = max <= 0 ? min : max;
 
-        var followings = new List<Graph>();
+        var all = new List<Graph>();
+        var others = new List<Graph>();
         for (int i = 0; i < max; i++)
         {
-            followings.Add(graph.Copy());
+            var g = graph.Copy();
+            all.Add(g);
+            if (i > min) others.Add(g);
         }
 
-        this.Concate(followings, plus);
+        this.Concate(all, plus);
+
+        for(int i = 0; i < others.Count; i++)
+        {
+           this.Edges.Add(new (others[i].Head,this.Tail));
+        }
 
         return this;
     }
