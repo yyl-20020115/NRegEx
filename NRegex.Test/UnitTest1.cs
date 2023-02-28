@@ -3,8 +3,6 @@ using NRegEx;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
 
 namespace NRegex.Test;
 
@@ -136,26 +134,32 @@ public class UnitTest1
         Assert.IsTrue(regex0.IsMatch("bbb"));
     }
     [TestMethod]
-    public void TestMethod8()
+    public void TestMethod7()
     {
-        var regexString4 = "(a|b)*";
-        var regex4 = new Regex(regexString4);
-        Debug.WriteLine(regex4.Pattern);
-        Debug.WriteLine(regex4.Graph);
-
         var regexString5 = "1(0|1)*101";
         var regex5 = new Regex(regexString5);
-        Debug.WriteLine(regex5.Pattern);
-        Debug.WriteLine(regex5.Graph);
-
+        ExportAsDot(regex5.Graph);
+        Assert.IsFalse(regex5.IsMatch(""));
+        Assert.IsTrue(regex5.IsMatch("1000101"));
+        Assert.IsTrue(regex5.IsMatch("1111101"));
+    }
+    [TestMethod]
+    public void TestMethod8()
+    {
         var regexString6 = "0*10*10*10*";
         var regex6 = new Regex(regexString6);
-        Debug.WriteLine(regex6.Pattern);
-        Debug.WriteLine(regex6.Graph);
+        ExportAsDot(regex6.Graph);
+        Assert.IsFalse(regex6.IsMatch(""));
+        Assert.IsTrue(regex6.IsMatch("00010010001000"));
 
+    }
+    [TestMethod]
+    public void TestMethod9()
+    {
         var regexString7 = "1(1010*|1(010)*1)*0";
         var regex7 = new Regex(regexString7);
-        Debug.WriteLine(regex7.Pattern);
-        Debug.WriteLine(regex7.Graph);
+        ExportAsDot(regex7.Graph);
+        Assert.IsFalse(regex7.IsMatch(""));
+        Assert.IsTrue(regex7.IsMatch("110100101000"));
     }
 }
