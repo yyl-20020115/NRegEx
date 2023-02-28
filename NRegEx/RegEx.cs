@@ -126,7 +126,7 @@ public class Regex
     }
 
     protected virtual Graph Build()
-        => RegExParser.Parse(this.Name,this.Pattern);
+        => RegExDomParser.Build(this.Name,this.Pattern);
 
     protected void FetchNodes(HashSet<Node> inputs, HashSet<Node> outputs)
     {

@@ -1,7 +1,48 @@
-﻿using System.Runtime.ConstrainedExecution;
-using System.Text;
+﻿using System.Text;
 
 namespace NRegEx;
+
+// Parser flags.
+[Flags]
+public enum ParserOptions : uint
+{
+    None = 0,
+    // Fold case during matching (case-insensitive).
+    FOLD_CASE = 0x01,
+    // Treat pattern as a literal string instead of a regexp.
+    LITERAL = 0x02,
+    // Allow character classes like [^a-z] and [[:space:]] to match newline.
+    CLASS_NL = 0x04,
+    // Allow '.' to match newline.
+    DOT_NL = 0x08,
+    // Treat ^ and $ as only matching at beginning and end of text, not
+    // around embedded newlines.  (Perl's default).
+    ONE_LINE = 0x10,
+    // Make repetition operators default to non-greedy.
+    NON_GREEDY = 0x20,
+    // allow Perl extensions:
+    //   non-capturing parens - (?: )
+    //   non-greedy operators - *? +? ?? {}?
+    //   flag edits - (?i) (?-i) (?i: )
+    //     i - FoldCase
+    //     m - !OneLine
+    //     s - DotNL
+    //     U - NonGreedy
+    //   line ends: \A \z
+    //   \Q and \E to disable/enable metacharacters
+    //   (?P<name>expr) for named captures
+    // \C (any byte) is not supported.
+    PERL_X = 0x40,
+    // Allow \p{Han}, \P{Han} for Unicode group and negation.
+    UNICODE_GROUPS = 0x80,
+    // Regexp END_TEXT was $, not \z.  Internal use only.
+    WAS_DOLLAR = 0x100,
+    MATCH_NL = CLASS_NL | DOT_NL,
+    // As close to Perl as possible.
+    PERL = CLASS_NL | ONE_LINE | PERL_X | UNICODE_GROUPS,
+    // POSIX syntax.
+    POSIX = 0,
+}
 
 [Flags]
 public enum TokenTypes : int
@@ -30,6 +71,12 @@ public enum TokenTypes : int
     OpenParenthesis = 20,     //(
     CloseParenthesis = 21,     //)
 }
+public enum TokenOptions : uint
+{
+    Normal = 0,
+    Lazy = 1,
+    Possessive = 2,
+}
 public record class RegExNode(
     TokenTypes Type = TokenTypes.EOF,
     string Value = "",
@@ -39,7 +86,8 @@ public record class RegExNode(
     int? CaptureIndex = null,
     bool? Negate = null,
     int[]? Runes = null,
-    ParserOptions Options = ParserOptions.None)
+    ParserOptions Options = ParserOptions.None,
+    TokenOptions TokenOptions = TokenOptions.Normal)
 {
     public List<RegExNode> Children = new();
 }
@@ -66,7 +114,11 @@ public class RegExDomParser
     public string Pattern => this.Reader.Pattern;
     protected readonly Stack<RegExNode> NodeStack = new();
     protected int CaptureIndex = 0;
-    public static RegExNode Parse(string name, string pattern, ParserOptions options)
+    public static Graph Build(string name, string regex, ParserOptions options = ParserOptions.None)
+        => regex != null ? RegExGraphBuilder.Build(
+            Parse(name, regex, options)) : new();
+
+    public static RegExNode Parse(string name, string pattern, ParserOptions options = ParserOptions.None)
         => new RegExDomParser(name, pattern, options).Parse();
     public RegExDomParser(string name, string pattern, ParserOptions options)
     {
@@ -75,6 +127,17 @@ public class RegExDomParser
             pattern ?? throw new ArgumentNullException(nameof(pattern)));
         this.Options = options;
     }
+    /// <summary>
+    /// Lazy/Possessive/Normal support
+    /// </summary>
+    /// <param name="c"></param>
+    /// <returns></returns>
+    public static TokenOptions ParseTokenOptions(int c) => c switch
+    {
+        '?' => TokenOptions.Lazy,
+        '+' => TokenOptions.Possessive,
+        _ => TokenOptions.Normal,
+    };
     public RegExNode Parse()
     {
         int level = 0;
@@ -119,21 +182,51 @@ public class RegExDomParser
                         : TokenTypes.AnyCharExcludingNewLine
                         , this.Reader.Take()));
                     continue;
-                case '*':
-                    this.Push(new(TokenTypes.ZeroPlus,
-                        this.Reader.Take(), "", 0, -1)
-                    { Children = new() { this.NodeStack.Pop() } });
-                    continue;
                 case '+':
-                    this.Push(new(TokenTypes.OnePlus,
-                        this.Reader.Take(), "", 1, -1)
-                    { Children = new() { this.NodeStack.Pop() } });
+                    {
+                        var text = this.Reader.Take();
+                        var tops = ParseTokenOptions(this.Reader.Peek());
+                        if (tops != TokenOptions.Normal) this.Reader.Skip();
+                        this.Push(new(TokenTypes.OnePlus,
+                            text, "", 1, -1, TokenOptions: tops)
+                        { Children = new() { this.NodeStack.Pop() } });
+                    }
+                    continue;
+                case '*':
+                    {
+                        var text = this.Reader.Take();
+                        var tops = ParseTokenOptions(this.Reader.Peek());
+                        if (tops != TokenOptions.Normal) this.Reader.Skip();
+                        this.Push(new(TokenTypes.ZeroPlus,
+                            text, "", 0, -1, TokenOptions: tops)
+                        { Children = new() { this.NodeStack.Pop() } });
+                    }
                     continue;
                 case '?':
-                    this.Push(new(TokenTypes.ZeroOne,
-                        this.Reader.Take(), "", 0, 1)
-                    { Children = new() { this.NodeStack.Pop() } });
-                    break;
+                    {
+                        var text = this.Reader.Take();
+                        var tops = ParseTokenOptions(this.Reader.Peek());
+                        if (tops != TokenOptions.Normal) this.Reader.Skip();
+                        this.Push(new(TokenTypes.ZeroOne,
+                            text, "", 0, 1, TokenOptions: tops)
+                        { Children = new() { this.NodeStack.Pop() } });
+                    }
+                    continue;
+                case '(':
+                    if (((this.Options & ParserOptions.PERL) != ParserOptions.None) &&
+                        this.Reader.LookingAt("(?"))
+                        this.ParsePerlFlags(Reader);
+                    else
+                    {
+                        this.Push(
+                            new(TokenTypes.OpenParenthesis, Reader.Take(),
+                            CaptureIndex: ++CaptureIndex));
+                        level++;
+                    }
+                    continue;
+                case ')':
+                    this.ProcessCloseParenthesis(ref level);
+                    continue;
                 case '{':
                     this.Reader.Enter();
                     var (found, min, max) = this.ParseRepeat(this.Reader);
@@ -153,31 +246,16 @@ public class RegExDomParser
                 case '[':
                     this.ParseClass(Reader);
                     continue;
-                case '(':
-                    if (((this.Options & ParserOptions.PERL) != ParserOptions.None) &&
-                        this.Reader.LookingAt("(?"))
-                        this.ParsePerlFlags(Reader);
-                    else
-                    {
-                        this.Push(
-                            new(TokenTypes.OpenParenthesis, Reader.Take(),
-                            CaptureIndex: ++CaptureIndex));
-                        level++;
-                    }
-                    continue;
-                case ')':
-                    this.ProcessCloseParenthesis(ref level);
-                    continue;
             }
         }
-        
+
         if (level != 0)
             throw new RegExSyntaxException(
                 ERR_INTERNAL_ERROR, this.Pattern);
-        
+
         this.ProcessStack();
 
-        if (level!=0 || this.NodeStack.Count != 1)
+        if (level != 0 || this.NodeStack.Count != 1)
             throw new RegExSyntaxException(
                 ERR_MISSING_PAREN, this.Pattern);
 
@@ -200,7 +278,7 @@ public class RegExDomParser
             nodes
         };
         while (this.StackDepth > 0
-            && this.Peek().Type< TokenTypes.OpenParenthesis)
+            && this.Peek().Type < TokenTypes.OpenParenthesis)
         {
             var top = this.Pop();
             switch (top.Type)

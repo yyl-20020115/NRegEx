@@ -19,7 +19,7 @@ public static class Utils
 
     // Returns true iff |c| is an ASCII letter or decimal digit.
     public static bool Isalnum(int c)
-        => ('0' <= c && c <= '9') || ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z');
+        => c is >= '0' and <= '9' or >= 'A' and <= 'Z' or >= 'a' and <= 'z';
 
     // If |c| is an ASCII hex digit, returns its value, otherwise -1.
     public static int Unhex(int c) => c switch
@@ -123,10 +123,7 @@ public static class Utils
     // during the evaluation of the \b and \B zero-width assertions.
     // These assertions are ASCII-only: the word characters are [A-Za-z0-9_].
     public static bool IsWordRune(int r) 
-        => ('A' <= r && r <= 'Z') 
-        || ('a' <= r && r <= 'z') 
-        || ('0' <= r && r <= '9') 
-        || (r == '_');
+        => r is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9' or '_';
 
     //// EMPTY_* flags
 

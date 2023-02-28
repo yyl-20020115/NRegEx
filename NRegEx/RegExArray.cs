@@ -3,10 +3,11 @@
 public class RegExArray
 {
     public Dictionary<string, Regex> Dict = new();
-    public ICollection<Regex> Array => Dict.Values;
+    public ICollection<Regex> Regs => Dict.Values;
     public string[] Regexs { get; protected set; }
         = System.Array.Empty<string>();
-    public RegExArray(params string[] regexs) => this.SetRegexs(regexs);
+    public RegExArray(params string[] regexs) 
+        => this.SetRegexs(regexs);
 
     public void SetRegexs(params string[] regexs)
     {
@@ -22,11 +23,16 @@ public class RegExArray
         if (length < 0) length = input.Length;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
 
-        var allGraph = new Graph();
-        foreach (var r in this.Array)
-            allGraph.UnionWith(r.Graph);
+        var id = 0;
+        var top = new Graph();
+        foreach (var r in this.Regs)
+        {
+            top.UnionWith(RegExGraphBuilder.RecomposeIds(r.Graph, id));
+            id += r.Graph.Nodes.Count;
+        }
 
-        var nodes = allGraph.Heads?? new();
+        var nodes = new HashSet<Node> { top.Head };
+
         var last = nodes;
         var i = start;
         while (nodes.Count > 0 && i < length)
@@ -74,8 +80,9 @@ public class RegExArray
         var dict = new Dictionary<string, Capture>();
 
         var s = start;
-        var graph = new Graph().UnionWith(this.Array.Select(a => a.Graph));
+        var graph = new Graph().UnionWith(this.Regs.Select(a => a.Graph));
         var heads = graph.Nodes.Where(n => n.Inputs.Count == 0);
+
     repeat:
         var nodes = heads?.ToHashSet() ?? new();
         var last = nodes;
@@ -107,20 +114,7 @@ public class RegExArray
                 }
                 if (hit)
                 {
-                    m++;
                     i++;
-                    var any = false;
-                    foreach (var node in nodes)
-                    {
-                        if (node.Outputs.Count == 0)
-                        {
-                            dict[node.Name] = (
-                                new(start, m,
-                                    input[start..(start + m)]));
-                            any = true;
-                        }
-                    }
-                    if (any) break;
                 }
                 else
                 {
@@ -143,7 +137,7 @@ public class RegExArray
         var lookups = new HashLookups<string, Capture>();
 
         var s = start;
-        var graph = new Graph().UnionWith(this.Array.Select(a => a.Graph));
+        var graph = new Graph().UnionWith(this.Regs.Select(a => a.Graph));
 
         var heads = graph.Nodes.Where(n => n.Inputs.Count == 0);
     repeat:

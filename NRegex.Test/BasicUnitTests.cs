@@ -178,4 +178,14 @@ public class BasicUnitTests
         Assert.IsFalse(regex0.IsMatch(""));
         Assert.IsTrue(regex0.IsMatch("110100101000"));
     }
+    [TestMethod]
+    public void TestMethod10()
+    {
+
+    }
+    [TestMethod]
+    public void TestMethod11()
+    {
+
+    }
 }
