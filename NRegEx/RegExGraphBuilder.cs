@@ -22,7 +22,7 @@ public static class RegExGraphBuilder
 
     public static HashSet<Node> GetFollowings(Graph graph, Node current, HashSet<Node> visited)
         => graph.Edges.Where(e => e.Head == current && visited.Add(e.Tail)).Select(e => e.Tail).ToHashSet();
-    public static Graph RecomposeIds(Graph graph, int id = 0)
+    public static Graph Recompose(Graph graph, int id = 0)
     {
         var visited = new HashSet<Node>();
         var followings = GetFollowings(graph, graph.Head, visited);
@@ -46,17 +46,66 @@ public static class RegExGraphBuilder
                 collectings = new();
             }
         } while (followings.Count > 0);
-        var hits = new HashSet<Node>();
+        var nodes = new HashSet<Node>();
         foreach (var line in list)
         {
             foreach (var node in line)
             {
-                if (hits.Add(node))
-                {
-                    node.SetId(id++);
-                }
+                node.SetId(id++);
+                nodes.Add(node);
             }
         }
+        var segments = new List<List<Node>>();
+        do
+        {
+            var line = new List<Node>();
+            foreach (var node in nodes)
+            {
+                if (node.IsBridge)
+                {
+                    line.Add(node);
+                    var next = node.Outputs.Single();
+                    while (next.IsBridge)
+                    {
+                        line.Add(next);
+                        next = next.Outputs.Single();
+                    }
+                    break;
+                }
+            }
+            if(line.Count > 0)
+            {
+                segments.Add(line);
+            }
+            nodes.RemoveWhere(n => line.Contains(n));
+        } while (nodes.Any(n => n.IsBridge));
+        
+        foreach(var segment in segments)
+        {
+            if (segment.Count >= 2)
+            {
+                var head = segment[0];
+                var tail = segment[^1];
+
+                var before = head.Inputs.Single();
+                var after = tail.Outputs.Single();
+                before.Outputs.Clear();
+                after.Inputs.Clear();
+
+                segment.ForEach(s => s.Inputs.Clear());
+                segment.ForEach(s => s.Outputs.Clear());
+
+                var c = graph.Nodes.RemoveWhere(n => segment.Contains(n));
+                if (c > 0)
+                {
+                    c = graph.Edges.RemoveWhere(e => segment.Contains(e.Tail));
+                    c = graph.Edges.RemoveWhere(e => segment.Contains(e.Head));
+                }
+                graph.Edges.Add(new Edge(before, after));
+            }
+        }
+
+
         return graph;
     }
     public static bool HasPassThrough(Graph graph)
@@ -92,9 +141,9 @@ public static class RegExGraphBuilder
         return false;
     }
 
-    public static Graph Build(RegExNode node,int id = 0) 
-        => RecomposeIds(BuildInternal(node),id);
-    private static Graph BuildInternal(RegExNode node)
+    public static Graph Build(RegExNode node,int id = 0,bool caseInsensitive = false) 
+        => Recompose(BuildInternal(node, caseInsensitive),id);
+    private static Graph BuildInternal(RegExNode node, bool caseInsensitive = false)
     {
         var graph = new Graph(node.Name);
         switch (node.Type)
@@ -124,7 +173,8 @@ public static class RegExGraphBuilder
                 break;
             case TokenTypes.Literal:
                 {
-                    graph.ComposeLiteral(node.Value.Select(c => new Node(c)));
+                    graph.ComposeLiteral(node.Value.Select(c => 
+                        caseInsensitive? new Node(char.ToLower(c),char.ToUpper(c)):new Node(c)));
                 }
                 break;
             case TokenTypes.CharClass:

@@ -27,7 +27,7 @@ public class RegExArray
         var top = new Graph();
         foreach (var r in this.Regs)
         {
-            top.UnionWith(RegExGraphBuilder.RecomposeIds(r.Graph, id));
+            top.UnionWith(RegExGraphBuilder.Recompose(r.Graph, id));
             id += r.Graph.Nodes.Count;
         }
 
@@ -48,7 +48,7 @@ public class RegExArray
                 var hit = false;
                 foreach (var node in copies)
                 {
-                    var d = node.Hit(c);
+                    var d = node.TryHit(c);
                     if (d == null)
                     {
                         nodes.UnionWith(node.Outputs);//this is virtual node
@@ -99,7 +99,7 @@ public class RegExArray
                 var hit = false;
                 foreach (var node in copies)
                 {
-                    var d = node.Hit(c);
+                    var d = node.TryHit(c);
                     if (d == null)
                     {
                         nodes.UnionWith(node.Outputs);//this is virtual node
@@ -156,7 +156,7 @@ public class RegExArray
                 var hit = false;
                 foreach (var node in copies)
                 {
-                    var d = node.Hit(c);
+                    var d = node.TryHit(c);
                     if (d == null)
                     {
                         nodes.UnionWith(node.Outputs);//this is virtual node

@@ -114,9 +114,9 @@ public class RegExDomParser
     public string Pattern => this.Reader.Pattern;
     protected readonly Stack<RegExNode> NodeStack = new();
     protected int CaptureIndex = 0;
-    public static Graph Build(string name, string regex, ParserOptions options = ParserOptions.None)
+    public static Graph Build(string name, string regex,int id = 0, ParserOptions options = ParserOptions.None)
         => regex != null ? RegExGraphBuilder.Build(
-            Parse(name, regex, options)) : new();
+            Parse(name, regex, options),id, (options & ParserOptions.FOLD_CASE)== ParserOptions.FOLD_CASE) : new();
 
     public static RegExNode Parse(string name, string pattern, ParserOptions options = ParserOptions.None)
         => new RegExDomParser(name, pattern, options).Parse();

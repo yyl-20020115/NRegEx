@@ -165,7 +165,7 @@ public class Regex
             nodes.Clear();
             foreach (var node in copies)
             {
-                var d = node.Hit(c);
+                var d = node.TryHit(c);
                 if (d == null)
                 {
                     this.FetchNodes(node.Outputs, nodes);
@@ -205,10 +205,10 @@ public class Regex
                 var hit = false;
                 foreach (var node in copies)
                 {
-                    var d = node.Hit(c);
+                    var d = node.TryHit(c);
                     if (d == null)
                     {
-                        nodes.UnionWith(node.Outputs);
+                        this.FetchNodes(node.Outputs, nodes);
                         continue;
                     }
                     else if (d.Value)
@@ -222,24 +222,6 @@ public class Regex
                 {
                     m++;
                     i++;
-                    var any = false;
-                    while (!any)
-                    {
-                        copies = nodes.ToArray();
-                        nodes.Clear();
-                        foreach (var node in copies)
-                        {
-                            if (node.IsVirtual)
-                            {
-                                any = true;
-                                nodes.UnionWith(node.Outputs);
-                            }
-                            else
-                            {
-                                nodes.Add(node);
-                            }
-                        }
-                    }
                 }
                 else
                 {

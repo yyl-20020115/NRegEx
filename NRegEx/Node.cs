@@ -3,21 +3,21 @@ using System.Text;
 
 namespace NRegEx;
 
-public record class Node
+public class Node
 {
     public const int EOFChar = -1;
     public const int NewLineChar = '\n';
     public const int ReturnChar = '\r';
 
-    public readonly static HashSet<int> AllChars = Enumerable.Range(
+    public readonly static int[] AllChars = Enumerable.Range(
                     char.MinValue,
-                    char.MaxValue - char.MinValue + 1).ToHashSet();
-    public readonly static HashSet<int> WordChars = Enumerable.Range(
+                    char.MaxValue - char.MinValue + 1).ToArray();
+    public readonly static int[] WordChars = Enumerable.Range(
                     char.MinValue,
-                    char.MaxValue - char.MinValue + 1).Where(i => !char.IsSurrogate((char)i) && char.IsLetter((char)i)).ToHashSet();
-    public readonly static HashSet<int> NonWordChars = Enumerable.Range(
+                    char.MaxValue - char.MinValue + 1).Where(i => !char.IsSurrogate((char)i) && char.IsLetter((char)i)).ToArray();
+    public readonly static int[] NonWordChars = Enumerable.Range(
                     char.MinValue,
-                    char.MaxValue - char.MinValue + 1).Where(i => !char.IsSurrogate((char)i) && !char.IsLetter((char)i)).ToHashSet();
+                    char.MaxValue - char.MinValue + 1).Where(i => !char.IsSurrogate((char)i) && !char.IsLetter((char)i)).ToArray();
     //public static bool IsRuneSurrogate(int i)
     //=> i >= char.MinValue && i <= char.MaxValue && char.IsSurrogate((char)i);
     //public static bool IsRuneLetter(int i)
@@ -40,6 +40,10 @@ public record class Node
 
     public readonly bool Inverted;
     public readonly string Name;
+    public bool IsBridge 
+        => this.IsVirtual 
+        && this.Inputs.Count == 1 
+        && this.Outputs.Count == 1;
 
     public int Id => id;
 
@@ -62,19 +66,9 @@ public record class Node
         this.id = ++Nid;
         if (chars!=null && chars.Length > 0)
         {
-            IEnumerable<int> source;
-            if(this.Inverted = inverted)
-            {
-                this.CharSet = new BitArray(AllChars.Count);
-                source = AllChars.Except(chars);
-            }
-            else
-            {
-                this.CharSet = new BitArray(chars.Max(m => m) + 1);
-                source = chars;
-            }
-            foreach (var c in source) this.CharSet[c] = true;
-
+            this.Inverted = inverted;
+            this.CharSet = new BitArray(chars.Max(m => m) + 1);
+            foreach (var c in chars) this.CharSet[c] = true;
             this.Name = "'" + string.Join(",", chars.Select(c => new Rune(c >= 0 ? c : ' ').ToString()).ToArray()) + "'";
         }
         else 
@@ -93,10 +87,19 @@ public record class Node
         }
         return this;
     }
-    public bool? Hit(int c) => this.CharSet == null
+    protected bool TryHitCore(int c)
+        => this.CharSet!=null && c >= 0 && c < this.CharSet.Count && this.CharSet.Get(c);
+
+    protected bool TryHitCoreWithInverted(int c)
+    {
+        var hit = this.TryHitCore(c);
+        return this.Inverted ? (!hit) : hit;
+    }
+
+    public bool? TryHit(int c) 
+        => this.CharSet == null
         ? null
-        : c >= 0 && c < CharSet.Count && CharSet.Get(c)
-        ;
+        : this.TryHitCoreWithInverted(c);
 
     public static string FormatNodes(IEnumerable<Node> nodes) 
         => string.Join(',', nodes.Select(n => n.id).ToArray());

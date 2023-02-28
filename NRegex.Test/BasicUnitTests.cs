@@ -54,7 +54,14 @@ public class BasicUnitTests
         => ExportAsDot(RegExGraphBuilder.ExportAsDot(graph).ToString(), png, dot);
     public static int ExportAsDot(string content, string? png = null, string? dot = null)
     {
-        var fnn = new StackTrace()?.GetFrame(1)?.GetMethod()?.Name;
+        var trace = new StackTrace();
+        var fnn = "graph";
+        var depth = 1;
+        do
+        {
+            fnn = trace?.GetFrame(depth++)?.GetMethod()?.Name;
+        } while (fnn == nameof(ExportAsDot));
+
         fnn ??= "graph";
         png ??= fnn + ".png";
         dot ??= fnn + ".dot";
@@ -71,7 +78,7 @@ public class BasicUnitTests
         Assert.AreEqual(@"|()[]{}^$*+?\.", Regex.Unescape(@"\|\(\)\[\]\{\}\^\$\*\+\?\\\."));
     }
     [TestMethod]
-    public void TestMethod0()
+    public void TestMethod00()
     {
         var regexString0 = "abcd";
         var regex0 = new Regex(regexString0);
@@ -82,7 +89,7 @@ public class BasicUnitTests
     }
 
     [TestMethod]
-    public void TestMethod1()
+    public void TestMethod01()
     {
         var regexString0 = "a|ab|c";
         var regex0 = new Regex(regexString0);
@@ -92,7 +99,7 @@ public class BasicUnitTests
         Assert.IsTrue(regex0.IsMatch("c"));
     }
     [TestMethod]
-    public void TestMethod2()
+    public void TestMethod02()
     {
         var regexString0 = "a*";
         var regex0 = new Regex(regexString0);
@@ -104,7 +111,7 @@ public class BasicUnitTests
         Assert.IsFalse(regex0.IsMatch("b"));
     }
     [TestMethod]
-    public void TestMethod3()
+    public void TestMethod03()
     {
         var regexString0 = "a+";
         var regex0 = new Regex(regexString0);
@@ -116,7 +123,7 @@ public class BasicUnitTests
         Assert.IsFalse(regex0.IsMatch("b"));
     }
     [TestMethod]
-    public void TestMethod4()
+    public void TestMethod04()
     {
         var regexString0 = "a?";
         var regex0 = new Regex(regexString0);
@@ -126,7 +133,7 @@ public class BasicUnitTests
         Assert.IsFalse(regex0.IsMatch("aa"));
     }
     [TestMethod]
-    public void TestMethod5()
+    public void TestMethod05()
     {
         var regexString0 = "(a|b)+";
         var regex0 = new Regex(regexString0);
@@ -137,7 +144,7 @@ public class BasicUnitTests
         Assert.IsTrue(regex0.IsMatch("bbb"));
     }
     [TestMethod]
-    public void TestMethod6()
+    public void TestMethod06()
     {
         var regexString0 = "(a|b)*";
         var regex0 = new Regex(regexString0);
@@ -149,7 +156,7 @@ public class BasicUnitTests
         Assert.IsTrue(regex0.IsMatch("bbb"));
     }
     [TestMethod]
-    public void TestMethod7()
+    public void TestMethod07()
     {
         var regexString0 = "1(0|1)*101";
         var regex0 = new Regex(regexString0);
@@ -161,7 +168,7 @@ public class BasicUnitTests
         Assert.IsTrue(regex0.IsMatch("1000000101"));
     }
     [TestMethod]
-    public void TestMethod8()
+    public void TestMethod08()
     {
         var regexString0 = "0*10*10*10*";
         var regex0 = new Regex(regexString0);
@@ -170,7 +177,7 @@ public class BasicUnitTests
         Assert.IsTrue(regex0.IsMatch("00010010001000"));
     }
     [TestMethod]
-    public void TestMethod9()
+    public void TestMethod09()
     {
         var regexString0 = "1(1010*|1(010)*1)*0";
         var regex0 = new Regex(regexString0);
