@@ -149,17 +149,21 @@ public record class Graph
             : $"({g.Description})";
         return this;
     }
-    public Graph ZeroPlus(Graph g)
+    public Graph ZeroPlus(Graph g, HashSet<Node>? loopset = null)
     {
         this.Edges.Add(new(this.Head, this.Tail)); //direct pass
         this.Edges.Add(new(g.Tail, g.Head)); //back link
         this.Description = $"({g.Description})*";
+        loopset?.UnionWith(this.Nodes);
+        loopset?.UnionWith(g.Nodes);
         return this.EmbedOne(g);
     }
-    public Graph OnePlus(Graph g)
+    public Graph OnePlus(Graph g, HashSet<Node>? loopset = null)
     {
         this.Edges.Add(new(g.Tail, g.Head)); //back link
         this.Description = $"({g.Description})+";
+        loopset?.UnionWith(this.Nodes);
+        loopset?.UnionWith(g.Nodes);
         return this.EmbedOne(g);
     }
     public Graph ZeroOne(Graph g)

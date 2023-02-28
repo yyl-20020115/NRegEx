@@ -45,7 +45,6 @@ public record class Node
 
     public int SetId(int id) => this.id = id;
     public readonly BitArray? CharSet = null;
-
     public readonly HashSet<Node> Inputs = new ();
     public readonly HashSet<Node> Outputs = new ();
     public Node(string name = "") => Name = name;
@@ -101,6 +100,24 @@ public record class Node
 
     public static string FormatNodes(IEnumerable<Node> nodes) 
         => string.Join(',', nodes.Select(n => n.id).ToArray());
+    public static string FormatCharset(BitArray chars)
+    {
+        var builder = new StringBuilder();
+        for(int i = 0;i<chars.Count;i++)
+        {
+            if (chars[i])
+            {
+                builder.Append('\'');
+                builder.Append(char.ConvertFromUtf32(i));
+                builder.Append('\'');
+                if (i < chars.Count - 1)
+                {
+                    builder.Append(',');
+                }
+            }
+        }
+        return builder.ToString();
+    }
     public override string ToString() 
-        => $"[({this.Id},{(this.Inverted?'T':'F')}):{string.Join(',',this.CharSet??new(0))} IN:{FormatNodes(this.Inputs)}  OUT:{FormatNodes(this.Outputs)}]";
+        => $"[({this.Id},{(this.Inverted?'T':'F')}):{FormatCharset(this.CharSet??new(0))} IN:{FormatNodes(this.Inputs)}  OUT:{FormatNodes(this.Outputs)}]";
 }

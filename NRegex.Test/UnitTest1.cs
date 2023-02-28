@@ -140,7 +140,7 @@ public class UnitTest1
         var regex5 = new Regex(regexString5);
         ExportAsDot(regex5.Graph);
         Assert.IsFalse(regex5.IsMatch(""));
-        Assert.IsTrue(regex5.IsMatch("1000101"));
+        Assert.IsTrue(regex5.IsMatch("11101"));
         Assert.IsTrue(regex5.IsMatch("1111101"));
     }
     [TestMethod]

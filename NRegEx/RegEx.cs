@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Diagnostics;
 using System.Text;
 
 namespace NRegEx;
@@ -137,7 +138,6 @@ public class Regex
         var heads = this.Graph.Nodes.Where(n=>n.Inputs.Count==0);
         var nodes = heads.ToHashSet();
         var i = start;
-        var guard = new BitArray(Graph.Nodes.Count);
         while (nodes.Count > 0 && i < length)
         {
             var c = input[i];
@@ -154,42 +154,28 @@ public class Regex
                 }
                 else if (d.Value)
                 {
+                    Debug.WriteLine($"Hit('{c}') at ({i}):{node.Id}");
                     hit = true;
                     //needs all hits
                     nodes.UnionWith(node.Outputs);
                 }
             }
+            Debug.WriteLine($"Nodes:{string.Join(',',nodes)}");
             if (hit)
             {
-                guard.SetAll(false);
                 i++;
-                var any = false;
-                while (!any)
+                Debug.WriteLine($"Step at i={i},Length={input.Length}");
+                if (i == input.Length)
                 {
                     copies = nodes.ToArray();
                     nodes.Clear();
                     foreach (var node in copies)
                     {
-                        if (node.IsVirtual)
-                        {
-                            any = true;
-                            nodes.UnionWith(node.Outputs);
-                        }
-                        else
-                        {
-                            nodes.Add(node);
-                        }
+                        nodes.UnionWith(node.Outputs);
                     }
+                    break;
                 }
-            }
-            else
-            {
-                foreach (var n in nodes)
-                {
-                    if (guard[n.Id]) return false; //found loop
-                    guard[n.Id] = true;
-                }
-            }
+            }     
         }
 
         return i == input.Length && RegExGraphBuilder.HasPassThrough(this.Graph,nodes.ToArray());
