@@ -132,7 +132,7 @@ public static class RegExGraphBuilder
                 {
                     if (node == tail)
                         return true;
-                    else if (node.IsVirtual)
+                    else if (node.IsLink)
                         nodes.UnionWith(node.Outputs);
                 }
             }

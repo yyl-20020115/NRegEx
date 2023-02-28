@@ -125,24 +125,6 @@ public class Regex
     protected virtual Graph Build()
         => RegExDomParser.Build(this.Name,this.Pattern);
 
-    protected void FetchNodes(HashSet<Node> inputs, HashSet<Node> outputs)
-    {
-        foreach (var node in inputs)
-        {
-            if (outputs.Contains(node))
-            {
-                continue;
-            }
-            else if (!node.IsVirtual)
-            {
-                outputs.Add(node);
-            }
-            else 
-            {
-                this.FetchNodes(node.Outputs, outputs);
-            }
-        }
-    }
     public bool IsCompletelyMatch(string input, int start = 0, int length = -1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
@@ -165,7 +147,7 @@ public class Regex
                 var d = node.TryHit(c);
                 if (d == null)
                 {
-                    this.FetchNodes(node.Outputs, nodes);
+                    node.FetchNodes(nodes);
                     continue;
                 }
                 else if (d.Value)

@@ -40,7 +40,7 @@ public class RegExArray
             var copies = nodes.ToArray();
             last = nodes;
             nodes = new HashSet<Node>();
-            if (copies.All(copy => copy.IsVirtual))
+            if (copies.All(copy => copy.IsLink))
                 nodes.UnionWith(copies.SelectMany(n => n.Outputs));
             else
             {

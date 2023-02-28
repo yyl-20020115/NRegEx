@@ -36,12 +36,11 @@ public class Node
 
     protected static int Nid = 0;
     protected int id;
-    public bool IsVirtual => this.CharSet == null || this.CharSet.Count == 0;
-
+    public bool IsLink => this.CharSet == null || this.CharSet.Count == 0;
     public readonly bool Inverted;
-    public readonly string Name;
+    public readonly string Name ="";
     public bool IsBridge 
-        => this.IsVirtual 
+        => this.IsLink 
         && this.Inputs.Count == 1 
         && this.Outputs.Count == 1;
 
@@ -49,6 +48,7 @@ public class Node
 
     public int SetId(int id) => this.id = id;
     public readonly BitArray? CharSet = null;
+    public readonly int[]? CharsArray;
     public readonly HashSet<Node> Inputs = new ();
     public readonly HashSet<Node> Outputs = new ();
     public Node(string name = "") => Name = name;
@@ -67,6 +67,7 @@ public class Node
         if (chars!=null && chars.Length > 0)
         {
             this.Inverted = inverted;
+            this.CharsArray = chars;
             this.CharSet = new BitArray(chars.Max(m => m) + 1);
             foreach (var c in chars) this.CharSet[c] = true;
             var ts = chars.Select(c => new Rune(c >= 0 ? c : ' ').ToString());
@@ -74,9 +75,32 @@ public class Node
             var st = Utils.EscapeString(tt, true).PadRight(16)[..16].TrimEnd();
             this.Name = $"'[{(this.Inverted ? '-' : '+')}]" + st + "'";
         }
-        else 
+    }
+    public Node FetchNodes(HashSet<Node> outputs)
+    {
+        FetchNodes(this,outputs);
+        return this;
+    }
+    protected static void FetchNodes(Node node, HashSet<Node> outputs)
+    {
+        FetchNodes(node.Outputs, outputs);
+    }
+    protected static void FetchNodes(HashSet<Node> inputs, HashSet<Node> outputs)
+    {
+        foreach (var node in inputs)
         {
-            this.Name = string.Empty;
+            if (outputs.Contains(node))
+            {
+                continue;
+            }
+            else if (!node.IsLink)
+            {
+                outputs.Add(node);
+            }
+            else
+            {
+                FetchNodes(node.Outputs, outputs);
+            }
         }
     }
 
