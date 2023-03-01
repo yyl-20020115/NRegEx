@@ -1,5 +1,7 @@
-﻿//TODO: capture
-//TODO: lookaround
+﻿//TODO: capture (how?)
+//TODO: lookaround (not used)
+//TODO: word boundary, line start, line end
+//TODO: check generator
 
 字符 	描述
 \ 	将下一个字符标记为一个特殊字符、或一个原义字符、或一个向后引用、或一个八进制转义符。
