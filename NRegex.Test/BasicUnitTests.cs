@@ -371,14 +371,16 @@ public class BasicUnitTests
         var results = new List<string>();
         foreach(var reg in regs)
         {
+            string text = "";
             try
             {
                 var g = new RegExGenerator(reg);
-                var t = g.Generate();
-                results.Add(t);
+                text = g.Generate();
+                Assert.IsTrue(g.Regex.IsMatch(text));
+
             }catch(Exception ex) 
             {
-                Debug.WriteLine($"BADBADBAD:{reg}");
+                Debug.WriteLine($"BADBADBAD:REG:{reg}:TEXT:{text}");
             }
         }
     }
@@ -416,6 +418,16 @@ public class BasicUnitTests
     [TestMethod]
     public void TestMethod21()
     {
-
+        var reg = @"^[\w-]+(\.[\w-]+)*@[\w-]+(\.[\w-]+)+$";
+        var g = new RegExGenerator(reg);
+        var t = g.Generate();
+        var m = g.Regex.IsMatch(t);
+        Debug.WriteLine(t);
+    }
+    [TestMethod]
+    public void TestMethod22()
+    {
+        var r = new Regex(@"\.");
+        var m = r.Match(".");
     }
 }

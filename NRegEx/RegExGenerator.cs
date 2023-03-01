@@ -20,14 +20,15 @@ public class RegExGenerator
 
     public readonly Regex Regex;
     public readonly Random Random;
-    public int MaxRetries = 100;
+    public readonly int MaxRetries;
 
-    public RegExGenerator(string regex, Random? random = null)
+    public RegExGenerator(string regex, Random? random = null, int maxRetries = 8)
             : this(new Regex(RemoveStartEndMarkers(regex)), random) { }
-    public RegExGenerator(Regex regex, Random? random = null)
+    public RegExGenerator(Regex regex, Random? random = null, int maxRetries = 8)
     {
         this.Regex = regex;
-        Random = random ?? Random.Shared;
+        this.MaxRetries = maxRetries;
+        this.Random = random ?? Random.Shared;
     }
     
     protected virtual int GenerateRandomRune(int[]? runes) 
@@ -43,11 +44,10 @@ public class RegExGenerator
         => this.Generate(this.GetRandomNode(node.Children), builder);
     protected virtual StringBuilder? GenerateSequence(RegExNode node, StringBuilder? builder = null)
     {
-        foreach (var child in node.Children)
-            this.Generate(child, builder);
+        node.Children.ForEach(c => this.Generate(c, builder));
         return builder;
     }
-    protected virtual StringBuilder? GenerateLiteral(int[] runes, int count,StringBuilder? builder)
+    protected virtual StringBuilder? GenerateRune(int[] runes, int count,StringBuilder? builder)
     {
         for(int i = 0; i < count; i++)
         {
@@ -65,11 +65,12 @@ public class RegExGenerator
         }
         return runes;
     }
-    protected virtual StringBuilder? GenerateLiteral(RegExNode node, StringBuilder? builder = null)
-        => !string.IsNullOrEmpty(node.Value) && node.Length >= 0
-            ? builder?.Append(node.Value)
-            : this.GenerateLiteral(
-                this.GetRunes(node.Runes ?? Array.Empty<int>(), node.Inverted), 1, builder);
+    protected virtual StringBuilder? GenerateLiteral(RegExNode node, StringBuilder? builder = null) 
+        => !string.IsNullOrEmpty(node.Value) && node.Length >= 0 ? (builder?.Append(node.Value)) : builder;
+    protected virtual StringBuilder? GenerateRune(RegExNode node, StringBuilder? builder = null) 
+        => this.GenerateRune(
+            this.GetRunes(node.Runes ?? Array.Empty<int>(), node.Inverted), 1, builder);
+
     protected virtual StringBuilder? GenerateAnyChar(bool withNewLine, StringBuilder? builder = null) 
         => builder?.Append(char.ConvertFromUtf32(GenerateRandomRune(
                 withNewLine
@@ -99,6 +100,7 @@ public class RegExGenerator
         TokenTypes.Sequence => this.GenerateSequence(node, builder),
         TokenTypes.AnyCharExcludingNewLine => this.GenerateAnyChar(false,builder),
         TokenTypes.AnyCharIncludingNewLine => this.GenerateAnyChar(true, builder),
+        TokenTypes.RuneClass =>this.GenerateRune(node,builder),
         TokenTypes.ZeroPlus => this.GenerateRepeats(node, builder),
         TokenTypes.OnePlus => this.GenerateRepeats(node, builder),
         TokenTypes.ZeroOne => this.GenerateRepeats(node, builder),

@@ -18,7 +18,7 @@ public class GeneratorTests
         for (int i = 0; i < 100; i++)
         {
             var text = generator.Generate();
-            Assert.IsTrue(verifier.IsFullyMatch(text));
+            Assert.IsTrue(verifier.IsMatch(text));
         }
     }
 

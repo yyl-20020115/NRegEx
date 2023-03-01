@@ -1,6 +1,6 @@
 ﻿namespace NRegEx;
 
-public record class Capture(int InclusiveStart = 0, int ExclusiveEnd = -1, string? Value = null);
+public record class Capture(string Name = "", int InclusiveStart = 0, int ExclusiveEnd = -1, string? Value = null);
 
 public delegate string CaptureEvaluator(Capture capture);
 public class Regex
@@ -23,7 +23,7 @@ public class Regex
         => new Regex(pattern).IsMatch(input, start, length);
     public static bool IsFullyMatch(string input, string pattern, int start = 0, int length = -1)
         => new Regex(pattern).IsFullyMatch(input, start, length);
-    public static Capture Match(string input, string pattern, int start = 0, int length = -1)
+    public static Capture? Match(string input, string pattern, int start = 0, int length = -1)
         => new Regex(pattern).Match(input, start, length);
     public static List<Capture> Matches(string input, string pattern, int start = 0, int length = -1)
          => new Regex(pattern).Matches(input, start, length);
@@ -158,7 +158,7 @@ public class Regex
 
         int sp = 0, ep = 0;
         return this.IsMatchInternal(input, start, length, ref sp, ref ep)
-            ? new Capture(sp, ep, input[sp..ep]) : null;
+            ? new Capture(this.Name, sp, ep, input[sp..ep]) : null;
     }
 
     public List<Capture> Matches(string input, int start = 0, int length = -1)
