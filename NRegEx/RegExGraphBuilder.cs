@@ -180,7 +180,7 @@ public static class RegExGraphBuilder
                         : new Node(c) { Parent = graph }));
                 }
                 break;
-            case TokenTypes.CharClass:
+            case TokenTypes.RuneClass:
                 {
                     graph.ComposeLiteral(new Node(node.Inverted, 
                         node.Runes ?? Array.Empty<int>()) { Parent = graph });

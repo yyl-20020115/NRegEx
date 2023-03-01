@@ -5,7 +5,7 @@ public enum TokenTypes : int
 {
     EOF = -1,
     Literal = 0,
-    CharClass = 1,
+    RuneClass = 1,
     FoldCase = 2, //NOT USED
     AnyCharExcludingNewLine = 3,
     AnyCharIncludingNewLine = 4,

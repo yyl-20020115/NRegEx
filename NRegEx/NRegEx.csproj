@@ -12,4 +12,8 @@
     <Compile Remove="ResizableBitSet.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="CharClass.cs.old" />
+  </ItemGroup>
+
 </Project>
