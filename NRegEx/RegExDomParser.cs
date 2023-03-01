@@ -51,8 +51,10 @@ public class RegExDomParser
     {
         int level = 0;
         int c;
+        char d;
         while (-1 != (c = this.Reader.Peek()))
         {
+            d = ((char)c);
             int Position = this.Reader.Position;
             switch (c)
             {
@@ -126,19 +128,24 @@ public class RegExDomParser
                     }
                     continue;
                 case '(':
-                    if (((this.Options & Options.PERL) != Options.None) &&
-                        this.Reader.LookingAt("(?"))
-                        this.ParsePerlFlags(Reader);
-                    else
                     {
-                        this.Push(
-                            new(TokenTypes.OpenParenthesis, Reader.Take(),
-                            CaptureIndex: ++CaptureIndex, Position: Position));
+                        if (((this.Options & Options.PERL) != Options.None) &&
+                            this.Reader.LookingAt("(?"))
+                            this.ParsePerlFlags(Reader);
+                        else
+                        {
+                            this.Push(
+                                new(TokenTypes.OpenParenthesis, Reader.Take(),
+                                CaptureIndex: ++CaptureIndex, Position: Position));
+                        }
                         level++;
                     }
                     continue;
                 case ')':
-                    this.ProcessCloseParenthesis(ref level);
+                    {
+                        this.ProcessCloseParenthesis();
+                        level--;
+                    }
                     continue;
                 case '{':
                     {
@@ -177,7 +184,7 @@ public class RegExDomParser
 
         return this.NodeStack.Pop();
     }
-    protected void ProcessCloseParenthesis(ref int level)
+    protected void ProcessCloseParenthesis()
     {
         this.Reader.Skip();
         this.ProcessStack();
@@ -187,7 +194,6 @@ public class RegExDomParser
             throw new RegExSyntaxException(
                 ERR_MISSING_PAREN, this.Pattern);
         this.Push(result);
-        level--;
     }
     protected void ProcessStack()
     {

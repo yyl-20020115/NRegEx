@@ -15,10 +15,16 @@ public class Regex
         => new Regex(pattern).Replace(input, evaluator, count, start);
 
     public static bool IsMatch(string input, string pattern, int start = 0, int length = -1)
+        => new Regex(pattern).IsMatch(input, start, length);
+    public static bool IsMatchCompletely(string input, string pattern, int start = 0, int length = -1)
         => new Regex(pattern).IsMatchCompletely(input, start, length);
     public static Capture Match(string input, string pattern, int start = 0, int length = -1)
+        => new Regex(pattern).Match(input, start, length);
+    public static Capture MatchCompletely(string input, string pattern, int start = 0, int length = -1)
         => new Regex(pattern).MatchCompletely(input, start, length);
     public static List<Capture> Matches(string input, string pattern, int start = 0, int length = -1)
+        => new Regex(pattern).Matches(input, start, length);
+    public static List<Capture> MatchesCompletely(string input, string pattern, int start = 0, int length = -1)
         => new Regex(pattern).MatchesCompletely(input, start, length);
     /// <summary>
     /// We should check easy back tracing regex first
@@ -51,15 +57,17 @@ public class Regex
         if (length < 0) length = input.Length - start;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
 
-        int o = start;
-        int i = this.FindStart(input, o);
+        int i = this.FindStart(input, start);
+        int o = i;
         while (i >= 0 && i < length)
         {
-            var ret = this.IsMatchCompletelyInternal(input, i, length, ref o);
+            var ret = this.IsMatchCompletelyInternal(input, i, length, ref o,false);
             if (ret)
                 return true;
-            else
+            else if (o > i)
                 i = this.FindStart(input, o);
+            else
+                break;
         }
         return false;
     }
@@ -92,9 +100,9 @@ public class Regex
         if (start < 0 || start > input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length - start;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
-        return IsMatchCompletelyInternal(input, start, length, ref start);
+        return IsMatchCompletelyInternal(input, start, length, ref start, true);
     }
-    protected bool IsMatchCompletelyInternal(string input, int start, int length, ref int i)
+    protected bool IsMatchCompletelyInternal(string input, int start, int length, ref int i, bool strict)
     {
         if (length == 0 && RegExGraphBuilder.HasPassThrough(this.Graph)) return true;
 
@@ -121,9 +129,17 @@ public class Regex
             }
             i += hit ? 1 : 0;
         }
-
-        return i == input.Length && RegExGraphBuilder.HasPassThrough(this.Graph, nodes.ToArray());
+        return strict
+            ? i == input.Length
+                && RegExGraphBuilder.HasPassThrough(this.Graph, nodes.ToArray())
+            : i <= input.Length
+                && (nodes.Count==0 || RegExGraphBuilder.HasPassThrough(this.Graph, nodes.ToArray()));
     }
+    public Capture Match(string input, int start = 0, int length = -1)
+    {
+        return null;
+    }
+
     public Capture MatchCompletely(string input, int start = 0, int length = -1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
@@ -177,6 +193,11 @@ public class Regex
             : new(start, -1)
             ;
     }
+    public List<Capture> Matches(string input, int start = 0, int length = -1)
+    {
+        return null;
+    }
+
     public List<Capture> MatchesCompletely(string input, int start = 0, int length = -1)
     {
         var captures = new List<Capture>();
@@ -216,7 +237,7 @@ public class Regex
     }
     public string[] Split(string input, int count = 0, int start = 0)
     {
-        var matchs = this.MatchesCompletely(input, start);
+        var matchs = this.Matches(input, start);
         var result = new List<string>();
         var c = start = 0;
         foreach (var match in matchs)

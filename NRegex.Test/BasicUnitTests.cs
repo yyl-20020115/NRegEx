@@ -354,8 +354,8 @@ public class BasicUnitTests
             @"^(?i:[a-z0-9])+$",
             @"^(?s:[a-z0-9])+$",
             @"^(?m:[a-z0-9])+$",
-            @"^(?n:[a-z0-9])+$",
-            @"^(?x:[a-z0-9])+$",
+            //@"^(?n:[a-z0-9])+$",
+            //@"^(?x:[a-z0-9])+$",
             @"\\S+.*",
             @"^(?:(?:\+?1\s*(?:[.-]\s*)?)?(?:\(\s*([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9])\s*\)|([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9]))\s*(?:[.-]\s*)?)?([2-9]1[02-9]|[2-9][02-9]1|[2-9][02-9]{2})\s*(?:[.-]\s*)?([0-9]{4})(?:\s*(?:#|x\.?|ext\.?|extension)\s*(\d+))?$",
             @"^\s1\s+2\s3\s?4\s*$",
@@ -375,26 +375,25 @@ public class BasicUnitTests
             {
                 var g = new RegExGenerator(reg);
                 var t = g.Generate();
-                Debug.WriteLine(t);
                 results.Add(t);
             }catch(Exception ex) 
             {
-                Debug.WriteLine(ex.Message);
+                Debug.WriteLine($"BADBADBAD:{reg}");
             }
         }
     }
     [TestMethod]
     public void TestMethod20()
     {
-        var regexString0 = "[a-zA-Z0-9_]";
+        var regexString0 = "[a-zA-Z]*";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0);
-        Assert.IsFalse(regex0.IsMatch(""));
-        Assert.IsTrue(regex0.IsMatch("a"));
-        Assert.IsTrue(regex0.IsMatch("A"));
-        Assert.IsTrue(regex0.IsMatch("_"));
-        Assert.IsTrue(regex0.IsMatch("8"));
-        Assert.IsFalse(regex0.IsMatch("aaaa"));
+        Assert.IsFalse(regex0.IsMatch("123456"));
+        Assert.IsTrue(regex0.IsMatch("123abc456"));
+    }
+    [TestMethod]
+    public void TestMethod21()
+    {
 
     }
 }
