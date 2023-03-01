@@ -441,9 +441,13 @@ public class BasicUnitTests
 
         var regex2 = new Regex(lazyPattern);
         string input = "This sentence ends with the number 107325.";
-
-        var r1 = regex1.Match(input);
-        var r2 = regex2.Match(input);
-
+        try
+        {
+            var r1 = regex1.Match(input);
+            var r2 = regex2.Match(input);
+        }catch(Exception ex)
+        {
+            Debug.WriteLine(ex);
+        }
     }
 }

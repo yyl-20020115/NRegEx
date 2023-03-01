@@ -55,6 +55,7 @@ public static class RegExGraphBuilder
                 nodes.Add(node);
             }
         }
+#if true
         var segments = new List<List<Node>>();
         do
         {
@@ -106,9 +107,30 @@ public static class RegExGraphBuilder
         }
 
         graph.Nodes.RemoveWhere(n => !graph.Edges.Any(e => e.Head == n || e.Tail == n));
+#endif
 
-        return graph;
+
+        return graph;// FixGraph(graph);
     }
+    public static Graph FixGraph(Graph g)
+    {
+        if (g is not null)
+        {
+            foreach (var e in g.Edges)
+            {
+                if (!e.Head.Outputs.Contains(e.Tail))
+                {
+                    e.Head.Outputs.Add(e.Tail);
+                }
+                if (e.Tail.Inputs.Contains(e.Head))
+                {
+                    e.Tail.Outputs.Add(e.Head);
+                }
+            }
+        }
+        return g;
+    }
+
     public static bool HasPassThrough(Graph graph)
         => HasPassThrough(graph.Tail,graph.Head);
     public static bool HasPassThrough(Graph graph, Node[] nodes)
@@ -196,9 +218,9 @@ public static class RegExGraphBuilder
                 break;
             case TokenTypes.AnyCharExcludingNewLine:
                 {
-                    //\r\n excluded
+                    //\n excluded
                     graph.UnionWith(new Node(true,
-                        Node.ReturnChar, Node.NewLineChar) { Parent = graph });
+                        Node.NewLineChar) { Parent = graph });
                 }
                 break;
             case TokenTypes.Sequence:
