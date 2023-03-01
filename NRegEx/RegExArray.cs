@@ -11,20 +11,25 @@ public class RegExArray : Regex
 {
     public readonly Dictionary<string, Regex> RegexDictionary = new();
     public readonly Regex[] Regexs;
+    public readonly List<RegExNode> SubModels;
+    public readonly List<Graph> SubGraphs = new();
     public RegExArray(params string[] regexs)
         : this(regexs.Select(r => new Regex(r)).ToArray()) { }
     public RegExArray(params Regex[] regexs)
-        : base("", "")
+        : base(string.Join('|',regexs.Select(r=>$"({r.Pattern})").ToArray()))
     {
         if (regexs.Length == 0)
             throw new ArgumentException(nameof(regexs));
-        this.Model = new(TokenTypes.Union) { };
+        this.Model = new(TokenTypes.Union) { PatternName = this.Pattern };
         this.Graph = new() { SourceNode = this.Model };
+        this.SubModels = this.Model.Children;
         foreach (var regex in this.Regexs = regexs)
         {
             this.RegexDictionary[regex.Name] = regex;
             this.Model.Children.Add(regex.Model);
-            this.Graph.UnionWith(regex.Graph.Copy());
+            var sub = regex.Graph.Copy();
+            this.SubGraphs.Add(sub);
+            this.Graph.UnionWith(sub);
         }
     }
 }
