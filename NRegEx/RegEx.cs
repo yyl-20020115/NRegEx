@@ -1,91 +1,10 @@
-﻿using System.Text;
-
-namespace NRegEx;
+﻿namespace NRegEx;
 
 public record class Capture(int Index = 0, int Length = -1, string? Value = null);
 
 public delegate string CaptureEvaluator(Capture capture);
 public class Regex
 {
-    //|()[]{}^$*+?\.
-    //there is no place for #
-    public readonly static char[] MetaChars
-        = { '|', '(', ')', '[', ']', '{', '}', '^', '$', '*', '+', '?', '\\', '.' };
-
-    public static bool IsMetachar(char ch)
-        => Array.IndexOf(MetaChars, ch) >= 0;
-
-    public static string Escape(string input)
-    {
-        var chars = input.ToArray();
-        if ((Array.FindIndex(chars, ch => IsMetachar(ch)) is int i) && (-1 == i)) return input;
-        var builder = new StringBuilder(input.Length * 3);
-        var last = 0;
-        while (true)
-        {
-            builder.Append(chars[last..i]);
-            if (i >= chars.Length) break;
-            var ch = chars[i++];
-            last = i;
-            builder.Append('\\');
-            builder.Append(ch switch
-            {
-                '\n' => 'n',
-                '\r' => 'r',
-                '\t' => 't',
-                '\f' => 'f',
-                _ => ch,
-            });
-
-            var tail = chars[last..];
-            if (-1 == (i = Array.FindIndex(tail, ch => IsMetachar(ch))))
-            {
-                builder.Append(tail);
-                break;
-            }
-            else
-            {
-                i += last;
-            }
-        }
-        return builder.ToString();
-    }
-
-    public static string Unescape(string input)
-    {
-        var chars = input.ToArray();
-        if ((Array.IndexOf(chars, '\\') is int i) && (-1 == i)) return input;
-        var last = 0;
-        var builder = new StringBuilder(input.Length * 3);
-        while (true)
-        {
-            builder.Append(chars[last..i]);
-            if (i == chars.Length) break;
-            var ch = chars[last = ++i];
-            builder.Append(ch switch
-            {
-                'n' => '\n',
-                'r' => '\r',
-                't' => '\t',
-                'f' => '\f',
-                _ => ch,
-            });
-
-            last = ch == '\\' ? last + 2 : last + 1;
-            var tail = chars[last..];
-            if (-1 == (i = Array.IndexOf(tail, '\\')))
-            {
-                builder.Append(tail);
-                break;
-            }
-            else
-            {
-                i += last;
-            }
-        }
-        return builder.ToString();
-    }
-
     public static string[] Split(string input, string pattern, int count = 0, int start = 0)
         => new Regex(pattern).Split(input, count, start);
 
@@ -96,11 +15,11 @@ public class Regex
         => new Regex(pattern).Replace(input, evaluator, count, start);
 
     public static bool IsMatch(string input, string pattern, int start = 0, int length = -1)
-        => new Regex(pattern).IsCompletelyMatch(input, start, length);
+        => new Regex(pattern).IsMatchCompletely(input, start, length);
     public static Capture Match(string input, string pattern, int start = 0, int length = -1)
-        => new Regex(pattern).CompletelyMatch(input, start, length);
+        => new Regex(pattern).MatchCompletely(input, start, length);
     public static List<Capture> Matches(string input, string pattern, int start = 0, int length = -1)
-        => new Regex(pattern).Matches(input, start, length);
+        => new Regex(pattern).MatchesCompletely(input, start, length);
     /// <summary>
     /// We should check easy back tracing regex first
     /// or we'll have to accept the early (not lazy or greedy) result for sure.
@@ -125,18 +44,62 @@ public class Regex
         this.Graph = RegExGraphBuilder.Build(this.Model, 0,
             (this.Options & Options.FOLD_CASE) == Options.FOLD_CASE);
     }
-
-    public bool IsCompletelyMatch(string input, int start = 0, int length = -1)
+    public bool IsMatch(string input, int start = 0, int length = -1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
         if (start < 0 || start > input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length - start;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
+
+        int o = start;
+        int i = this.FindStart(input, o);
+        while (i >= 0 && i < length)
+        {
+            var ret = this.IsMatchCompletelyInternal(input, i, length, ref o);
+            if (ret)
+                return true;
+            else
+                i = this.FindStart(input, o);
+        }
+        return false;
+    }
+    protected int FindStart(string input, int start)
+    {
+        //^should always starts with start of input
+        if (this.Pattern.StartsWith('^') && start>0)
+        {
+            return -1;
+        }
+        else if (start < input.Length)
+        {
+            var heads = this.Graph.Nodes.Where(n => n.Inputs.Count == 0).ToArray();
+            var nodes = new HashSet<Node>();
+            foreach (var head in heads)
+            {
+                head.FetchNodes(nodes, true);
+            }
+            for(int i = start; i < input.Length; i++)
+            {
+                if (nodes.Any(n => n.TryHit(input[i]).GetValueOrDefault()))
+                    return i;
+            }
+        }
+        return -1;
+    }
+    public bool IsMatchCompletely(string input, int start = 0, int length = -1)
+    {
+        if (input == null) throw new ArgumentNullException(nameof(input));
+        if (start < 0 || start > input.Length) throw new ArgumentOutOfRangeException(nameof(start));
+        if (length < 0) length = input.Length - start;
+        if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
+        return IsMatchCompletelyInternal(input, start, length, ref start);
+    }
+    protected bool IsMatchCompletelyInternal(string input, int start, int length, ref int i)
+    {
         if (length == 0 && RegExGraphBuilder.HasPassThrough(this.Graph)) return true;
 
         var heads = this.Graph.Nodes.Where(n => n.Inputs.Count == 0);
         var nodes = heads.ToHashSet();
-        var i = start;
         while (nodes.Count > 0 && i < length)
         {
             var c = input[i];
@@ -161,7 +124,7 @@ public class Regex
 
         return i == input.Length && RegExGraphBuilder.HasPassThrough(this.Graph, nodes.ToArray());
     }
-    public Capture CompletelyMatch(string input, int start = 0, int length = -1)
+    public Capture MatchCompletely(string input, int start = 0, int length = -1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
         if (start < 0 || start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
@@ -214,12 +177,12 @@ public class Regex
             : new(start, -1)
             ;
     }
-    public List<Capture> Matches(string input, int start = 0, int length = -1)
+    public List<Capture> MatchesCompletely(string input, int start = 0, int length = -1)
     {
         var captures = new List<Capture>();
         while (true)
         {
-            var capture = this.CompletelyMatch(input, start, length);
+            var capture = this.MatchCompletely(input, start, length);
             if (null == capture)
                 break;
             else
@@ -236,7 +199,7 @@ public class Regex
         => this.Replace(input, (Capture capture) => replacement, count, start);
     public string Replace(string input, CaptureEvaluator evaluator, int count = 0, int start = 0)
     {
-        var matchs = this.Matches(input, start);
+        var matchs = this.MatchesCompletely(input, start);
         var result = new List<string>();
         var c = start = 0;
         foreach (var match in matchs)
@@ -253,7 +216,7 @@ public class Regex
     }
     public string[] Split(string input, int count = 0, int start = 0)
     {
-        var matchs = this.Matches(input, start);
+        var matchs = this.MatchesCompletely(input, start);
         var result = new List<string>();
         var c = start = 0;
         foreach (var match in matchs)

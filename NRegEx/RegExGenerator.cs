@@ -70,21 +70,11 @@ public class RegExGenerator
             ? builder?.Append(node.Value)
             : this.GenerateLiteral(
                 this.GetRunes(node.Runes ?? Array.Empty<int>(), node.Inverted), 1, builder);
-    protected virtual StringBuilder? GenerateAnyChar(bool nl, StringBuilder? builder = null)
-    {
-        int c = 0;
-        try
-        {
-            c = GenerateRandomRune(
-                    nl 
-                    ? Node.AllChars 
-                    : Node.AllCharsWithoutNewLine);
-            return builder?.Append(char.ConvertFromUtf32(c));
-        }catch(Exception ex) 
-        {
-            return builder?.Append("");
-        }
-    }
+    protected virtual StringBuilder? GenerateAnyChar(bool withNewLine, StringBuilder? builder = null) 
+        => builder?.Append(char.ConvertFromUtf32(GenerateRandomRune(
+                withNewLine
+                ? Node.AllChars
+                : Node.AllCharsWithoutNewLine)));
 
     protected virtual StringBuilder? GenerateRepeats(RegExNode node, StringBuilder? builder = null)
     {
