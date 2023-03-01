@@ -55,68 +55,59 @@ public static class RegExGraphBuilder
                 nodes.Add(node);
             }
         }
-#if true
-        var segments = new List<List<Node>>();
-        do
+        return CompactDoubles(graph);
+    }
+    public static Graph CompactDoubles(Graph graph, int minlength =2)
+    {
+        var pairs = new List<(List<Node> nodes, List<Edge> edges)>();
+        var bridges = new HashSet<Node>();
+        foreach (var node in graph.Nodes)
         {
-            var line = new List<Node>();
-            foreach (var node in nodes)
+            if (bridges.Contains(node))
+                continue;
+            if (node.IsBridge)
             {
-                if (node.IsBridge)
+                var dots = new List<Node>();
+                var stream = new List<Edge>();
+                var next = node;
+                var last = node;
+                var edge = graph.Edges.Single(e => e.Tail == next);
+                do
                 {
-                    line.Add(node);
-                    var next = node.Outputs.Single();
-                    while (next.IsBridge)
-                    {
-                        line.Add(next);
-                        next = next.Outputs.Single();
-                    }
-                    break;
-                }
-            }
-            if(line.Count > 0)
-            {
-                segments.Add(line);
-            }
-            nodes.RemoveWhere(n => line.Contains(n));
-        } while (nodes.Any(n => n.IsBridge));
-        
-        foreach(var segment in segments)
-        {
-            if (segment.Count >= 2)
-            {
-                var head = segment[0];
-                var tail = segment[^1];
-
-                var before = head.Inputs.Single();
-                var after = tail.Outputs.Single();
-                before.Outputs.Clear();
-                after.Inputs.Clear();
-
-                segment.ForEach(s => s.Inputs.Clear());
-                segment.ForEach(s => s.Outputs.Clear());
-
-                var c = graph.Nodes.RemoveWhere(n => segment.Contains(n));
-                if (c > 0)
+                    dots.Add(next);
+                    stream.Add(edge);
+                    edge = graph.Edges.Single(e => e.Head == next);
+                    last = next;
+                    next = edge.Tail;
+                } while (next != null && next.IsBridge);
+                if (next != null && last != null && last != next)
                 {
-                    c = graph.Edges.RemoveWhere(e => segment.Contains(e.Tail));
-                    c = graph.Edges.RemoveWhere(e => segment.Contains(e.Head));
+                    edge = graph.Edges.FirstOrDefault(
+                        e => e.Head == last && e.Tail == next);
+                    if (edge != null)
+                        stream.Add(edge);
                 }
-                graph.Edges.Add(new Edge(before, after));
+                bridges.UnionWith(dots);
+                pairs.Add((dots, stream));
             }
         }
-
-        graph.Nodes.RemoveWhere(n => !graph.Edges.Any(e => e.Head == n || e.Tail == n));
-#endif
-
-
-        return graph;// FixGraph(graph);
-    }
-    public static Graph FixGraph(Graph g)
-    {
-        if (g is not null)
+        foreach (var (nodes, edges) in pairs)
         {
-            foreach (var e in g.Edges)
+            if (nodes.Count >= minlength)
+            {
+                var first = edges[0];
+                var last = edges[^1];
+                graph.Edges.Add(new (first.Head, last.Tail));
+                graph.RemoveNodes(nodes.ToHashSet());
+            }
+        }
+        return graph;
+    }
+    public static Graph FixGraph(Graph graph)
+    {
+        if (graph is not null)
+        {
+            foreach (var e in graph.Edges)
             {
                 if (!e.Head.Outputs.Contains(e.Tail))
                 {
@@ -128,7 +119,7 @@ public static class RegExGraphBuilder
                 }
             }
         }
-        return g;
+        return graph;
     }
 
     public static bool HasPassThrough(Graph graph)

@@ -1,4 +1,6 @@
-﻿namespace NRegEx;
+﻿using System.Xml.Linq;
+
+namespace NRegEx;
 public class Graph
 {
     protected static int Gid = 0;
@@ -225,4 +227,31 @@ public class Graph
     }
 
     public override string ToString() => $"H:{this.Head},T:{this.Tail}";
+
+    public Graph RemoveNode(Node node)
+    {
+        foreach(var n in this.Nodes)
+        {
+            n.Inputs.Remove(node);
+            n.Outputs.Remove(node);
+        }
+
+        this.Edges.RemoveWhere(e => e.Head == node || e.Tail == node);
+        this.Nodes.Remove(node);        
+        return this;
+    }
+    public Graph RemoveNodes(HashSet<Node> nodes)
+    {
+        foreach (var n in this.Nodes)
+        {
+            n.Inputs.ExceptWith(nodes);
+            n.Outputs.ExceptWith(nodes);
+        }
+
+        this.Edges.RemoveWhere(
+            e => nodes.Contains( e.Head ) || nodes.Contains(e.Tail));
+        this.Nodes.ExceptWith(nodes);
+        return this;
+    }
+
 }

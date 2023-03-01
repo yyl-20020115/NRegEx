@@ -84,7 +84,6 @@ public class BasicUnitTests
         var regexString0 = "abcd";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0);
-        //dot -T png  graph.dot -o graph.png
         Assert.IsFalse(regex0.IsFullyMatch("bcda"));
         Assert.IsTrue(regex0.IsFullyMatch("abcd"));
     }

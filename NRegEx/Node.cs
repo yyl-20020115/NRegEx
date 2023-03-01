@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Text;
+using System.Xml.Linq;
 
 namespace NRegEx;
 
@@ -72,15 +73,10 @@ public class Node
             this.charsArray = chars;
             this.charSet = new BitArray(chars.Max(m => m) + 1);
             foreach (var c in chars) this.charSet[c] = true;
-            try
-            {
-                this.Name = $"'[{(this.Inverted ? '-' : '+')}]" +
-                    Utils.EscapeString(
-                        Utils.RunesToString(chars.Where(c=>Unicode.IsValidUTF32(c)), ","), true).PadRight(16)[..16].TrimEnd()
-                    + "'";
-            }catch (Exception ex) 
-            {
-            }
+            this.Name = $"'[{(this.Inverted ? '-' : '+')}]" +
+                Utils.EscapeString(
+                    Utils.RunesToString(chars.Where(c=>Unicode.IsValidUTF32(c)), ","), true).PadRight(16)[..16].TrimEnd()
+                + "'";
         }
     }
     public Node FetchNodes(HashSet<Node> outputs, bool deep = true)
@@ -88,34 +84,25 @@ public class Node
         if (!deep)
         {
             outputs.UnionWith(this.Outputs);
+            outputs.Remove(this);
         }
         else
         {
-            FetchNodes(this, outputs, deep);
+            foreach(var node in this.Outputs)
+            {   
+                if (!node.IsLink)
+                {
+                    outputs.Add(node);
+                    continue;
+                }
+                else if (deep)
+                {
+                    node.FetchNodes(outputs, deep);
+                }
+
+            }
         }
         return this;
-    }
-    protected static void FetchNodes(Node node, HashSet<Node> outputs, bool deep = true)
-    {
-        FetchNodes(node.Outputs, outputs, deep);
-    }
-    protected static void FetchNodes(HashSet<Node> inputs, HashSet<Node> outputs, bool deep = true)
-    {
-        foreach (var node in inputs)
-        {
-            if (outputs.Contains(node))
-            {
-                continue;
-            }
-            else if (!node.IsLink)
-            {
-                outputs.Add(node);
-            }
-            else if (deep)
-            {
-                FetchNodes(node.Outputs, outputs, deep);
-            }
-        }
     }
 
     public Node UnionWith(params int[] runes)

@@ -1,6 +1,6 @@
 ﻿using CommandLine;
-using System.Text.RegularExpressions;
-
+using NRegEx;
+using System.Diagnostics;
 namespace NGrep;
 
 public class Options
@@ -107,7 +107,7 @@ public static class Program
 
         if (Options.PrintOnlyMatchingPart)
         {
-            Console.Write(lines[linenumber].Substring(match.Index, match.Length));
+            Console.Write(lines[linenumber][match.InclusiveStart.. match.ExclusiveEnd]);
         }
         else
         {
@@ -155,6 +155,31 @@ public static class Program
 
     public static void Main(string[] args)
     {
+        string greedyPattern = @".+(\d+)\.";
+        string lazyPattern = @".+?(\d+)\.";
+
+        var regex1 = new Regex(greedyPattern);
+
+        var regex2 = new Regex(lazyPattern);
+        string input = "This sentence ends with the number 107325.";
+        try
+        {
+            var r1 = regex1.Match(input);
+            var r2 = regex2.Match(input);
+
+            var s = r1.ToString();
+            var s2 = r2.ToString();
+
+
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex);
+        }
+
+
+
+
         try
         {
             Parser = new Parser(s =>
