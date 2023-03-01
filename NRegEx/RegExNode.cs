@@ -13,7 +13,8 @@ public record class RegExNode(
     TokenOptions TokenOptions = TokenOptions.Normal,
     bool Inverted = false,
     int Position = -1,
-    int Length = -1)
+    int Length = -1,
+    string? PatternName=null)
 {
     public List<RegExNode> Children = new();
 }

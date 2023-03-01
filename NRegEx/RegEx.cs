@@ -37,11 +37,11 @@ public class Regex
     //public static bool IsBacktracingFriendly(string regex)
     //    => !string.IsNullOrEmpty(regex)
     //    && Graph.IsBacktracingFriendly(new Regex(regex).Graph);
-    public readonly RegExNode Model;
-    public readonly Graph Graph;
     public readonly Options Options;
     public readonly string Pattern;
     public readonly string Name;
+    public RegExNode Model { get; protected set; }
+    public Graph Graph { get; protected set; }
     public Regex(string pattern, string? name = null, Options options = Options.PERL)
     {
         this.Pattern = pattern;
@@ -53,22 +53,24 @@ public class Regex
     }
     public bool IsMatch(string input, int start = 0, int length = -1)
     {
+        Node? last = null;
         int sp = 0, ep = 0;
-        return this.IsMatchInternal(input, start, length, ref sp, ref ep);
+        return this.IsMatchInternal(input, start, length, ref sp, ref ep, ref last);
     }
-    protected bool IsMatchInternal(string input, int start, int length, ref int sp, ref int ep)
+    protected bool IsMatchInternal(string input, int start, int length, ref int sp, ref int ep,ref Node? last)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
         if (start < 0 || start > input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length - start;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
         var tail = start + length;
+
         int i = this.MatchFindStart(input, start, tail);
         int o = sp = ep = i;
         while (i >= 0 && i < tail)
         {
             length -= (i - start);
-            if (this.IsMatchInternal(input, i, length, ref o, false))
+            if (this.IsMatchInternal(input, i, length, ref o,ref last, false))
             {
                 ep = o;
                 return true;
@@ -113,13 +115,15 @@ public class Regex
         if (start < 0 || start > input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length - start;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
-        return IsMatchInternal(input, start, length, ref start, true);
+        Node? last = null;
+        return IsMatchInternal(input, start, length, ref start,ref last, true);
     }
-    protected bool IsMatchInternal(string input, int start, int length, ref int i, bool strict)
+    protected bool IsMatchInternal(string input, int start, int length, ref int i,ref Node? last, bool strict)
     {
         if (length == 0 && RegExGraphBuilder.HasPassThrough(this.Graph)) return true;
         var tail = start + length;
         i = start;
+        
         var heads = this.Graph.Nodes.Where(n => n.Inputs.Count == 0);
         var nodes = heads.ToHashSet();
         while (nodes.Count > 0 && i < tail)
@@ -138,7 +142,7 @@ public class Regex
                 else if (d.Value)
                 {
                     hit = true;
-                    node.FetchNodes(nodes, false);
+                    last = node.FetchNodes(nodes, false);
                 }
             }
             i += hit ? 1 : 0;
@@ -155,10 +159,19 @@ public class Regex
         if (start < 0 || start > input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length - start;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
-
+        Node? last = null;
         int sp = 0, ep = 0;
-        return this.IsMatchInternal(input, start, length, ref sp, ref ep)
-            ? new Capture(this.Name, sp, ep, input[sp..ep]) : null;
+        var ret = this.IsMatchInternal(input, start, length, ref sp, ref ep, ref last);
+        if (ret)
+        {
+            var name = this.Name;
+            if (last != null && last.Parent is Graph p && p.SourceNode is RegExNode r)
+            {
+                name = r.PatternName ?? name;
+            }
+            return new Capture(name, sp, ep, input[sp..ep]);
+        }
+        return null;
     }
 
     public List<Capture> Matches(string input, int start = 0, int length = -1)

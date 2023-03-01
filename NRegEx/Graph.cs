@@ -6,7 +6,6 @@ public class Graph
     protected int id = Gid++;
     public int Id => id;
     public int SetId(int id) => this.id = id;
-    public string? Description { get; protected set; }
     public readonly string Name;
 
     public readonly HashSet<Node> Nodes = new();
@@ -22,7 +21,6 @@ public class Graph
             this.Nodes.Add(this.Head 
                 = this.Tail 
                 = new (cs) { Parent = this });
-            this.Description = this.Head.ToString();
         }
         else
         {
@@ -169,16 +167,12 @@ public class Graph
         
         this.Edges.UnionWith(g.Edges);
         this.Nodes.UnionWith(g.Nodes);
-        this.Description = !string.IsNullOrEmpty(Description) 
-            ? $"({this.Description} | {g.Description})"
-            : $"({g.Description})";
         return this;
     }
     public Graph ZeroPlus(Graph g, HashSet<Node>? loopset = null)
     {
         this.Edges.Add(new(this.Head, this.Tail)); //direct pass
         this.Edges.Add(new(g.Tail, g.Head)); //back link
-        this.Description = $"({g.Description})*";
         loopset?.UnionWith(this.Nodes);
         loopset?.UnionWith(g.Nodes);
         return this.EmbedOne(g);
@@ -186,7 +180,6 @@ public class Graph
     public Graph OnePlus(Graph g, HashSet<Node>? loopset = null)
     {
         this.Edges.Add(new(g.Tail, g.Head)); //back link
-        this.Description = $"({g.Description})+";
         loopset?.UnionWith(this.Nodes);
         loopset?.UnionWith(g.Nodes);
         return this.EmbedOne(g);
@@ -194,7 +187,6 @@ public class Graph
     public Graph ZeroOne(Graph g)
     {
         this.Edges.Add(new(this.Head, this.Tail)); //direct pass
-        this.Description = $"({g.Description})?";
         return this.EmbedOne(g);
     }
     public Graph EmbedOne(Graph g)

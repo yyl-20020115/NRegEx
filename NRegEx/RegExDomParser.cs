@@ -61,41 +61,44 @@ public class RegExDomParser
                 default:
                     {
                         var taken = this.Reader.Take();
-                        this.Push(new(TokenTypes.Literal, taken, Position: Position, Length: taken.Length));
+                        this.Push(new(
+                            TokenTypes.Literal, taken, Position: Position, 
+                            Length: taken.Length, PatternName:this.Name));
                     }
                     continue;
                 case RegExTextReader.EOF:
-                    this.Push(new());
+                    this.Push(new(PatternName: this.Name));
                     continue;
                 case '\\':
                     this.ParseBackslash(Reader);
                     continue;
                 case '&':
-                    this.Push(new(TokenTypes.Concate, this.Reader.Take(), Position: Position));
+                    this.Push(new(
+                        TokenTypes.Concate, this.Reader.Take(), Position: Position, PatternName: this.Name));
                     continue;
                 case '|':
-                    this.Push(new(TokenTypes.Alternate, this.Reader.Take(), Position: Position));
+                    this.Push(new(TokenTypes.Alternate, this.Reader.Take(), Position: Position, PatternName: this.Name));
                     continue;
                 case '^':
                     this.Push(new(
                         ((this.Options & Options.ONE_LINE) != Options.None)
                         ? TokenTypes.BeginLine
                         : TokenTypes.BeginText
-                        , this.Reader.Take(), Position: Position));
+                        , this.Reader.Take(), Position: Position, PatternName: this.Name));
                     break;
                 case '$':
                     this.Push(new(
                         ((this.Options & Options.ONE_LINE) != Options.None)
                         ? TokenTypes.EndLine
                         : TokenTypes.EndText
-                        , this.Reader.Take(), Position: Position));
+                        , this.Reader.Take(), Position: Position, PatternName: this.Name));
                     continue;
                 case '.':
                     this.Push(new(
                         ((this.Options & Options.DOT_NL) != Options.None)
                         ? TokenTypes.AnyCharExcludingNewLine
                         : TokenTypes.AnyCharExcludingNewLine
-                        , this.Reader.Take(), Position: Position));
+                        , this.Reader.Take(), Position: Position, PatternName: this.Name));
                     continue;
                 case '+':
                     {
@@ -103,7 +106,7 @@ public class RegExDomParser
                         var tops = ParseTokenOptions(this.Reader.Peek());
                         if (tops != TokenOptions.Normal) this.Reader.Skip();
                         this.Push(new(TokenTypes.OnePlus,
-                            text, "", 1, -1, TokenOptions: tops, Position: Position)
+                            text, "", 1, -1, TokenOptions: tops, Position: Position, PatternName: this.Name)
                         { Children = new() { this.NodeStack.Pop() } });
                     }
                     continue;
@@ -113,7 +116,7 @@ public class RegExDomParser
                         var tops = ParseTokenOptions(this.Reader.Peek());
                         if (tops != TokenOptions.Normal) this.Reader.Skip();
                         this.Push(new(TokenTypes.ZeroPlus,
-                            text, "", 0, -1, TokenOptions: tops, Position: Position)
+                            text, "", 0, -1, TokenOptions: tops, Position: Position, PatternName: this.Name)
                         { Children = new() { this.NodeStack.Pop() } });
                     }
                     continue;
@@ -123,7 +126,7 @@ public class RegExDomParser
                         var tops = ParseTokenOptions(this.Reader.Peek());
                         if (tops != TokenOptions.Normal) this.Reader.Skip();
                         this.Push(new(TokenTypes.ZeroOne,
-                            text, "", 0, 1, TokenOptions: tops, Position: Position)
+                            text, "", 0, 1, TokenOptions: tops, Position: Position, PatternName: this.Name)
                         { Children = new() { this.NodeStack.Pop() } });
                     }
                     continue;
@@ -136,7 +139,7 @@ public class RegExDomParser
                         {
                             this.Push(
                                 new(TokenTypes.OpenParenthesis, Reader.Take(),
-                                CaptureIndex: ++CaptureIndex, Position: Position));
+                                CaptureIndex: ++CaptureIndex, Position: Position, PatternName: this.Name));
                         }
                         level++;
                     }
@@ -155,13 +158,13 @@ public class RegExDomParser
                         {
                             this.Reader.Leave();
                             var taken = this.Reader.Take();
-                            this.Push(new(TokenTypes.Literal, taken, Position: Position,Length:taken.Length));
+                            this.Push(new(TokenTypes.Literal, taken, Position: Position,Length:taken.Length, PatternName: this.Name));
                         }
                         else
                         {
                             this.Reader.Discard();
                             this.Push(new(TokenTypes.Repeats,
-                                text ?? "", "", min, max, Position: Position)
+                                text ?? "", "", min, max, Position: Position, PatternName: this.Name)
                             { Children = new() { this.NodeStack.Pop() } });
                         }
                     }
@@ -218,11 +221,12 @@ public class RegExDomParser
                     continue;
             }
         }
-        var alts = new RegExNode(TokenTypes.Union);
+        var alts = new RegExNode(TokenTypes.Union, PatternName: this.Name);
         foreach (var ds in nlist)
         {
             ds.Reverse();
-            alts.Children.Add(new(TokenTypes.Sequence) { Children = ds });
+            alts.Children.Add(new(
+                TokenTypes.Sequence, PatternName: this.Name) { Children = ds });
         }
         this.Push(alts);
     }
@@ -330,7 +334,7 @@ public class RegExDomParser
             var end = s.IndexOf('>');
             if (end < 0)
                 throw new PatternSyntaxException(ERR_INVALID_NAMED_CAPTURE, s);
-            var name = s.Substring(4, end - 4); // "name"
+            var name = s[4..end]; // "name"
             Reader.SkipString(name);
             Reader.Skip(5); // "(?P<>"
             if (!IsValidCaptureName(name))
@@ -339,7 +343,7 @@ public class RegExDomParser
                     ERR_INVALID_NAMED_CAPTURE, s[..end]); // "(?P<name>"
             }
             var node = new RegExNode(TokenTypes.OpenParenthesis,
-                Value: name, CaptureIndex: ++this.CaptureIndex, Position: startPos);
+                Value: name, CaptureIndex: ++this.CaptureIndex, Position: startPos, PatternName: this.Name);
             // Like ordinary capture, but named.
             if (namedGroups.ContainsKey(name))
             {
@@ -406,7 +410,7 @@ public class RegExDomParser
                     if (c == ':')
                     {
                         // Open new group
-                        this.Push(new(TokenTypes.OpenParenthesis, Position: startPos));
+                        this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, PatternName: this.Name));
                     }
                     this.Options = flags;
                     return;
@@ -839,13 +843,13 @@ public class RegExDomParser
             switch ((char)c)
             {
                 case 'A':
-                    this.Push(new(TokenTypes.BeginText, "\\A", Options: Options, Position: savedPos));
+                    this.Push(new(TokenTypes.BeginText, "\\A", Options: Options, Position: savedPos, PatternName: this.Name));
                     goto outswitch;
                 case 'b':
-                    this.Push(new(TokenTypes.WordBoundary, "\\b", Options: Options, Position: savedPos));
+                    this.Push(new(TokenTypes.WordBoundary, "\\b", Options: Options, Position: savedPos, PatternName: this.Name));
                     goto outswitch;
                 case 'B':
-                    this.Push(new(TokenTypes.NotWordBoundary, "\\B", Options: Options, Position: savedPos));
+                    this.Push(new(TokenTypes.NotWordBoundary, "\\B", Options: Options, Position: savedPos, PatternName: this.Name));
                     goto outswitch;
                 case 'C':
                     //NOTICE:use any char instead
@@ -873,11 +877,11 @@ public class RegExDomParser
                             j += new Rune(codepoint).Utf16SequenceLength;
                         }
                         var taken = Utils.RunesToString(cps);
-                        this.Push(new(TokenTypes.Literal,taken, Options: Options,Position:savedPos,Length:taken.Length));
+                        this.Push(new(TokenTypes.Literal,taken, Options: Options,Position:savedPos,Length:taken.Length, PatternName: this.Name));
                         goto outswitch;
                     }
                 case 'z':
-                    this.Push(new(TokenTypes.EndText, "\\z", Options: Options, Position: savedPos));
+                    this.Push(new(TokenTypes.EndText, "\\z", Options: Options, Position: savedPos, PatternName: this.Name));
                     goto outswitch;
                 default:
                     Reader.RewindTo(savedPos);
@@ -910,7 +914,7 @@ public class RegExDomParser
             {
                 var escaped = ParseEscape(Reader);
                 var taken = char.ConvertFromUtf32(escaped);
-                this.Push(new(TokenTypes.Literal, taken, Runes: new int[] { escaped }, Position: savedPos, Length: taken.Length));
+                this.Push(new(TokenTypes.Literal, taken, Runes: new int[] { escaped }, Position: savedPos, Length: taken.Length, PatternName: this.Name));
             }
         }
     outswitch:
@@ -919,7 +923,7 @@ public class RegExDomParser
 
     protected void PushRuneClassList(List<RuneClass> list, int savedPos)
     {
-        var alt = new RegExNode(TokenTypes.Union, Position: savedPos);
+        var alt = new RegExNode(TokenTypes.Union, Position: savedPos, PatternName: this.Name);
         this.AddNodeChildren(alt.Children, list.Where(cc => cc.Inverted).ToList(), true, savedPos);
         this.AddNodeChildren(alt.Children, list.Where(cc => !cc.Inverted).ToList(), false, savedPos);
 
@@ -934,12 +938,11 @@ public class RegExDomParser
         }
         if (runes.Count > 0)
         {
-            children.Add(new(TokenTypes.Sequence)
+            children.Add(new(TokenTypes.Sequence, PatternName: this.Name)
             {
                 Children = new() {new(TokenTypes.RuneClass, Options: Options,
-                    Runes: runes.ToArray(), Inverted: inverted, Position: position)}
+                    Runes: runes.ToArray(), Inverted: inverted, Position: position, PatternName:this.Name)}
             });
         }
-
     }
 }
