@@ -46,13 +46,11 @@ public static class RegExGraphBuilder
                 collectings = new();
             }
         } while (followings.Count > 0);
-        var nodes = new HashSet<Node>();
         foreach (var line in list)
         {
             foreach (var node in line)
             {
                 node.SetId(id++);
-                nodes.Add(node);
             }
         }
         return CompactDoubles(graph);
@@ -103,25 +101,6 @@ public static class RegExGraphBuilder
         }
         return graph;
     }
-    public static Graph FixGraph(Graph graph)
-    {
-        if (graph is not null)
-        {
-            foreach (var e in graph.Edges)
-            {
-                if (!e.Head.Outputs.Contains(e.Tail))
-                {
-                    e.Head.Outputs.Add(e.Tail);
-                }
-                if (e.Tail.Inputs.Contains(e.Head))
-                {
-                    e.Tail.Outputs.Add(e.Head);
-                }
-            }
-        }
-        return graph;
-    }
-
     public static bool HasPassThrough(Graph graph)
         => HasPassThrough(graph.Tail,graph.Head);
     public static bool HasPassThrough(Graph graph, Node[] nodes)
