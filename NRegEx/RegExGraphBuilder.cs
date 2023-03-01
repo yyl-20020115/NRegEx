@@ -245,7 +245,7 @@ public static class RegExGraphBuilder
                 break;
             case TokenTypes.NotWordBoundary:
                 {
-                    graph.UnionWith(new Node(true,RegExTextReader.WORD_BOUNDARY) { Parent = graph });
+                    graph.UnionWith(new Node(true,RegExTextReader.NOT_WORD_BOUNDARY) { Parent = graph });
                 }
                 break;
         }

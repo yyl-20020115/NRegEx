@@ -864,7 +864,8 @@ public class RegExDomParser
                     // any byte; not supported
                     throw new PatternSyntaxException(ERR_INVALID_ESCAPE, "\\C");
                 case 'c':
-                    if(!Reader.HasMore) goto outswitch;
+                    if(!Reader.HasMore) 
+                        goto outswitch;
                     else
                     {
                         int r = this.Reader.Peek();

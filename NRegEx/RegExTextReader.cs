@@ -3,11 +3,18 @@ public class RegExTextReader
 {
     public const int EOF = -1;
     public const int UNICODE_LIMIT = 0x10ffff;
+
     public const int WORD_BOUNDARY = UNICODE_LIMIT + 1;
-    public const int BEGIN_TEXT = UNICODE_LIMIT + 2;
-    public const int END_TEXT = UNICODE_LIMIT + 3;
-    public const int BEGIN_LINE = UNICODE_LIMIT + BEGIN_TEXT + 2;
-    public const int END_LINE = UNICODE_LIMIT + END_TEXT + 2;
+    public const int NOT_WORD_BOUNDARY = UNICODE_LIMIT + 2;
+
+    public const int BEGIN_TEXT = UNICODE_LIMIT + 3;
+    public const int END_TEXT = UNICODE_LIMIT + 4;
+
+    public const int BEGIN_LINE = BEGIN_TEXT + 2;
+    public const int END_LINE = END_TEXT + 2;
+
+    public const int BEGIN_WORD = BEGIN_LINE + 2;
+    public const int END_WORD = END_LINE + 2;
 
     public readonly TextReader Reader;
     protected enum ReaderStates : uint

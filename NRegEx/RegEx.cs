@@ -1,4 +1,6 @@
-﻿namespace NRegEx;
+﻿using System.Xml.Linq;
+
+namespace NRegEx;
 
 public delegate string CaptureEvaluator(Capture capture);
 public class Regex
@@ -128,7 +130,7 @@ public class Regex
         if (length == 0 && RegExGraphBuilder.HasPassThrough(this.Graph)) return true;
         var tail = start + length;
         i = start;
-        
+        this.UpdateIndicators(input, i, start, length);
         var heads = this.Graph.Nodes.Where(n => n.Inputs.Count == 0);
         var nodes = heads.ToHashSet();
         while (nodes.Count > 0 && i < tail)
@@ -139,18 +141,30 @@ public class Regex
             nodes.Clear();
             foreach (var node in copies)
             {
-                var d = node.TryHit(c);
-                if (!d.HasValue)
-                {
-                    node.FetchNodes(nodes, true);
-                }
-                else if (d.Value)
+                //this is for BEGIN_LINE etc
+                if (this.TryHitHode(node))
                 {
                     hit = true;
                     last = node.FetchNodes(nodes, false);
                 }
+                else
+                {
+                    var d = node.TryHit(c);
+                    if (!d.HasValue)
+                    {
+                        node.FetchNodes(nodes, true);
+                    }
+                    else if (d.Value)
+                    {
+                        hit = true;
+                        last = node.FetchNodes(nodes, false);
+                    }
+                }
             }
-            i += hit ? 1 : 0;
+            if (hit)
+            {
+                this.UpdateIndicators(input,++i,start,length);
+            }
         }
         return strict || this.RequestTextEnd //this means having $ in the end
             ? i == input.Length
@@ -158,6 +172,74 @@ public class Regex
             : i <= input.Length
                 && (nodes.Count == 0 || RegExGraphBuilder.HasPassThrough(this.Graph, nodes.ToArray()));
     }
+
+    protected bool[] Indicators =new bool[8];
+
+    protected const int BeginTextIndex = 0;
+    protected const int EndTextIndex = 1;
+    protected const int BeginLineIndex = 2;
+    protected const int EndLineIndex = 3;
+    protected const int BeginWordIndex = 4;
+    protected const int EndWordIndex = 5;
+    protected const int WordBoundaryIndex = 6;
+    protected const int NotWordBoundaryIndex = 7;
+
+    protected Dictionary<int, int> IndicatorsDict = new()
+    {
+        [BeginTextIndex] = RegExTextReader.BEGIN_TEXT,
+        [EndTextIndex] = RegExTextReader.END_TEXT,
+        [BeginLineIndex] = RegExTextReader.BEGIN_LINE,
+        [EndLineIndex] = RegExTextReader.END_LINE,
+        [BeginWordIndex] = RegExTextReader.BEGIN_WORD,
+        [EndWordIndex] = RegExTextReader.END_WORD,
+        [WordBoundaryIndex] = RegExTextReader.WORD_BOUNDARY,
+        [NotWordBoundaryIndex] = RegExTextReader.NOT_WORD_BOUNDARY,
+    };
+    protected char? last = null;
+    protected void UpdateIndicators(string input, int i, int start, int length)
+    {
+        int tail = start + length;
+        char? Last = i > 0 && i < tail ? input[i - 1] : null;
+        char? This = i >= 0 && i < tail ? input[i + 0] : null;
+        char? Next = i + 1 < tail ? input[i + 1] : null;
+
+        this.Indicators[BeginTextIndex] = i == start;
+        this.Indicators[EndTextIndex] = i == tail - 1;
+
+        this.Indicators[BeginLineIndex] = Last == '\n';
+        this.Indicators[EndLineIndex] = Next=='\n';
+        
+        this.Indicators[BeginWordIndex] 
+            = (Last is null || !Unicode.IsRuneLetter(Last.Value)) 
+            && (This is not null && Unicode.IsRuneLetter(This.Value));
+
+        this.Indicators[EndWordIndex] 
+            = (This is not null && Unicode.IsRuneLetter(This.Value))
+            && (Next is null || !Unicode.IsRuneLetter(Next.Value));
+
+        this.Indicators[WordBoundaryIndex] 
+            =  this.Indicators[BeginWordIndex]
+            || this.Indicators[EndWordIndex]
+            ;
+
+        this.Indicators[NotWordBoundaryIndex] = !this.Indicators[WordBoundaryIndex];
+    }
+    protected bool TryHitHode(Node node)
+    {
+        if (!node.IsLink)
+        {
+            foreach(var kv in this.IndicatorsDict)
+            {
+                if (Check(Indicators[kv.Key], node, kv.Value))
+                    return true;
+            }
+        }
+        return false;
+    }
+    protected static bool Check(bool value, Node node, int other)
+        => value && Check(node.CharsArray, other);
+    protected static bool Check(int[]? values, int i)
+        => values is not null && Array.IndexOf(values, i) >= 0;
     public Match Match(string input, int start = 0, int length = -1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
