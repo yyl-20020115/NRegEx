@@ -8,15 +8,6 @@ public class Node
     public const int EOFChar = -1;
     public const int NewLineChar = '\n';
     public const int ReturnChar = '\r';
-    public static bool IsRuneLetter(int i)
-        => Rune.GetUnicodeCategory(new Rune(i))
-            is System.Globalization.UnicodeCategory.LowercaseLetter
-            or System.Globalization.UnicodeCategory.UppercaseLetter
-            or System.Globalization.UnicodeCategory.TitlecaseLetter
-            or System.Globalization.UnicodeCategory.ModifierLetter
-            or System.Globalization.UnicodeCategory.OtherLetter
-            ;
-
     public readonly static int[] AllChars = Enumerable.Range(
                     char.MinValue,
                     char.MaxValue - char.MinValue + 1).Where(i=>Unicode.IsValidUTF32(i)).ToArray();
@@ -27,10 +18,10 @@ public class Node
 
     public readonly static int[] WordChars = Enumerable.Range(
                     char.MinValue,
-                    char.MaxValue - char.MinValue + 1).Where(i => Unicode.IsValidUTF32(i) && IsRuneLetter(i)).ToArray();
+                    char.MaxValue - char.MinValue + 1).Where(i => Unicode.IsValidUTF32(i) && Unicode.IsRuneLetter(i)).ToArray();
     public readonly static int[] NonWordChars = Enumerable.Range(
                     char.MinValue,
-                    char.MaxValue - char.MinValue + 1).Where(i => Unicode.IsValidUTF32(i) && !IsRuneLetter(i)).ToArray();
+                    char.MaxValue - char.MinValue + 1).Where(i => Unicode.IsValidUTF32(i) && !Unicode.IsRuneLetter(i)).ToArray();
 
     protected static int Nid = 0;
     protected int id = Nid++;
@@ -81,10 +72,15 @@ public class Node
             this.charsArray = chars;
             this.charSet = new BitArray(chars.Max(m => m) + 1);
             foreach (var c in chars) this.charSet[c] = true;
-            var ts = chars.Select(c => new Rune(c >= 0 && c <= char.MaxValue ? c : ' ').ToString()).ToArray();
-            var tt = string.Join(",", ts);
-            var st = Utils.EscapeString(tt, true).PadRight(16)[..16].TrimEnd();
-            this.Name = $"'[{(this.Inverted ? '-' : '+')}]" + st + "'";
+            try
+            {
+                this.Name = $"'[{(this.Inverted ? '-' : '+')}]" +
+                    Utils.EscapeString(
+                        Utils.RunesToString(chars.Where(c=>Unicode.IsValidUTF32(c)), ","), true).PadRight(16)[..16].TrimEnd()
+                    + "'";
+            }catch (Exception ex) 
+            {
+            }
         }
     }
     public Node FetchNodes(HashSet<Node> outputs, bool deep = true)

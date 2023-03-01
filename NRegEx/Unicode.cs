@@ -1,4 +1,7 @@
-﻿/*
+﻿using NRegEx;
+using System.Collections;
+using System.Text;
+/*
  * Copyright (c) 2020 The Go Authors. All rights reserved.
  *
  * Use of this source code is governed by a BSD-style
@@ -119,6 +122,14 @@ public static class Unicode
         int l = Characters.ToLowerCase(r);
         return l != r ? l : Characters.ToUpperCase(r);
     }
+    public static bool IsRuneLetter(int i)
+        => Rune.GetUnicodeCategory(new Rune(i))
+            is System.Globalization.UnicodeCategory.LowercaseLetter
+            or System.Globalization.UnicodeCategory.UppercaseLetter
+            or System.Globalization.UnicodeCategory.TitlecaseLetter
+            or System.Globalization.UnicodeCategory.ModifierLetter
+            or System.Globalization.UnicodeCategory.OtherLetter
+            ;
 }
 public static class Characters
 {

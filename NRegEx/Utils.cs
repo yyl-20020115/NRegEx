@@ -107,21 +107,28 @@ public static class Utils
     // Returns the Java UTF-16 string containing the single rune |r|.
     public static string RuneToString(int r)
         => new Rune(r).ToString();
-    public static string RunesToString(IEnumerable<Rune> runes)
+    public static string RunesToString(IEnumerable<Rune> runes, string? separator = null)
     {
         var builder = new StringBuilder();
-        foreach(var rune in runes)
+        var first = true;
+        foreach (var rune in runes)
         {
+            if (!first && separator != null) builder.Append(separator);
             builder.Append(rune.ToString());
+            first = false;
         }
         return builder.ToString();
     }
-    public static string RunesToString(IEnumerable<int> runes)
+    
+    public static string RunesToString(IEnumerable<int> runes, string? separator = null)
     {
         var builder = new StringBuilder();
+        var first = true;
         foreach (var rune in runes)
         {
+            if (!first && separator != null) builder.Append(separator);
             builder.Append(new Rune(rune).ToString());
+            first = false;
         }
         return builder.ToString();
     }
