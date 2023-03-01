@@ -87,16 +87,10 @@ public class Node
             this.charsArray = chars;
             this.charSet = new BitArray(chars.Max(m => m) + 1);
             foreach (var c in chars) this.charSet[c] = true;
-            try
-            {
-                var ts = chars.Select(c => new Rune(c >= 0 && c <= Unicode.MAX_RUNE ? c : ' ').ToString()).ToArray();
-                var tt = string.Join(",", ts);
-                var st = Utils.EscapeString(tt, true).PadRight(16)[..16].TrimEnd();
-                this.Name = $"'[{(this.Inverted ? '-' : '+')}]" + st + "'";
-            }catch (Exception ex) {
-                var s = ex.Message;
-            }
-
+            var ts = chars.Select(c => new Rune(c >= 0 && c <= char.MaxValue ? c : ' ').ToString()).ToArray();
+            var tt = string.Join(",", ts);
+            var st = Utils.EscapeString(tt, true).PadRight(16)[..16].TrimEnd();
+            this.Name = $"'[{(this.Inverted ? '-' : '+')}]" + st + "'";
         }
     }
     public Node FetchNodes(HashSet<Node> outputs, bool deep = true)
