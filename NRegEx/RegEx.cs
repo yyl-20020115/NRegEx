@@ -1,18 +1,23 @@
 ﻿namespace NRegEx;
 
-public record class Capture(int Start = 0, int End = -1, string? Value = null);
+public record class Capture(int InclusiveStart = 0, int ExclusiveEnd = -1, string? Value = null);
 
 public delegate string CaptureEvaluator(Capture capture);
 public class Regex
 {
-    public static string[] Split(string input, string pattern, int count = 0, int start = 0)
-        => new Regex(pattern).Split(input, count, start);
+    public static string[] Split(string input, string pattern, int start = 0)
+        => new Regex(pattern).Split(input, start);
+    public static string ReplaceFirst(string input, string pattern, string replacement, int start = 0)
+        => new Regex(pattern).ReplaceFirst(input, replacement, start);
 
-    public static string Replace(string input, string pattern, string replacement, int count = 0, int start = 0)
-        => new Regex(pattern).Replace(input, replacement, count, start);
+    public static string ReplaceFirst(string input, string pattern, CaptureEvaluator evaluator, int start = 0)
+        => new Regex(pattern).ReplaceFirst(input, evaluator, start);
 
-    public static string Replace(string input, string pattern, CaptureEvaluator evaluator, int count = 0, int start = 0)
-        => new Regex(pattern).Replace(input, evaluator, count, start);
+    public static string ReplaceAll(string input, string pattern, string replacement, int start = 0)
+        => new Regex(pattern).ReplaceAll(input, replacement, start);
+
+    public static string ReplaceAll(string input, string pattern, CaptureEvaluator evaluator, int start = 0)
+        => new Regex(pattern).ReplaceAll(input, evaluator, start);
 
     public static bool IsMatch(string input, string pattern, int start = 0, int length = -1)
         => new Regex(pattern).IsMatch(input, start, length);
@@ -20,8 +25,8 @@ public class Regex
         => new Regex(pattern).IsFullyMatch(input, start, length);
     public static Capture Match(string input, string pattern, int start = 0, int length = -1)
         => new Regex(pattern).Match(input, start, length);
-   public static List<Capture> Matches(string input, string pattern, int start = 0, int length = -1)
-        => new Regex(pattern).Matches(input, start, length);
+    public static List<Capture> Matches(string input, string pattern, int start = 0, int length = -1)
+         => new Regex(pattern).Matches(input, start, length);
     /// <summary>
     /// We should check easy back tracing regex first
     /// or we'll have to accept the early (not lazy or greedy) result for sure.
@@ -49,39 +54,44 @@ public class Regex
     public bool IsMatch(string input, int start = 0, int length = -1)
     {
         int sp = 0, ep = 0;
-        return this.IsMatchInternal(input, start, length,ref sp, ref ep);
+        return this.IsMatchInternal(input, start, length, ref sp, ref ep);
     }
-    protected bool IsMatchInternal(string input, int start, int length,ref int sp, ref int ep)
+    protected bool IsMatchInternal(string input, int start, int length, ref int sp, ref int ep)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
         if (start < 0 || start > input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length - start;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
-
-        int i = this.MatchFindStart(input, start);
+        var tail = start + length;
+        int i = this.MatchFindStart(input, start, tail);
         int o = sp = ep = i;
-        while (i >= 0 && i < length)
+        while (i >= 0 && i < tail)
         {
+            length -= (i - start);
             if (this.IsMatchInternal(input, i, length, ref o, false))
             {
                 ep = o;
                 return true;
             }
             else if (o > i)
-                i = this.MatchFindStart(input, o);
+            {
+                //we can not use o, we can only use i+1
+                //because o can bring mistakes
+                i = this.MatchFindStart(input, i + 1, tail);
+            }
             else
                 break;
         }
         return false;
     }
-    protected int MatchFindStart(string input, int start)
+    protected int MatchFindStart(string input, int start, int tail)
     {
         //^should always starts with start of input
-        if (this.Pattern.StartsWith('^') && start>0)
+        if (this.Pattern.StartsWith('^') && start > 0)
         {
             return -1;
         }
-        else if (start < input.Length)
+        else if (start < tail)
         {
             var heads = this.Graph.Nodes.Where(n => n.Inputs.Count == 0).ToArray();
             var nodes = new HashSet<Node>();
@@ -89,7 +99,7 @@ public class Regex
             {
                 head.FetchNodes(nodes, true);
             }
-            for(int i = start; i < input.Length; i++)
+            for (int i = start; i < tail; i++)
             {
                 if (nodes.Any(n => n.TryHit(input[i]).GetValueOrDefault()))
                     return i;
@@ -108,10 +118,11 @@ public class Regex
     protected bool IsMatchInternal(string input, int start, int length, ref int i, bool strict)
     {
         if (length == 0 && RegExGraphBuilder.HasPassThrough(this.Graph)) return true;
+        var tail = start + length;
         i = start;
         var heads = this.Graph.Nodes.Where(n => n.Inputs.Count == 0);
         var nodes = heads.ToHashSet();
-        while (nodes.Count > 0 && i < length)
+        while (nodes.Count > 0 && i < tail)
         {
             var c = input[i];
             var hit = false;
@@ -136,7 +147,7 @@ public class Regex
             ? i == input.Length
                 && RegExGraphBuilder.HasPassThrough(this.Graph, nodes.ToArray())
             : i <= input.Length
-                && (nodes.Count==0 || RegExGraphBuilder.HasPassThrough(this.Graph, nodes.ToArray()));
+                && (nodes.Count == 0 || RegExGraphBuilder.HasPassThrough(this.Graph, nodes.ToArray()));
     }
     public Capture? Match(string input, int start = 0, int length = -1)
     {
@@ -146,7 +157,7 @@ public class Regex
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
 
         int sp = 0, ep = 0;
-        return this.IsMatchInternal(input, start, length, ref sp, ref ep) 
+        return this.IsMatchInternal(input, start, length, ref sp, ref ep)
             ? new Capture(sp, ep, input[sp..ep]) : null;
     }
 
@@ -156,7 +167,7 @@ public class Regex
         if (start < 0 || start > input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length - start;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
-
+        var tail = start + length;
         var captures = new List<Capture>();
         while (true)
         {
@@ -165,47 +176,62 @@ public class Regex
                 break;
             else
             {
-                if (capture.Start < 0 || capture.End<0||capture.End<capture.Start)
+                if (capture.InclusiveStart < 0 || capture.ExclusiveEnd < 0 || capture.ExclusiveEnd < capture.InclusiveStart)
                     break;
                 captures.Add(capture);
 
-                start = capture.Start;
-                length -= start;
+                length -= (capture.ExclusiveEnd - start);
+                start = capture.ExclusiveEnd;
             }
-            if (capture.End >= input.Length) break;
+            if (capture.ExclusiveEnd >= tail) break;
         }
         return captures;
     }
-    public string Replace(string input, string replacement, int count = 0, int start = 0)
-        => this.Replace(input, (Capture capture) => replacement, count, start);
-    public string Replace(string input, CaptureEvaluator evaluator, int count = 0, int start = 0)
+    public string ReplaceFirst(string input, string replacement, int start = 0)
+        => this.ReplaceFirst(input, (Capture capture) => replacement, start);
+    public string ReplaceFirst(string input, CaptureEvaluator evaluator, int start = 0)
     {
-        var matchs = this.Matches(input, start);
-        var result = new List<string>();
-        var c = start = 0;
-        foreach (var match in matchs)
+        var match = this.Match(input, start);
+        if (match is not null)
         {
-            var delta = match.Start - start;
-            if (delta > 0) result.Add(input[start..match.Start]);
+            var result = new List<string>();
+            var delta = match.InclusiveStart - start;
+            if (delta > 0) result.Add(input[start..match.InclusiveStart]);
             var replacement = evaluator(match) ?? "";
             result.Add(replacement);
-            start = match.End;
-            if (++c >= count) break;
+            start = match.ExclusiveEnd;
+            if (start < input.Length) result.Add(input[start..]);
+            return result.Aggregate((a, b) => a + b);
         }
-        if (start < input.Length) result.Add(input[start..]);
-        return result.Aggregate((a, b) => a + b);
+        return input;
     }
-    public string[] Split(string input, int count = 0, int start = 0)
+
+    public string ReplaceAll(string input, string replacement, int start = 0)
+        => this.ReplaceAll(input, (Capture capture) => replacement, start);
+    public string ReplaceAll(string input, CaptureEvaluator evaluator, int start = 0)
     {
         var matchs = this.Matches(input, start);
         var result = new List<string>();
-        var c = start = 0;
         foreach (var match in matchs)
         {
-            var delta = match.Start - start;
-            if (delta > 0) result.Add(input[start..match.Start]);
-            start = match.End;
-            if (++c >= count) break;
+            var delta = match.InclusiveStart - start;
+            if (delta > 0) result.Add(input[start..match.InclusiveStart]);
+            var replacement = evaluator(match) ?? "";
+            result.Add(replacement);
+            start = match.ExclusiveEnd;
+        }
+        if (start < input.Length) result.Add(input[start..]);
+        return result.Count > 0 ? result.Aggregate((a, b) => a + b) : input;
+    }
+    public string[] Split(string input, int start = 0)
+    {
+        var matchs = this.Matches(input, start);
+        var result = new List<string>();
+        foreach (var match in matchs)
+        {
+            var delta = match.InclusiveStart - start;
+            if (delta > 0) result.Add(input[start..match.InclusiveStart]);
+            start = match.ExclusiveEnd;
         }
         if (start < input.Length) result.Add(input[start..]);
         return result.ToArray();

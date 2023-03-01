@@ -389,7 +389,29 @@ public class BasicUnitTests
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0);
         Assert.IsFalse(regex0.IsMatch("123456"));
-        Assert.IsTrue(regex0.IsMatch("123abc456"));
+        Assert.IsTrue(regex0.IsMatch("123abc456xyz"));
+        var capture = regex0.Match("123abc456");
+
+        Assert.AreEqual("abc", capture.Value);
+
+        var captures = regex0.Matches("123abc456xyz888tmt");
+
+        Assert.AreEqual(captures.Count, 3);
+        Assert.AreEqual("abc", captures[0].Value);
+        Assert.AreEqual("xyz", captures[1].Value);
+        Assert.AreEqual("tmt", captures[2].Value);
+
+        var parts = regex0.Split("123abc456xyz888tmt");
+
+        Assert.AreEqual(parts.Length, 3);
+        Assert.AreEqual("123", parts[0]);
+        Assert.AreEqual("456", parts[1]);
+        Assert.AreEqual("888", parts[2]);
+
+        var ret = regex0.ReplaceFirst("123abc456xyz888tmt", "hahaha");
+        Assert.AreEqual(ret, "123hahaha456xyz888tmt");
+        ret = regex0.ReplaceAll("123abc456xyz888tmt", "hahaha");
+        Assert.AreEqual(ret, "123hahaha456hahaha888hahaha");
     }
     [TestMethod]
     public void TestMethod21()
