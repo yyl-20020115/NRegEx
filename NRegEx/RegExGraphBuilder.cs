@@ -99,7 +99,7 @@ public static class RegExGraphBuilder
                 graph.RemoveNodes(nodes.ToHashSet());
             }
         }
-        return graph;
+        return graph.Clean();
     }
     public static bool HasPassThrough(Graph graph)
         => HasPassThrough(graph.Tail,graph.Head);
@@ -199,16 +199,25 @@ public static class RegExGraphBuilder
                         graph.Concate(node.Children.Select(c => BuildInternal(c)));
                 }
                 break;
-
+            case TokenTypes.Capture:
+                {
+                    if (node.Children.Count > 0)
+                        graph.UnionWith(BuildInternal(node.Children[0]));
+                }
+                break;
             case TokenTypes.Union:
-                if(node.Children.Count > 0)
-                    graph.UnionWith(node.Children.Select(c => BuildInternal(c)));
+                {
+                    if (node.Children.Count > 0)
+                        graph.UnionWith(node.Children.Select(c => BuildInternal(c)));
+                }
                 break;
             case TokenTypes.Repeats:
-                if (node.Children.Count > 0)
-                    graph.ComposeRepeats(BuildInternal(node.Children[0]),
-                        node.Min.GetValueOrDefault(),
-                        node.Max.GetValueOrDefault());
+                {
+                    if (node.Children.Count > 0)
+                        graph.ComposeRepeats(BuildInternal(node.Children[0]),
+                            node.Min.GetValueOrDefault(),
+                            node.Max.GetValueOrDefault());
+                }
                 break;
             case TokenTypes.BeginLine:
                 {

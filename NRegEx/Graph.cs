@@ -253,5 +253,9 @@ public class Graph
         this.Nodes.ExceptWith(nodes);
         return this;
     }
-
+    public Graph Clean()
+    {
+        this.Nodes.RemoveWhere(n => n.IsBroken);
+        return this;
+    }
 }

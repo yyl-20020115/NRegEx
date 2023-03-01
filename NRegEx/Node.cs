@@ -35,6 +35,11 @@ public class Node
         && this.Inputs.Count == 1
         && this.Outputs.Count == 1;
 
+    public bool IsBroken
+        => this.IsLink
+        && this.Inputs.Count == 0
+        && this.Outputs.Count == 0;
+
     public int Id => id;
     public bool Inverted { get => inverted; protected set => inverted = value; }
     public string Name { get => name; protected set => name = value; }
@@ -86,7 +91,7 @@ public class Node
             outputs.UnionWith(this.Outputs);
             outputs.Remove(this);
         }
-        else
+        else if(!outputs.Contains(this))
         {
             foreach(var node in this.Outputs)
             {   
@@ -99,7 +104,6 @@ public class Node
                 {
                     node.FetchNodes(outputs, deep);
                 }
-
             }
         }
         return this;

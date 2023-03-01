@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Text.Json;
 
 namespace NRegEx;
 
@@ -47,6 +48,12 @@ public class RegExGenerator
         node.Children.ForEach(c => this.Generate(c, builder));
         return builder;
     }
+    protected virtual StringBuilder? GenerateCapture(RegExNode node, StringBuilder? builder)
+    {
+        if(node.Children.Count>0) this.Generate(node.Children[0], builder);
+        return builder;
+    }
+
     protected virtual StringBuilder? GenerateRune(int[] runes, int count,StringBuilder? builder)
     {
         for(int i = 0; i < count; i++)
@@ -97,6 +104,7 @@ public class RegExGenerator
     {
         TokenTypes.Literal => this.GenerateLiteral(node,builder),
         TokenTypes.Union => this.GenerateUnion(node,builder),
+        TokenTypes.Capture=> this.GenerateCapture(node,builder),
         TokenTypes.Sequence => this.GenerateSequence(node, builder),
         TokenTypes.AnyCharExcludingNewLine => this.GenerateAnyChar(false,builder),
         TokenTypes.AnyCharIncludingNewLine => this.GenerateAnyChar(true, builder),
@@ -107,6 +115,8 @@ public class RegExGenerator
         TokenTypes.Repeats => this.GenerateRepeats(node, builder),
         _ => new StringBuilder(),
     };
+
+
     public string Generate() 
         => Generate(Regex.Model, new())?.ToString() ?? "";
 }

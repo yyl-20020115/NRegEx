@@ -147,7 +147,7 @@ public class RegExDomParser
                     continue;
                 case ')':
                     {
-                        this.ProcessCloseParenthesis();
+                        this.ProcessCloseParenthesis(level);
                         level--;
                     }
                     continue;
@@ -188,7 +188,7 @@ public class RegExDomParser
 
         return this.NodeStack.Pop();
     }
-    protected void ProcessCloseParenthesis()
+    protected void ProcessCloseParenthesis(int level)
     {
         this.Reader.Skip();
         this.ProcessStack();
@@ -197,6 +197,12 @@ public class RegExDomParser
         if (open.Type != TokenTypes.OpenParenthesis)
             throw new RegExSyntaxException(
                 ERR_MISSING_PAREN, this.Pattern);
+        if (level > 0)
+        {
+            result = new RegExNode(TokenTypes.Capture, PatternName: this.Name) {
+                Children = new() { result }
+            };
+        }
         this.Push(result);
     }
     protected void ProcessStack()
