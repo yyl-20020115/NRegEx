@@ -14,7 +14,7 @@ public class Graph
     public Node Head;
     public Node Tail;
     public RegExNode? SourceNode = null;
-    public Graph(string name = "",params char[] cs )
+    public Graph(string name = "",params int[] cs )
     {
         this.Name = name;
         if (cs.Length>0)

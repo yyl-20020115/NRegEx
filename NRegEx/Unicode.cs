@@ -31,6 +31,10 @@ public static class Unicode
     public const int MIN_FOLD = 0x0041;
     public const int MAX_FOLD = 0x1044f;
 
+    public const int SURROGATE_FIRST = 0xd800;
+    public const int SURROGATE_LAST = 0xdfff;
+    public static bool IsSurrogate(int c) => c >= SURROGATE_FIRST && c <= SURROGATE_LAST;
+    public static bool IsValidUTF32(int c) => c >= 0 && c <= MAX_RUNE && !IsSurrogate(c);
     // is32 uses binary search to test whether rune is in the specified
     // slice of 32-bit ranges.
     // TODO(adonovan): opt: consider using int[n*3] instead of int[n][3].

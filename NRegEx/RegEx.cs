@@ -12,19 +12,19 @@ public class Regex
     public readonly static char[] MetaChars
         = { '|', '(', ')', '[', ']', '{', '}', '^', '$', '*', '+', '?', '\\', '.' };
 
-    public static bool IsMetachar(char ch) 
+    public static bool IsMetachar(char ch)
         => Array.IndexOf(MetaChars, ch) >= 0;
 
     public static string Escape(string input)
     {
         var chars = input.ToArray();
-        if((Array.FindIndex(chars, ch => IsMetachar(ch)) is int i) && (-1 == i)) return input;
+        if ((Array.FindIndex(chars, ch => IsMetachar(ch)) is int i) && (-1 == i)) return input;
         var builder = new StringBuilder(input.Length * 3);
         var last = 0;
-        while(true)
+        while (true)
         {
             builder.Append(chars[last..i]);
-            if (i>= chars.Length) break;
+            if (i >= chars.Length) break;
             var ch = chars[i++];
             last = i;
             builder.Append('\\');
@@ -57,7 +57,7 @@ public class Regex
         if ((Array.IndexOf(chars, '\\') is int i) && (-1 == i)) return input;
         var last = 0;
         var builder = new StringBuilder(input.Length * 3);
-        while(true)
+        while (true)
         {
             builder.Append(chars[last..i]);
             if (i == chars.Length) break;
@@ -116,13 +116,13 @@ public class Regex
     public readonly Options Options;
     public readonly string Pattern;
     public readonly string Name;
-    public Regex(string pattern, string? name = null, Options options = Options.None)
+    public Regex(string pattern, string? name = null, Options options = Options.PERL)
     {
         this.Pattern = pattern;
         this.Name = name ?? this.Pattern;
         this.Options = options;
         this.Model = RegExDomParser.Parse(this.Name, this.Pattern, this.Options);
-        this.Graph = RegExGraphBuilder.Build(this.Model,0,
+        this.Graph = RegExGraphBuilder.Build(this.Model, 0,
             (this.Options & Options.FOLD_CASE) == Options.FOLD_CASE);
     }
 
@@ -130,11 +130,11 @@ public class Regex
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
         if (start < 0 || start > input.Length) throw new ArgumentOutOfRangeException(nameof(start));
-        if (length < 0) length = input.Length;
+        if (length < 0) length = input.Length - start;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
-        if (length==0 && RegExGraphBuilder.HasPassThrough(this.Graph)) return true;
+        if (length == 0 && RegExGraphBuilder.HasPassThrough(this.Graph)) return true;
 
-        var heads = this.Graph.Nodes.Where(n=>n.Inputs.Count==0);
+        var heads = this.Graph.Nodes.Where(n => n.Inputs.Count == 0);
         var nodes = heads.ToHashSet();
         var i = start;
         while (nodes.Count > 0 && i < length)
@@ -159,12 +159,12 @@ public class Regex
             i += hit ? 1 : 0;
         }
 
-        return i == input.Length && RegExGraphBuilder.HasPassThrough(this.Graph,nodes.ToArray());
+        return i == input.Length && RegExGraphBuilder.HasPassThrough(this.Graph, nodes.ToArray());
     }
     public Capture CompletelyMatch(string input, int start = 0, int length = -1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
-        if (start<0 || start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
+        if (start < 0 || start >= input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
         var s = start;

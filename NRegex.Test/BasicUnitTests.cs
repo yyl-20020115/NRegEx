@@ -3,6 +3,7 @@ using System;
 using System.IO;
 using System.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Collections.Generic;
 
 namespace NRegex.Test;
 
@@ -306,43 +307,39 @@ public class BasicUnitTests
             @"^\w+$", //由数字、26个英文字母或者下划线组成的字符串 
             @"^[\w-]+(\.[\w-]+)*@[\w-]+(\.[\w-]+)+$", //email地址 
             @"^[a-zA-z]+://(\w+(-\w+)*)(\.(\w+(-\w+)*))*(\?\S*)?$", //url
-        };
-
-        var regs2 = new string[]
-        {
-            "[ab]{4,6}",
-            "[ab]{4,6}c",
-            "(a|b)*ab",
-            "[A-Za-z0-9]",
-            "[A-Za-z0-9_]",
-            "[A-Za-z]",
-            "[ \t]",
+            @"[ab]{4,6}",
+            @"[ab]{4,6}c",
+            @"(a|b)*ab",
+            @"[A-Za-z0-9]",
+            @"[A-Za-z0-9_]",
+            @"[A-Za-z]",
+            @"[ \t]",
             @"[(?<=\W)(?=\w)|(?<=\w)(?=\W)]",
-            "[\x00-\x1F\x7F]",
-            "[0-9]",
-            "[^0-9]",
-            "[\x21-\x7E]",
-            "[a-z]",
-            "[\x20-\x7E]",
-            "[ \t\r\n\v\f]",
-            "[^ \t\r\n\v\f]",
-            "[A-Z]",
-            "[A-Fa-f0-9]",
-            "in[du]",
-            "x[0-9A-Z]",
-            "[^A-M]in",
-            ".gr",
+            @"[\x00-\x1F\x7F]",
+            @"[0-9]",
+            @"[^0-9]",
+            @"[\x21-\x7E]",
+            @"[a-z]",
+            @"[\x20-\x7E]",
+            @"[ \t\r\n\v\f]",
+            @"[^ \t\r\n\v\f]",
+            @"[A-Z]",
+            @"[A-Fa-f0-9]",
+            @"in[du]",
+            @"x[0-9A-Z]",
+            @"[^A-M]in",
+            @".gr",
             @"\(.*l",
-            "W*in",
-            "[xX][0-9a-z]",
+            @"W*in",
+            @"[xX][0-9a-z]",
             @"\(\(\(ab\)*c\)*d\)\(ef\)*\(gh\)\{2\}\(ij\)*\(kl\)*\(mn\)*\(op\)*\(qr\)*",
             @"((mailto\:|(news|(ht|f)tp(s?))\://){1}\S+)",
             @"^http\://[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,3}(/\S*)?$",
             @"^([1-zA-Z0-1@.\s]{1,255})$",
-            "[A-Z][0-9A-Z]{10}",
-            "[A-Z][A-Za-z0-9]{10}",
-            "[A-Za-z0-9]{11}",
-            "[A-Za-z]{11}",
+            @"[A-Z][0-9A-Z]{10}",
+            @"[A-Z][A-Za-z0-9]{10}",
+            @"[A-Za-z0-9]{11}",
+            @"[A-Za-z]{11}",
             @"^[a-zA-Z''-'\s]{1,40}$",
             @"^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$",
             @"a[a-z]",
@@ -359,7 +356,7 @@ public class BasicUnitTests
             @"^(?m:[a-z0-9])+$",
             @"^(?n:[a-z0-9])+$",
             @"^(?x:[a-z0-9])+$",
-            "\\S+.*",
+            @"\\S+.*",
             @"^(?:(?:\+?1\s*(?:[.-]\s*)?)?(?:\(\s*([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9])\s*\)|([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9]))\s*(?:[.-]\s*)?)?([2-9]1[02-9]|[2-9][02-9]1|[2-9][02-9]{2})\s*(?:[.-]\s*)?([0-9]{4})(?:\s*(?:#|x\.?|ext\.?|extension)\s*(\d+))?$",
             @"^\s1\s+2\s3\s?4\s*$",
             @"(\s123)+",
@@ -370,6 +367,20 @@ public class BasicUnitTests
             @"\W+1\w?2\W{4}",
             @"^[^$]$"
         };
+
+        var results = new List<string>();
+        foreach(var reg in regs)
+        {
+            try
+            {
+                var g = new RegExGenerator(reg);
+
+                results.Add(g.Generate());
+            }catch(Exception ex) 
+            {
+                var s = ex.Message;
+            }
+        }
     }
     [TestMethod]
     public void TestMethod20()

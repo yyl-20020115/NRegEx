@@ -174,10 +174,11 @@ public static class RegExGraphBuilder
                 break;
             case TokenTypes.Literal:
                 {
-                    graph.ComposeLiteral(node.Value.Select(c => 
+                    graph.ComposeLiteral(node.Value.EnumerateRunes().Select(c => 
                         caseInsensitive 
-                        ? new Node(char.ToLower(c),char.ToUpper(c)) { Parent = graph } 
-                        : new Node(c) { Parent = graph }));
+                        ? new Node(Characters.ToUpperCase(c.Value),
+                                   Characters.ToLowerCase(c.Value)) { Parent = graph } 
+                        : new Node(c.Value) { Parent = graph }));
                 }
                 break;
             case TokenTypes.RuneClass:

@@ -8,36 +8,29 @@ public class Node
     public const int EOFChar = -1;
     public const int NewLineChar = '\n';
     public const int ReturnChar = '\r';
+    public static bool IsRuneLetter(int i)
+        => Rune.GetUnicodeCategory(new Rune(i))
+            is System.Globalization.UnicodeCategory.LowercaseLetter
+            or System.Globalization.UnicodeCategory.UppercaseLetter
+            or System.Globalization.UnicodeCategory.TitlecaseLetter
+            or System.Globalization.UnicodeCategory.ModifierLetter
+            or System.Globalization.UnicodeCategory.OtherLetter
+            ;
 
     public readonly static int[] AllChars = Enumerable.Range(
                     char.MinValue,
-                    char.MaxValue - char.MinValue + 1).ToArray();
+                    char.MaxValue - char.MinValue + 1).Where(i=>Unicode.IsValidUTF32(i)).ToArray();
     
     public readonly static int[] AllCharsWithoutNewLine = Enumerable.Range(
                     char.MinValue,
-                    char.MaxValue - char.MinValue + 1).Where(i=>i!='\n').ToArray();
+                    char.MaxValue - char.MinValue + 1).Where(i=>Unicode.IsValidUTF32(i) && i!='\n').ToArray();
 
     public readonly static int[] WordChars = Enumerable.Range(
                     char.MinValue,
-                    char.MaxValue - char.MinValue + 1).Where(i => !char.IsSurrogate((char)i) && char.IsLetter((char)i)).ToArray();
+                    char.MaxValue - char.MinValue + 1).Where(i => Unicode.IsValidUTF32(i) && IsRuneLetter(i)).ToArray();
     public readonly static int[] NonWordChars = Enumerable.Range(
                     char.MinValue,
-                    char.MaxValue - char.MinValue + 1).Where(i => !char.IsSurrogate((char)i) && !char.IsLetter((char)i)).ToArray();
-    //public static bool IsRuneSurrogate(int i)
-    //=> i >= char.MinValue && i <= char.MaxValue && char.IsSurrogate((char)i);
-    //public static bool IsRuneLetter(int i)
-    //    => Rune.GetUnicodeCategory(new Rune(i))
-    //        is System.Globalization.UnicodeCategory.LowercaseLetter
-    //        or System.Globalization.UnicodeCategory.UppercaseLetter
-    //        or System.Globalization.UnicodeCategory.TitlecaseLetter
-    //        or System.Globalization.UnicodeCategory.ModifierLetter
-    //        or System.Globalization.UnicodeCategory.OtherLetter
-    //        ;
-    //public readonly static BitSet AllChars = new(Unicode.MAX_RUNE, true);
-    //public readonly static BitSet WordChars = new(Enumerable.Range(
-    //                0, Unicode.MAX_RUNE).Where(i => !IsRuneSurrogate(i) && IsRuneLetter(i)).ToHashSet());
-    //public readonly static BitSet NonWordChars = new(Enumerable.Range(
-    //                0, Unicode.MAX_RUNE).Where(i => !IsRuneSurrogate(i) && !IsRuneLetter(i)).ToHashSet());
+                    char.MaxValue - char.MinValue + 1).Where(i => Unicode.IsValidUTF32(i) && !IsRuneLetter(i)).ToArray();
 
     protected static int Nid = 0;
     protected int id = Nid++;
@@ -75,10 +68,6 @@ public class Node
     public readonly HashSet<Node> Inputs = new();
     public readonly HashSet<Node> Outputs = new();
     public Node(string name = "") => Name = name;
-    public Node(params Rune[] runes)
-        : this(runes.Select(r => r.Value).ToArray()) { }
-    public Node(params char[] chars)
-        : this(chars.Select(c => (int)c).ToArray()) { }
     public Node(params int[] chars)
         : this(false, chars) { }
     public Node(bool inverted, params char[] chars)
