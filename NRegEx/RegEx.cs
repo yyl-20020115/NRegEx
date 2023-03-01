@@ -1,4 +1,6 @@
-﻿using System.Xml.Linq;
+﻿using System.Net.Http.Headers;
+using System.Text;
+using System.Xml.Linq;
 
 namespace NRegEx;
 
@@ -40,7 +42,7 @@ public class Regex
     public readonly Options Options;
     public readonly string Pattern;
     public readonly string Name;
-    public readonly Dictionary<string, int> NamedGroups;
+    public readonly DualDictionary<string, int> NamedGroups =new();
     public RegExNode Model { get; protected set; }
     public Graph Graph { get; protected set; }
 
@@ -54,7 +56,10 @@ public class Regex
         this.Options = options;
         var Parser = new RegExDomParser(this.Name, this.Pattern, this.Options);
         this.Model = Parser.Parse();
-        this.NamedGroups = Parser.NamedGroups;
+        foreach(var pair in Parser.NamedGroups)
+        {
+            this.NamedGroups.Add(pair.Key, pair.Value);
+        }
         this.RequestTextBegin = Parser.RequestTextBegin;
         this.RequestTextEnd = Parser.RequestTextEnd;
         this.Graph = RegExGraphBuilder.Build(this.Model, 0,
@@ -66,7 +71,7 @@ public class Regex
         int sp = 0, ep = 0;
         return this.IsMatchInternal(input, start, length, ref sp, ref ep, ref last);
     }
-    protected bool IsMatchInternal(string input, int start, int length, ref int sp, ref int ep,ref Node? last)
+    protected bool IsMatchInternal(string input, int start, int length, ref int sp, ref int ep,ref Node? last,ListLookups<int,int>? groups = null)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
         if (start < 0 || start > input.Length) throw new ArgumentOutOfRangeException(nameof(start));
@@ -81,7 +86,7 @@ public class Regex
         while (i >= 0 && i < tail)
         {
             length -= (i - start);
-            if (this.IsMatchInternal(input, i, length, ref o,ref last, false))
+            if (this.IsMatchInternal(input, i, length, ref o,ref last, false,groups))
             {
                 ep = o;
                 return true;
@@ -125,7 +130,7 @@ public class Regex
         Node? last = null;
         return IsMatchInternal(input, start, length, ref start,ref last, true);
     }
-    protected bool IsMatchInternal(string input, int start, int length, ref int i,ref Node? last, bool strict)
+    protected bool IsMatchInternal(string input, int start, int length, ref int i,ref Node? last, bool strict, ListLookups<int, int>? groups = null)
     {
         if (length == 0 && RegExGraphBuilder.HasPassThrough(this.Graph)) return true;
         var tail = start + length;
@@ -156,6 +161,9 @@ public class Regex
                     }
                     else if (d.Value)
                     {
+                        if (groups != null)
+                            foreach (var cap in node.Captures)
+                                groups[cap].Add(i);
                         hit = true;
                         last = node.FetchNodes(nodes, false);
                     }
@@ -228,7 +236,7 @@ public class Regex
     protected bool TryHitHode(Node node)
     {
         if (!node.IsLink)
-        {
+        {   
             foreach(var kv in this.IndicatorsDict)
             {
                 if (Check(this.Indicators[kv.Key], node, kv.Value))
@@ -249,20 +257,72 @@ public class Regex
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
         if (this.RequestTextBegin && start > 0) throw new ArgumentOutOfRangeException(nameof(start));
         Node? last = null;
+        var groups = new ListLookups<int,int>();
         int sp = 0, ep = 0;
-        var ret = this.IsMatchInternal(input, start, length, ref sp, ref ep, ref last);
+        var ret = this.IsMatchInternal(input, start, length, ref sp, ref ep, ref last,groups);
         if (ret)
         {
             var name = this.Name;
             if (last?.Parent?.SourceNode is RegExNode r)
-            {
                 name = r.PatternName ?? name;
-            }
-            return new Match(this,input, true, name, sp, ep, input[sp..ep]);
+
+            //TODO: build matches
+            return this.BuildMatch(input, name, sp, ep, groups);;
         }
         return new Match(this,input, false);
     }
+    protected Match BuildMatch(string input, string name, int sp, int ep, ListLookups<int, int>? groups)
+    {
+        var match = new Match(this, input, true, name, sp, ep, input[sp..ep]);
+        if (groups != null)
+        {
+            for (int i = 0; i < groups.Count; i++)
+            {
+                var groupName = this.NamedGroups.TryGetValue(i, out var n) ? n : i.ToString();
+                var group = new Group(true,
+                    Name: groupName);
 
+                match.Groups.Add(group);    
+
+                var thisGroupPositions = groups[i];
+                int c = 0;
+                foreach (var thisCapturePositions in SplitList(thisGroupPositions.ToArray()))
+                {
+                    var builder = new StringBuilder();
+                    foreach (var position in thisCapturePositions)
+                    {
+                        builder.Append(input[position]);
+                    }
+                    group.Captures.Add(new Capture(
+                        $"{groupName}-{c}", 
+                        thisCapturePositions.Min(), 
+                        thisCapturePositions.Max() + 1, 
+                        builder.ToString()));
+                }
+            }
+        }
+        return match;
+    }
+    protected static int[][] SplitList(int[] list)
+    {
+        var parts = new List<int[]>();
+
+        if (list.Length <= 1) return new int[][] { list };
+    retry:
+        for (int i = 0; i < list.Length; i++)
+        {
+            int c = list[i + 0];
+            int d = list[i + 1];
+            if (d != c + 1)
+            {
+                parts.Add(list[..(i+1)]);
+                list = list[i..];
+                goto retry;
+            }
+        }
+        return parts.ToArray();
+
+    }
     public List<Match> Matches(string input, int start = 0, int length = -1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));

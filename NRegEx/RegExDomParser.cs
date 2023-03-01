@@ -199,7 +199,8 @@ public class RegExDomParser
                 ERR_MISSING_PAREN, this.Pattern);
         if (level > 0)
         {
-            result = new RegExNode(TokenTypes.Capture, PatternName: this.Name) {
+            result = new RegExNode(TokenTypes.Capture, PatternName: this.Name,CaptureIndex:open.CaptureIndex) 
+            {
                 Children = new() { result }
             };
         }

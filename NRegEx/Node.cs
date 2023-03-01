@@ -64,6 +64,7 @@ public class Node
     protected int[]? charsArray;
     public readonly HashSet<Node> Inputs = new();
     public readonly HashSet<Node> Outputs = new();
+    public readonly List<int> Captures = new();
     public Node(string name = "") => Name = name;
     public Node(params int[] chars)
         : this(false, chars) { }

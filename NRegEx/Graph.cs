@@ -171,6 +171,15 @@ public class Graph
         this.Nodes.UnionWith(g.Nodes);
         return this;
     }
+    public Graph CaptureWith(Graph g, int i)
+    {
+        foreach(var node in g.Nodes)
+        {
+            node.Captures.Add(i);
+        }
+
+        return this.UnionWith(g);
+    }
     public Graph ZeroPlus(Graph g, HashSet<Node>? loopset = null)
     {
         this.Edges.Add(new(this.Head, this.Tail)); //direct pass
