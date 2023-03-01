@@ -207,22 +207,23 @@ public class Regex
         this.Indicators[EndTextIndex] = i == tail - 1;
 
         this.Indicators[BeginLineIndex] = Last == '\n';
-        this.Indicators[EndLineIndex] = Next=='\n';
+        this.Indicators[EndLineIndex] = This == '\n';
         
         this.Indicators[BeginWordIndex] 
-            = (Last is null || !Unicode.IsRuneLetter(Last.Value)) 
-            && (This is not null && Unicode.IsRuneLetter(This.Value));
+            = (Last is null || !Unicode.IsRuneWord(Last.Value)) 
+            && (This is not null && Unicode.IsRuneWord(This.Value));
 
         this.Indicators[EndWordIndex] 
-            = (This is not null && Unicode.IsRuneLetter(This.Value))
-            && (Next is null || !Unicode.IsRuneLetter(Next.Value));
+            = (This is not null && Unicode.IsRuneWord(This.Value))
+            && (Next is null || !Unicode.IsRuneWord(Next.Value));
 
         this.Indicators[WordBoundaryIndex] 
             =  this.Indicators[BeginWordIndex]
             || this.Indicators[EndWordIndex]
             ;
 
-        this.Indicators[NotWordBoundaryIndex] = !this.Indicators[WordBoundaryIndex];
+        this.Indicators[NotWordBoundaryIndex] 
+            = !this.Indicators[WordBoundaryIndex];
     }
     protected bool TryHitHode(Node node)
     {
@@ -230,7 +231,7 @@ public class Regex
         {
             foreach(var kv in this.IndicatorsDict)
             {
-                if (Check(Indicators[kv.Key], node, kv.Value))
+                if (Check(this.Indicators[kv.Key], node, kv.Value))
                     return true;
             }
         }
@@ -257,9 +258,9 @@ public class Regex
             {
                 name = r.PatternName ?? name;
             }
-            return new Match(true, name, sp, ep, input[sp..ep]);
+            return new Match(this,input, true, name, sp, ep, input[sp..ep]);
         }
-        return new Match(false);
+        return new Match(this,input, false);
     }
 
     public List<Match> Matches(string input, int start = 0, int length = -1)
@@ -291,9 +292,12 @@ public class Regex
     }
     public string ReplaceFirst(string input, string replacement, int start = 0)
         => this.ReplaceFirst(input, (Capture capture) => replacement, start);
+    public string ReplaceFirst(string input, string replacement,Match match, int start = 0)
+        => this.ReplaceFirst(input, (Capture capture) => replacement, match, start);
     public string ReplaceFirst(string input, CaptureEvaluator evaluator, int start = 0)
+        => this.ReplaceFirst(input, evaluator, this.Match(input, start), start);
+    public string ReplaceFirst(string input, CaptureEvaluator evaluator,Match match, int start = 0)
     {
-        var match = this.Match(input, start);
         if (match is not null)
         {
             var result = new List<string>();
@@ -310,11 +314,14 @@ public class Regex
 
     public string ReplaceAll(string input, string replacement, int start = 0)
         => this.ReplaceAll(input, (Capture capture) => replacement, start);
-    public string ReplaceAll(string input, CaptureEvaluator evaluator, int start = 0)
+    public string ReplaceAll(string input, string replacement,List<Match> matches, int start = 0)
+        => this.ReplaceAll(input, (Capture capture) => replacement, matches, start);
+    public string ReplaceAll(string input, CaptureEvaluator evaluator, int start = 0) 
+        => ReplaceAll(input, evaluator, Matches(input, start), start);
+    public string ReplaceAll(string input, CaptureEvaluator evaluator, List<Match> matches, int start = 0)
     {
-        var matchs = this.Matches(input, start);
         var result = new List<string>();
-        foreach (var match in matchs)
+        foreach (var match in matches)
         {
             var delta = match.InclusiveStart - start;
             if (delta > 0) result.Add(input[start..match.InclusiveStart]);
@@ -325,11 +332,12 @@ public class Regex
         if (start < input.Length) result.Add(input[start..]);
         return result.Count > 0 ? result.Aggregate((a, b) => a + b) : input;
     }
-    public string[] Split(string input, int start = 0)
+    public string[] Split(string input, int start = 0) 
+        => this.Split(input, this.Matches(input, start), start);
+    public string[] Split(string input,List<Match> matches, int start = 0)
     {
-        var matchs = this.Matches(input, start);
         var result = new List<string>();
-        foreach (var match in matchs)
+        foreach (var match in matches)
         {
             var delta = match.InclusiveStart - start;
             if (delta > 0) result.Add(input[start..match.InclusiveStart]);

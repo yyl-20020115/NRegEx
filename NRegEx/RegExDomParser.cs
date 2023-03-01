@@ -387,7 +387,15 @@ public class RegExDomParser
                     flags |= Options.NON_GREEDY;
                     sawFlag = true;
                     break;
-
+                case '#': //#comments
+                    { //skip comments
+                        while (this.Reader.HasMore)
+                        {
+                            c = this.Reader.Pop();
+                            if (c == ')') return;
+                        }
+                    }
+                    break;
                 // Switch to negation.
                 case '-':
                     if (sign < 0) goto exit;
@@ -474,7 +482,7 @@ public class RegExDomParser
         if (!string.IsNullOrEmpty(name) && name[0] == '^')
         {
             sign = -sign;
-            name = name.Substring(1);
+            name = name[1..];
         }
 
         var pair = UnicodeTable(name)
@@ -812,9 +820,24 @@ public class RegExDomParser
         if (g == null)
             return false;
 
-        list.Add(new(g.Sign < 0, g.Class) { Position = beforePos });
+        list.Add(new(g.Sign < 0, TranslateCharClass(g.Class)) { Position = beforePos });
 
         return true;
+    }
+    protected static int[] TranslateCharClass(int[] ranges)
+    {
+        if (ranges.Length % 2 == 0)
+        {
+            var set = new HashSet<int>();
+            for(int i = 0;i < ranges.Length; i += 2)
+            {
+                int lo = ranges[i + 0];
+                int hi = ranges[i + 1];
+                set.UnionWith(Enumerable.Range(lo, hi - lo + 1));
+            }
+            return set.ToArray();
+        }
+        return Array.Empty<int>();
     }
 
     // parseNamedClass parses a leading POSIX named character class like
@@ -835,7 +858,7 @@ public class RegExDomParser
         Reader.SkipString(name);
         if (!CharGroup.POSIX_GROUPS.TryGetValue(name, out var g))
             throw new PatternSyntaxException(ERR_INVALID_CHAR_RANGE, name);
-        list.Add(new(g.Sign < 0, g.Class) { Position = savedPos });
+        list.Add(new(g.Sign < 0,TranslateCharClass(g.Class)) { Position = savedPos });
         return true;
     }
 
@@ -903,8 +926,11 @@ public class RegExDomParser
                         this.Push(new(TokenTypes.Literal,taken, Options: Options,Position:savedPos,Length:taken.Length, PatternName: this.Name));
                         goto outswitch;
                     }
+                case 'Z':
+                    this.Push(new(TokenTypes.EndLine, "\\" + (char)c, Options: Options, Position: savedPos, PatternName: this.Name));
+                    goto outswitch;
                 case 'z':
-                    this.Push(new(TokenTypes.EndText, "\\z", Options: Options, Position: savedPos, PatternName: this.Name));
+                    this.Push(new(TokenTypes.EndText, "\\"+(char)c, Options: Options, Position: savedPos, PatternName: this.Name));
                     goto outswitch;
                 default:
                     Reader.RewindTo(savedPos);

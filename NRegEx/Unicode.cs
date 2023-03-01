@@ -1,5 +1,6 @@
 ﻿using NRegEx;
 using System.Collections;
+using System.Runtime.CompilerServices;
 using System.Text;
 /*
  * Copyright (c) 2020 The Go Authors. All rights reserved.
@@ -65,7 +66,7 @@ public static class Unicode
         if (r <= MAX_LATIN1)
         {
             foreach (int[] range in ranges)
-            // range = [lo, hi, stride]
+                // range = [lo, hi, stride]
                 if (r > range[1])
                     continue;
                 else
@@ -130,6 +131,13 @@ public static class Unicode
             or System.Globalization.UnicodeCategory.ModifierLetter
             or System.Globalization.UnicodeCategory.OtherLetter
             ;
+    public static bool IsRuneWord(int i)
+         => IsRuneLetter(i) || 
+        (Rune.GetUnicodeCategory(new Rune(i))
+        is System.Globalization.UnicodeCategory.DecimalDigitNumber
+        or System.Globalization.UnicodeCategory.LetterNumber
+        or System.Globalization.UnicodeCategory.OtherNumber
+        )||(i=='_');
 }
 public static class Characters
 {

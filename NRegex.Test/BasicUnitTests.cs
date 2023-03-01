@@ -430,4 +430,20 @@ public class BasicUnitTests
         var r = new Regex(@"\.");
         var m = r.Match(".");
     }
+    [TestMethod]
+    public void TestMethod23()
+    {
+        string greedyPattern = @".+(\d+)\.";
+        string lazyPattern = @".+?(\d+)\.";
+
+        var regex1 = new Regex(greedyPattern);
+        ExportAsDot(regex1);
+
+        var regex2 = new Regex(lazyPattern);
+        string input = "This sentence ends with the number 107325.";
+
+        var r1 = regex1.Match(input);
+        var r2 = regex2.Match(input);
+
+    }
 }
