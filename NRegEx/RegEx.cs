@@ -111,7 +111,7 @@ public class Regex
     //public static bool IsBacktracingFriendly(string regex)
     //    => !string.IsNullOrEmpty(regex)
     //    && Graph.IsBacktracingFriendly(new Regex(regex).Graph);
-    public readonly RegExNode Node;
+    public readonly RegExNode Model;
     public readonly Graph Graph;
     public readonly Options Options;
     public readonly string Pattern;
@@ -121,8 +121,8 @@ public class Regex
         this.Pattern = pattern;
         this.Name = name ?? this.Pattern;
         this.Options = options;
-        this.Node = RegExDomParser.Parse(this.Name, this.Pattern, this.Options);
-        this.Graph = RegExGraphBuilder.Build(this.Node,0,
+        this.Model = RegExDomParser.Parse(this.Name, this.Pattern, this.Options);
+        this.Graph = RegExGraphBuilder.Build(this.Model,0,
             (this.Options & Options.FOLD_CASE) == Options.FOLD_CASE);
     }
 

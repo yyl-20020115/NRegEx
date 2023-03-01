@@ -1,11 +1,10 @@
-﻿using System.Data;
-using System.Text;
+﻿using System.Text;
 
 namespace NRegEx;
 
 public class RegExGenerator
 {
-    private static string RemoveStartEndMarkers(string regExp)
+    public static string RemoveStartEndMarkers(string regExp)
     {
         if (regExp.StartsWith("^", StringComparison.Ordinal))
         {
@@ -31,36 +30,46 @@ public class RegExGenerator
     
     protected virtual int GetRandomRune(int[]? runes) 
         => runes == null ? '\0' : runes[Random.Next(runes.Length)];
-    protected virtual Node GetRandomNode(Node[] nodes)
-        => nodes[Random.Next(nodes.Length)];
+    protected virtual RegExNode GetRandomNode(List<RegExNode> nodes)
+        => nodes[Random.Next(nodes.Count)];
     protected virtual int GetBetween(int minLength, int maxLength)
         => this.Random.Next(minLength, maxLength);
     public string Generate(int minLength = 0, int maxLength = -1)
     {
         maxLength = maxLength<0? this.Regex.Pattern.Length : maxLength;
+
         var builder= new StringBuilder();
-        var graph = this.Regex.Graph; 
-        var heads = graph.Nodes.Where(n => n.Inputs.Count == 0);
-        var nodes = heads.ToHashSet();
-        var path = new List<Node> { graph.Head };
-        //TODO:
-        while (nodes.Count>0)
+        var model = this.Regex.Model;
+
+        if(model.Type  == TokenTypes.Union)
         {
-            //random walk to tail
-            var node = GetRandomNode(nodes.ToArray());
-            if (!node.IsLink)
-                path.Add(node);
-            nodes.Clear();
-            node.FetchNodes(nodes);
+            var branch = this.GetRandomNode(model.Children);
+            if(branch.Type== TokenTypes.Sequence)
+            {
+                var leaf = this.GetRandomNode(branch.Children);
+                //TODO:
+                
+
+            }
         }
-        //TODO:
-        var count = this.GetBetween(minLength, maxLength);
+
+
+        //while (nodes.Count>0)
+        //{
+        //    //random walk to tail
+        //    var node = GetRandomNode(nodes.ToArray());
+        //    if (!node.IsLink)
+        //        path.Add(node);
+        //    nodes.Clear();
+        //    node.FetchNodes(nodes);
+        //}
+        //var count = this.GetBetween(minLength, maxLength);
         
-        foreach(var n in path)
-        {
-            var c = GetRandomRune(n.CharsArray);
-            builder.Append(char.ConvertFromUtf32(c));
-        }
+        //foreach(var n in path)
+        //{
+        //    var c = GetRandomRune(n.CharsArray);
+        //    builder.Append(char.ConvertFromUtf32(c));
+        //}
 
         return builder.ToString();
     }

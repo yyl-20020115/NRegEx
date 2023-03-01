@@ -1,6 +1,7 @@
 ﻿using System.Text;
 
 namespace NRegEx;
+
 public class RegExDomParser
 {
     // Unexpected error
@@ -52,14 +53,13 @@ public class RegExDomParser
         int c;
         while (-1 != (c = this.Reader.Peek()))
         {
-            int Position = this.Reader.Position;
             switch (c)
             {
                 default:
-                    this.Push(new(TokenTypes.Literal, this.Reader.Take(),Position:Position));
+                    this.Push(new(TokenTypes.Literal, this.Reader.Take()));
                     continue;
                 case RegExTextReader.EOF:
-                    this.Push(new(TokenTypes.EOF, "\0", Position:Position));
+                    this.Push(new());
                     continue;
                 case '\\':
                     this.ParseBackslash(Reader);

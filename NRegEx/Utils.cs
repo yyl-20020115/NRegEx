@@ -4,6 +4,10 @@
  * Use of this source code is governed by a BSD-style
  * license that can be found in the LICENSE file.
  */
+using NRegEx;
+using NRegEx;
+using NRegEx;
+using NRegEx;
 using System.Collections;
 using System.Text;
 
@@ -16,6 +20,10 @@ public static class Utils
 {
 
     public static readonly int[] EMPTY_INTS = Array.Empty<int>();
+    //|()[]{}^$*+?\.
+    //there is no place for #
+    public readonly static char[] MetaChars
+        = { '|', '(', ')', '[', ']', '{', '}', '^', '$', '*', '+', '?', '\\', '.' };
 
     // Returns true iff |c| is an ASCII letter or decimal digit.
     public static bool Isalnum(int c)
@@ -246,5 +254,79 @@ public static class Utils
             first = source.IndexOf(c0, ++first, limit - first);
         }
         return -1;
+    }
+
+    public static bool IsMetachar(char ch) 
+        => Array.IndexOf(MetaChars, ch) >= 0;
+
+    public static string Escape(string input)
+    {
+        var chars = input.ToArray();
+        if((Array.FindIndex(chars, ch => IsMetachar(ch)) is int i) && (-1 == i)) return input;
+        var builder = new StringBuilder(input.Length * 3);
+        var last = 0;
+        while(true)
+        {
+            builder.Append(chars[last..i]);
+            if (i>= chars.Length) break;
+            var ch = chars[i++];
+            last = i;
+            builder.Append('\\');
+            builder.Append(ch switch
+            {
+                '\n' => 'n',
+                '\r' => 'r',
+                '\t' => 't',
+                '\f' => 'f',
+                _ => ch,
+            });
+
+            var tail = chars[last..];
+            if (-1 == (i = Array.FindIndex(tail, ch => IsMetachar(ch))))
+            {
+                builder.Append(tail);
+                break;
+            }
+            else
+            {
+                i += last;
+            }
+        }
+        return builder.ToString();
+    }
+
+    public static string Unescape(string input)
+    {
+        var chars = input.ToArray();
+        if ((Array.IndexOf(chars, '\\') is int i) && (-1 == i)) return input;
+        var last = 0;
+        var builder = new StringBuilder(input.Length * 3);
+        while(true)
+        {
+            builder.Append(chars[last..i]);
+            if (i == chars.Length) break;
+            var ch = chars[last = ++i];
+            builder.Append(ch switch
+            {
+                'n' => '\n',
+                'r' => '\r',
+                't' => '\t',
+                'f' => '\f',
+                _ => ch,
+            });
+
+            last = ch == '\\' ? last + 2 : last + 1;
+            var tail = chars[last..];
+            if (-1 == (i = Array.IndexOf(tail, '\\')))
+            {
+                builder.Append(tail);
+                break;
+            }
+            else
+            {
+                i += last;
+            }
+        }
+        return builder.ToString();
     }
 }

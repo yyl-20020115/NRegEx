@@ -26,4 +26,6 @@ public enum TokenTypes : int
     Union = 19,         //..|..|.. = Alternate
     OpenParenthesis = 20,     //(
     CloseParenthesis = 21,     //)
+    BeginWord = 22, //<
+    EndWord = 23, //>
 }
