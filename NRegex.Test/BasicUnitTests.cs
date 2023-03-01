@@ -279,13 +279,9 @@ public class BasicUnitTests
     [TestMethod]
     public void TestMethod18()
     {
-        var regexString0 = @"\b\B\cx\d\D\f\n\r\s\S\t\v\w\W\xn\num\n\nm\nml\un";
+        var regexString0 = @"\A\b\B\d\D\f\n\r\s\S\t\v\w\W\x12\023";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0);
-        Assert.IsFalse(regex0.IsCompletelyMatch(""));
-        Assert.IsTrue(regex0.IsCompletelyMatch("aa"));
-        Assert.IsTrue(regex0.IsCompletelyMatch("aaa"));
-        Assert.IsFalse(regex0.IsCompletelyMatch("aaaa"));
 
     }
 

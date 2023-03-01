@@ -779,13 +779,13 @@ public class RegExDomParser
             switch ((char)c)
             {
                 case 'A':
-                    this.Push(new (TokenTypes.BeginText, Options: Options));
+                    this.Push(new (TokenTypes.BeginText,"\\A", Options: Options,Position:savedPos));
                     goto outswitch;
                 case 'b':
-                    this.Push(new (TokenTypes.WordBoundary, Options: Options));
+                    this.Push(new (TokenTypes.WordBoundary,"\\b", Options: Options, Position: savedPos));
                     goto outswitch;
                 case 'B':
-                    this.Push(new (TokenTypes.NotWordBoundary, Options: Options));
+                    this.Push(new (TokenTypes.NotWordBoundary,"\\B", Options: Options, Position: savedPos));
                     goto outswitch;
                 case 'C':
                     //NOTICE:use any char instead
@@ -793,6 +793,9 @@ public class RegExDomParser
                     //goto outswitch;
                     // any byte; not supported
                     throw new PatternSyntaxException(ERR_INVALID_ESCAPE, "\\C");
+                case 'c':
+                    goto outswitch;
+
                 case 'Q':
                     {
                         // \Q ... \E: the ... is always literals
@@ -813,7 +816,7 @@ public class RegExDomParser
                         goto outswitch;
                     }
                 case 'z':
-                    this.Push(new (TokenTypes.EndText, Options: Options));
+                    this.Push(new (TokenTypes.EndText,"\\z", Options: Options, Position: savedPos));
                     goto outswitch;
                 default:
                     Reader.RewindTo(savedPos);
@@ -826,7 +829,7 @@ public class RegExDomParser
                 var cc2 = new CharClass();
                 if (ParseUnicodeClass(Reader, cc2))
                 {
-                    Push(new (TokenTypes.CharClass, Options: Options, Runes: cc2.GetRunes()));
+                    this.Push(new (TokenTypes.CharClass, Options: Options, Runes: cc2.GetRunes()));
                     goto outswitch;
                 }
             }
@@ -835,7 +838,7 @@ public class RegExDomParser
             var cc = new CharClass();
             if (ParsePerlClassEscape(Reader, cc))
             {
-                Push(new (TokenTypes.CharClass, Options: Options, Runes: cc.GetRunes()));
+                this.Push(new (TokenTypes.CharClass, Options: Options, Runes: cc.GetRunes()));
                 goto outswitch;
             }
 
