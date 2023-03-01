@@ -22,13 +22,12 @@ public class RegExDomParser
     public readonly string Name;
     public readonly RegExPatternReader Reader;
     public Options Options;
-    protected readonly Dictionary<string, int> namedGroups = new();
+    public readonly Dictionary<string, int> NamedGroups = new();
     public string Pattern => this.Reader.Pattern;
     protected readonly Stack<RegExNode> NodeStack = new();
     protected int CaptureIndex = 0;
-
-    public static RegExNode Parse(string name, string pattern, Options options = Options.None)
-        => new RegExDomParser(name, pattern, options).Parse();
+    public bool RequestTextBegin { get; protected set; } = false;
+    public bool RequestTextEnd { get; protected set; } = false;
     public RegExDomParser(string name, string pattern, Options options)
     {
         this.Name = name;
@@ -80,6 +79,7 @@ public class RegExDomParser
                     this.Push(new(TokenTypes.Alternate, this.Reader.Take(), Position: Position, PatternName: this.Name));
                     continue;
                 case '^':
+                    this.RequestTextBegin = true;
                     this.Push(new(
                         ((this.Options & Options.ONE_LINE) != Options.None)
                         ? TokenTypes.BeginLine
@@ -87,6 +87,7 @@ public class RegExDomParser
                         , this.Reader.Take(), Position: Position, PatternName: this.Name));
                     break;
                 case '$':
+                    this.RequestTextEnd = true;
                     this.Push(new(
                         ((this.Options & Options.ONE_LINE) != Options.None)
                         ? TokenTypes.EndLine
@@ -328,15 +329,16 @@ public class RegExDomParser
         // Google source tree, (?P<expr>name) is the dominant form,
         // so that's the one we implement.  One is enough.
         var s = Reader.Rest;
-        if (s.StartsWith("(?P<"))
+        if (s.StartsWith("(?P<") || s.StartsWith("(?<") || s.StartsWith("(?'"))
         {
+            var delta = (s.StartsWith("(?<") || s.StartsWith("(?'")) ? -1 : 0;
             // Pull out name.
             var end = s.IndexOf('>');
             if (end < 0)
                 throw new PatternSyntaxException(ERR_INVALID_NAMED_CAPTURE, s);
-            var name = s[4..end]; // "name"
+            var name = s[(4 + delta)..end]; // "name"
             Reader.SkipString(name);
-            Reader.Skip(5); // "(?P<>"
+            Reader.Skip(5+delta); // "(?P<>"
             if (!IsValidCaptureName(name))
             {
                 throw new PatternSyntaxException(
@@ -345,11 +347,11 @@ public class RegExDomParser
             var node = new RegExNode(TokenTypes.OpenParenthesis,
                 Value: name, CaptureIndex: ++this.CaptureIndex, Position: startPos, PatternName: this.Name);
             // Like ordinary capture, but named.
-            if (namedGroups.ContainsKey(name))
+            if (NamedGroups.ContainsKey(name))
             {
                 throw new PatternSyntaxException(ERR_DUPLICATE_NAMED_CAPTURE, name);
             }
-            namedGroups.Add(name, this.CaptureIndex);
+            NamedGroups.Add(name, this.CaptureIndex);
 
             this.Push(node);
             return;

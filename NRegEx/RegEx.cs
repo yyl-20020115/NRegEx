@@ -1,7 +1,5 @@
 ﻿namespace NRegEx;
 
-public record class Capture(string Name = "", int InclusiveStart = 0, int ExclusiveEnd = -1, string? Value = null);
-
 public delegate string CaptureEvaluator(Capture capture);
 public class Regex
 {
@@ -23,9 +21,9 @@ public class Regex
         => new Regex(pattern).IsMatch(input, start, length);
     public static bool IsFullyMatch(string input, string pattern, int start = 0, int length = -1)
         => new Regex(pattern).IsFullyMatch(input, start, length);
-    public static Capture? Match(string input, string pattern, int start = 0, int length = -1)
+    public static Match Match(string input, string pattern, int start = 0, int length = -1)
         => new Regex(pattern).Match(input, start, length);
-    public static List<Capture> Matches(string input, string pattern, int start = 0, int length = -1)
+    public static List<Match> Matches(string input, string pattern, int start = 0, int length = -1)
          => new Regex(pattern).Matches(input, start, length);
     /// <summary>
     /// We should check easy back tracing regex first
@@ -40,14 +38,23 @@ public class Regex
     public readonly Options Options;
     public readonly string Pattern;
     public readonly string Name;
+    public readonly Dictionary<string, int> NamedGroups;
     public RegExNode Model { get; protected set; }
     public Graph Graph { get; protected set; }
+
+    protected readonly bool RequestTextBegin;
+    protected readonly bool RequestTextEnd;
+
     public Regex(string pattern, string? name = null, Options options = Options.PERL)
     {
         this.Pattern = pattern;
         this.Name = name ?? this.Pattern;
         this.Options = options;
-        this.Model = RegExDomParser.Parse(this.Name, this.Pattern, this.Options);
+        var Parser = new RegExDomParser(this.Name, this.Pattern, this.Options);
+        this.Model = Parser.Parse();
+        this.NamedGroups = Parser.NamedGroups;
+        this.RequestTextBegin = Parser.RequestTextBegin;
+        this.RequestTextEnd = Parser.RequestTextEnd;
         this.Graph = RegExGraphBuilder.Build(this.Model, 0,
             (this.Options & Options.FOLD_CASE) == Options.FOLD_CASE);
     }
@@ -63,6 +70,8 @@ public class Regex
         if (start < 0 || start > input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length - start;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
+        if (this.RequestTextBegin && start > 0) throw new ArgumentOutOfRangeException(nameof(start));
+
         var tail = start + length;
 
         int i = this.MatchFindStart(input, start, tail);
@@ -88,12 +97,7 @@ public class Regex
     }
     protected int MatchFindStart(string input, int start, int tail)
     {
-        //^should always starts with start of input
-        if (this.Pattern.StartsWith('^') && start > 0)
-        {
-            return -1;
-        }
-        else if (start < tail)
+        if (start < tail)
         {
             var heads = this.Graph.Nodes.Where(n => n.Inputs.Count == 0).ToArray();
             var nodes = new HashSet<Node>();
@@ -115,6 +119,7 @@ public class Regex
         if (start < 0 || start > input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length - start;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
+        if (this.RequestTextBegin && start > 0) throw new ArgumentOutOfRangeException(nameof(start));
         Node? last = null;
         return IsMatchInternal(input, start, length, ref start,ref last, true);
     }
@@ -147,58 +152,60 @@ public class Regex
             }
             i += hit ? 1 : 0;
         }
-        return strict
+        return strict || this.RequestTextEnd //this means having $ in the end
             ? i == input.Length
                 && RegExGraphBuilder.HasPassThrough(this.Graph, nodes.ToArray())
             : i <= input.Length
                 && (nodes.Count == 0 || RegExGraphBuilder.HasPassThrough(this.Graph, nodes.ToArray()));
     }
-    public Capture? Match(string input, int start = 0, int length = -1)
+    public Match Match(string input, int start = 0, int length = -1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
         if (start < 0 || start > input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length - start;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
+        if (this.RequestTextBegin && start > 0) throw new ArgumentOutOfRangeException(nameof(start));
         Node? last = null;
         int sp = 0, ep = 0;
         var ret = this.IsMatchInternal(input, start, length, ref sp, ref ep, ref last);
         if (ret)
         {
             var name = this.Name;
-            if (last != null && last.Parent is Graph p && p.SourceNode is RegExNode r)
+            if (last?.Parent?.SourceNode is RegExNode r)
             {
                 name = r.PatternName ?? name;
             }
-            return new Capture(name, sp, ep, input[sp..ep]);
+            return new Match(true, name, sp, ep, input[sp..ep]);
         }
-        return null;
+        return new Match(false);
     }
 
-    public List<Capture> Matches(string input, int start = 0, int length = -1)
+    public List<Match> Matches(string input, int start = 0, int length = -1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
         if (start < 0 || start > input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length - start;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
+        if (this.RequestTextBegin && start > 0) throw new ArgumentOutOfRangeException(nameof(start));
         var tail = start + length;
-        var captures = new List<Capture>();
+        var matches = new List<Match>();
         while (true)
         {
-            var capture = this.Match(input, start, length);
-            if (null == capture)
+            var match = this.Match(input, start, length);
+            if (null == match)
                 break;
             else
             {
-                if (capture.InclusiveStart < 0 || capture.ExclusiveEnd < 0 || capture.ExclusiveEnd < capture.InclusiveStart)
+                if (match.InclusiveStart < 0 || match.ExclusiveEnd < 0 || match.ExclusiveEnd < match.InclusiveStart)
                     break;
-                captures.Add(capture);
+                matches.Add(match);
 
-                length -= (capture.ExclusiveEnd - start);
-                start = capture.ExclusiveEnd;
+                length -= (match.ExclusiveEnd - start);
+                start = match.ExclusiveEnd;
             }
-            if (capture.ExclusiveEnd >= tail) break;
+            if (match.ExclusiveEnd >= tail) break;
         }
-        return captures;
+        return matches;
     }
     public string ReplaceFirst(string input, string replacement, int start = 0)
         => this.ReplaceFirst(input, (Capture capture) => replacement, start);
