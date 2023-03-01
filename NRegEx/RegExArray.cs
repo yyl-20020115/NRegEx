@@ -4,6 +4,8 @@
 /// All Regexs will be matched parallelly
 /// during the matching stage just like one Regex
 /// Other operations are the same.
+/// The Name field of Capture object is the source name or pattern 
+/// (if name is not given) of the Regex which matched.
 /// </summary>
 public class RegExArray : Regex
 {
