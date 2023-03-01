@@ -15,17 +15,18 @@ public enum TokenTypes : int
     EndText = 8,
     WordBoundary = 9,
     NotWordBoundary = 10,
-    Capture = 11,       //NOT USED
-    ZeroPlus = 12,      //*
-    OnePlus = 13,       //+
-    ZeroOne = 14,       //?
-    Repeats = 15,
-    Concate = 16,       //& = Sequence
-    Sequence = 17,      //.&.&.&...
-    Alternate = 18,     // |
-    Union = 19,         //..|..|.. = Alternate
-    OpenParenthesis = 20,     //(
-    CloseParenthesis = 21,     //)
-    BeginWord = 22, //<
-    EndWord = 23, //>
+    Capture = 11,       //
+    BackReference = 12,
+    ZeroPlus = 13,      //*
+    OnePlus = 14,       //+
+    ZeroOne = 15,       //?
+    Repeats = 16,
+    Concate = 17,       //& = Sequence
+    Sequence = 18,      //.&.&.&...
+    Alternate = 19,     // |
+    Union = 20,         //..|..|.. = Alternate
+    OpenParenthesis = 21,     //(
+    CloseParenthesis = 22,     //)
+    BeginWord = 23, //<
+    EndWord = 24, //>
 }

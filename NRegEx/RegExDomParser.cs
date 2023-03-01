@@ -912,7 +912,12 @@ public class RegExDomParser
                         }
                     }
                     goto outswitch;
+                case 'k':
+                    {
+                        //BackReference
 
+                    }
+                    goto outswitch;
                 case 'Q':
                     {
                         // \Q ... \E: the ... is always literals
