@@ -1,6 +1,4 @@
-﻿using System.Xml.Linq;
-
-namespace NRegEx;
+﻿namespace NRegEx;
 public class Graph
 {
     protected static int Gid = 0;
@@ -15,6 +13,8 @@ public class Graph
     public Node Head;
     public Node Tail;
     public RegExNode? SourceNode = null;
+    public readonly List<int> BackReferences = new();
+    public readonly List<Graph> ReferenceGraphs = new();
     public Graph(string name = "",params int[] cs )
     {
         this.Name = name;
@@ -174,20 +174,16 @@ public class Graph
     public Graph CaptureWith(Graph g, int i)
     {
         foreach(var node in g.Nodes)
-        {
             node.Captures.Add(i);
-        }
-
         return this.UnionWith(g);
     }
     public Graph BackReferenceWith(Graph g, int i)
     {
-        foreach (var node in g.Nodes)
-        {
-            
-        }
-
-        return this.UnionWith(g);
+        //BackReference are on Graphs, not nodes
+        g.BackReferences.Add(i);
+        //g.ReferenceGraphs.Add(this);
+        this.ReferenceGraphs.Add(g);
+        return this;
     }
     public Graph ZeroPlus(Graph g, HashSet<Node>? loopset = null)
     {

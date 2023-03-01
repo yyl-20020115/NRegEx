@@ -266,7 +266,6 @@ public class Regex
             if (last?.Parent?.SourceNode is RegExNode r)
                 name = r.PatternName ?? name;
 
-            //TODO: build matches
             return this.BuildMatch(input, name, sp, ep, groups);;
         }
         return new Match(this,input, false);
@@ -274,6 +273,9 @@ public class Regex
     protected Match BuildMatch(string input, string name, int sp, int ep, ListLookups<int, int>? groups)
     {
         var match = new Match(this, input, true, name, sp, ep, input[sp..ep]);
+        //group 0
+        match.Groups.Add(match);
+
         if (groups != null)
         {
             for (int i = 0; i < groups.Count; i++)

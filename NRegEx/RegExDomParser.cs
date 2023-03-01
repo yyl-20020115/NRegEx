@@ -25,7 +25,7 @@ public class RegExDomParser
     public readonly Dictionary<string, int> NamedGroups = new();
     public string Pattern => this.Reader.Pattern;
     protected readonly Stack<RegExNode> NodeStack = new();
-    protected int CaptureIndex = 0;
+    protected int CaptureIndex = 1;
     public bool RequestTextBegin { get; protected set; } = false;
     public bool RequestTextEnd { get; protected set; } = false;
     public RegExDomParser(string name, string pattern, Options options)
