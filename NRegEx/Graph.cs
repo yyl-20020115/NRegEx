@@ -180,6 +180,15 @@ public class Graph
 
         return this.UnionWith(g);
     }
+    public Graph BackReferenceWith(Graph g, int i)
+    {
+        foreach (var node in g.Nodes)
+        {
+            
+        }
+
+        return this.UnionWith(g);
+    }
     public Graph ZeroPlus(Graph g, HashSet<Node>? loopset = null)
     {
         this.Edges.Add(new(this.Head, this.Tail)); //direct pass

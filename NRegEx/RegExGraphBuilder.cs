@@ -205,6 +205,12 @@ public static class RegExGraphBuilder
                         graph.CaptureWith(BuildInternal(node.Children[0]), index);
                 }
                 break;
+            case TokenTypes.BackReference:
+                {
+                    if (node.Children.Count > 0 && node.CaptureIndex is int index)
+                        graph.BackReferenceWith(BuildInternal(node.Children[0]), index);
+                }
+                break;
             case TokenTypes.Union:
                 {
                     if (node.Children.Count > 0)

@@ -655,22 +655,13 @@ public class RegExDomParser
                     return c;
                 }
                 break;
-
-            // Octal escapes.
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
                 // Single non-zero digit is a backreference; not supported
-                if (!Reader.HasMore || Reader.Peek() < '0' || Reader.Peek() > '7')
-                    break;
-                goto for_zero;
+                //if (!Reader.HasMore || Reader.Peek() < '0' || Reader.Peek() > '7')
+                //    break;
+                //goto for_zero;
             /* fallthrough */
             case '0':
-            for_zero:
+            //for_zero:
                 {
                     // Consume up to three octal digits; already have one.
                     int r = c - '0';
@@ -878,6 +869,52 @@ public class RegExDomParser
             int c = Reader.Pop();
             switch ((char)c)
             {
+                //BackReference
+                case 'k':
+                    {
+                        var s = Reader.Rest;
+                        if (s.StartsWith("<"))
+                        {
+                            // Pull out name.
+                            var end = s.IndexOf('>');
+                            if (end < 0)
+                                throw new PatternSyntaxException(ERR_INVALID_NAMED_CAPTURE, s);
+                            var name = s[1..end]; // "name"
+                            Reader.SkipString(name);
+                            Reader.Skip(2); // "<>"
+                            if (!IsValidCaptureName(name))
+                            {
+                                throw new PatternSyntaxException(
+                                    ERR_INVALID_NAMED_CAPTURE, s[..end]); // "k<name>"
+                            }
+                            // Like ordinary capture, but named.
+                            if (!this.NamedGroups.TryGetValue(name, out var index))
+                                throw new RegExSyntaxException($"Unable to find capture index for name:{name}");
+
+                            this.Push(new(TokenTypes.BackReference,
+                                "\\" + (char)c, Options: Options, Position: savedPos, PatternName: this.Name,
+                                CaptureIndex: index));
+                        }
+                    }
+                    goto outswitch;
+                //BackReference
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                    {
+                        int index = c - '0';
+
+                        this.Push(new(TokenTypes.BackReference, 
+                            "\\"+(char)c, Options: Options, Position: savedPos, PatternName: this.Name,
+                            CaptureIndex: index));
+                    }
+                    goto outswitch;
                 case 'A':
                     this.Push(new(TokenTypes.BeginText, "\\A", Options: Options, Position: savedPos, PatternName: this.Name));
                     goto outswitch;
@@ -910,12 +947,6 @@ public class RegExDomParser
                         {
                             this.Push(new(TokenTypes.Literal, "\\c", Options: Options, Position: savedPos, Length:1, PatternName: this.Name));
                         }
-                    }
-                    goto outswitch;
-                case 'k':
-                    {
-                        //BackReference
-
                     }
                     goto outswitch;
                 case 'Q':
