@@ -774,16 +774,20 @@ public class RegExDomParser
             // character or use \x08.
             case 'a':
                 return '\a'; // No \a in Java
+            case 'b':
+                return '\b';
+            case 't':
+                return '\t';
+            case 'r':
+                return '\r';
+            case 'v':
+                return '\u000b'; // No \v in Java
             case 'f':
                 return '\f';
             case 'n':
                 return '\n';
-            case 'r':
-                return '\r';
-            case 't':
-                return '\t';
-            case 'v':
-                return 11; // No \v in Java
+            case 'e':
+                return '\u001b';
         }
     outswitch:
         throw new PatternSyntaxException(ERR_INVALID_ESCAPE, Reader.From(startPos));
@@ -860,6 +864,22 @@ public class RegExDomParser
                     // any byte; not supported
                     throw new PatternSyntaxException(ERR_INVALID_ESCAPE, "\\C");
                 case 'c':
+                    if(!Reader.HasMore) goto outswitch;
+                    else
+                    {
+                        int r = this.Reader.Peek();
+                        if (r is >= 'a' and <= 'z' or >= 'A' and <= 'Z')
+                        {
+                            this.Reader.Pop();
+                            int n = (char.ToLower((char)r) - 'a') + 1;
+                            var t = char.ConvertFromUtf32(n);
+                            this.Push(new(TokenTypes.Literal,t , Options: Options, Position: savedPos,Length:t.Length, PatternName: this.Name));
+                        }
+                        else
+                        {
+                            this.Push(new(TokenTypes.Literal, "\\c", Options: Options, Position: savedPos, Length:1, PatternName: this.Name));
+                        }
+                    }
                     goto outswitch;
 
                 case 'Q':
