@@ -4,10 +4,6 @@
  * Use of this source code is governed by a BSD-style
  * license that can be found in the LICENSE file.
  */
-using NRegEx;
-using NRegEx;
-using NRegEx;
-using NRegEx;
 using System.Collections;
 using System.Text;
 
@@ -111,6 +107,24 @@ public static class Utils
     // Returns the Java UTF-16 string containing the single rune |r|.
     public static string RuneToString(int r)
         => new Rune(r).ToString();
+    public static string RunesToString(IEnumerable<Rune> runes)
+    {
+        var builder = new StringBuilder();
+        foreach(var rune in runes)
+        {
+            builder.Append(rune.ToString());
+        }
+        return builder.ToString();
+    }
+    public static string RunesToString(IEnumerable<int> runes)
+    {
+        var builder = new StringBuilder();
+        foreach (var rune in runes)
+        {
+            builder.Append(new Rune(rune).ToString());
+        }
+        return builder.ToString();
+    }
 
     // Returns a new copy of the specified subarray.
     public static int[] SubArray(int[] array, int start, int end)

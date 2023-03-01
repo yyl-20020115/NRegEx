@@ -57,7 +57,10 @@ public class RegExDomParser
             switch (c)
             {
                 default:
-                    this.Push(new(TokenTypes.Literal, this.Reader.Take(), Position: Position));
+                    {
+                        var taken = this.Reader.Take();
+                        this.Push(new(TokenTypes.Literal, taken, Position: Position, Length: taken.Length));
+                    }
                     continue;
                 case RegExTextReader.EOF:
                     this.Push(new());
@@ -144,7 +147,8 @@ public class RegExDomParser
                         if (!found)
                         {
                             this.Reader.Leave();
-                            this.Push(new(TokenTypes.Literal, this.Reader.Take(), Position: Position));
+                            var taken = this.Reader.Take();
+                            this.Push(new(TokenTypes.Literal, taken, Position: Position,Length:taken.Length));
                         }
                         else
                         {
@@ -862,7 +866,8 @@ public class RegExDomParser
                             cps.Add(codepoint);
                             j += new Rune(codepoint).Utf16SequenceLength;
                         }
-                        Push(new(TokenTypes.Literal, Options: Options, Runes: cps.ToArray()));
+                        var taken = Utils.RunesToString(cps);
+                        this.Push(new(TokenTypes.Literal,taken, Options: Options,Position:savedPos,Length:taken.Length));
                         goto outswitch;
                     }
                 case 'z':
@@ -896,8 +901,11 @@ public class RegExDomParser
             //Reuse(re);
 
             // Ordinary single-character escape.
-            var escaped = ParseEscape(Reader);
-            this.Push(new(TokenTypes.Literal, char.ConvertFromUtf32(escaped), Runes: new int[] { escaped }, Position: savedPos));
+            {
+                var escaped = ParseEscape(Reader);
+                var taken = char.ConvertFromUtf32(escaped);
+                this.Push(new(TokenTypes.Literal, taken, Runes: new int[] { escaped }, Position: savedPos, Length: taken.Length));
+            }
         }
     outswitch:
         ;

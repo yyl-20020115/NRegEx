@@ -12,6 +12,11 @@ public class Node
     public readonly static int[] AllChars = Enumerable.Range(
                     char.MinValue,
                     char.MaxValue - char.MinValue + 1).ToArray();
+    
+    public readonly static int[] AllCharsWithoutNewLine = Enumerable.Range(
+                    char.MinValue,
+                    char.MaxValue - char.MinValue + 1).Where(i=>i!='\n').ToArray();
+
     public readonly static int[] WordChars = Enumerable.Range(
                     char.MinValue,
                     char.MaxValue - char.MinValue + 1).Where(i => !char.IsSurrogate((char)i) && char.IsLetter((char)i)).ToArray();

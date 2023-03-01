@@ -58,7 +58,7 @@ public class GeneratorTests
         {
             try
             {
-                regexList.Add(generator.Generate(minLength, maxLength));
+                regexList.Add(generator.Generate());
             }
             catch (Exception ex)
             {
