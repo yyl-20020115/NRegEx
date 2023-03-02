@@ -1,7 +1,17 @@
-﻿//TODO: capture (how?)
+﻿//DONE: capture
 //TODO: lookaround (different groups)
-//TODO: word boundary, line start, line end
+//DONE: word boundary, line start, line end
 //NOTICE: back reference condition and lookaround conditions are not supported
+
+$ number 	Includes the last substring matched by the capturing group that is identified by number, where number is a decimal value, in the replacement string. For more information, see Substituting a Numbered Group.
+${ name } 	Includes the last substring matched by the named group that is designated by (?<name> ) in the replacement string. For more information, see Substituting a Named Group.
+$$ 	Includes a single "$" literal in the replacement string. For more information, see Substituting a "$" Symbol.
+$& 	Includes a copy of the entire match in the replacement string. For more information, see Substituting the Entire Match.
+$` 	Includes all the text of the input string before the match in the replacement string. For more information, see Substituting the Text before the Match.
+$' 	Includes all the text of the input string after the match in the replacement string. For more information, see Substituting the Text after the Match.
+$+ 	Includes the last group captured in the replacement string. For more information, see Substituting the Last Captured Group.
+$_ 	Includes the entire input string in the replacement string. For more information, see Substituting the Entire Input String.
+	
 字符 	描述
 \ 	将下一个字符标记为一个特殊字符、或一个原义字符、或一个向后引用、或一个八进制转义符。
 	例如，“n”匹配字符“n”。“\n”匹配一个换行符。串行“\\”匹配“\”而“\(”则匹配“(”。
