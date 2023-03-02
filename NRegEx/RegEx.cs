@@ -39,8 +39,10 @@ public class Regex
     public readonly string Pattern;
     public readonly string Name;
     public readonly DualDictionary<string, int> NamedGroups;
-    protected readonly Dictionary<int, Graph> BackReferencePoints;
+    protected readonly Dictionary<int, Graph> BackRefPoints;
+    protected readonly Dictionary<int, Graph> GroupGraphs;
     protected readonly Dictionary<int, GroupType> GroupTypes;
+
     public RegExNode Model { get; protected set; }
     public Graph Graph { get; protected set; }
 
@@ -55,8 +57,9 @@ public class Regex
         var Builder = new RegExGraphBuilder();
         this.Graph = Builder.Build(this.Model, 0,
             (this.Options & Options.CASE_INSENSITIVE) == Options.CASE_INSENSITIVE);
-        this.BackReferencePoints = Builder.BackRefPoints;
+        this.BackRefPoints = Builder.BackRefPoints;
         this.GroupTypes = Builder.GroupTypes;
+        this.GroupGraphs = Builder.GroupGraphs;
     }
     public bool IsMatch(string input, int first = 0, int length = -1, bool reversely = false)
     {
@@ -80,7 +83,7 @@ public class Regex
     }
     protected bool IsMatchInternal(string input, int first, int length, ref int sp, ref int ep, ref Node? last, ListLookups<int, List<int>>? groups, int direction)
     {
-        direction = FixDirection(direction);
+        direction = RegexHelpers.FixDirection(direction);
         var tail = first + length;
         var start = direction >= 0 ? first : tail - 1;
 
@@ -116,7 +119,9 @@ public class Regex
     }
     protected int MatchFindStart(string input, int first, int tail, int direction)
     {
-        direction = FixDirection(direction);
+        var indicators = new RegExIndicators();
+
+        direction = RegexHelpers.FixDirection(direction);
         if (first < tail)
         {
             var last = tail - 1;
@@ -131,13 +136,13 @@ public class Regex
             if (direction < 0) (first, last) = (last, first);
             for (int i = first; i != last + direction; i += direction)
             {
-                this.UpdateIndicators(input, i, first, tail, direction);
+                indicators.UpdateIndicators(input, i, first, tail, direction);
                 foreach (var node in nodes)
                 {
                     //by pass indicators if indicator matches
                     if (node.IsIndicator)
                     {
-                        if (this.TryHitHode(node))
+                        if (TryHitHode(node,indicators))
                         {
                             var subs = new HashSet<Node>();
                             node.FetchNodes(subs, true, direction);
@@ -165,6 +170,8 @@ public class Regex
     protected bool IsMatchInternal(string input, int first, int length, ref int i, ref Node? last, bool strict, ListLookups<int, List<int>>? groups, int direction)
     {
         if (length == 0 && GraphUtils.HasPassThrough(this.Graph)) return true;
+        var indicators = new RegExIndicators();
+
         direction = Math.Sign(direction);
         var start = first;
         var tail = first + length;
@@ -172,7 +179,7 @@ public class Regex
         if (direction < 0) (start, end) = (end, start);
 
         i = start;
-        this.UpdateIndicators(input, i, first, tail, direction);
+        indicators.UpdateIndicators(input, i, first, tail, direction);
         var heads = this.Graph.Nodes.Where(n => !(direction >= 0 ? n.HasInput : n.HasOutput));
         var nodes = heads.ToHashSet();
         var backs = new HashSet<Node>();
@@ -186,7 +193,7 @@ public class Regex
             foreach (var node in copies)
             {
                 //this is for BEGIN_LINE etc
-                if (node.IsIndicator && this.TryHitHode(node))
+                if (node.IsIndicator && TryHitHode(node,indicators))
                 {
                     //hit = true;
                     //no advance
@@ -218,7 +225,7 @@ public class Regex
                 i += direction;
                 //if (quit &&(i < start || i > end))
                 //    return true;
-                this.UpdateIndicators(input, i, first, tail, direction);
+                indicators.UpdateIndicators(input, i, first, tail, direction);
             }
         }
         if (backs.Count > 0)
@@ -254,18 +261,26 @@ public class Regex
                         case GroupType.NormalGroup:
                         case GroupType.AtomicGroup:
                             EmitPosition(node, i, groups[index]);
-                            if (this.BackReferencePoints.TryGetValue(index, out var graph))
+                            if (this.BackRefPoints.TryGetValue(index, out var graph))
                                 backs.Add(graph.InsertPointBeforeTail(new(input[i])));
                             break;
                         case GroupType.ForwardPositiveGroup:
                         case GroupType.ForwardNegativeGroup:
                             {
+                                if(this.GroupGraphs.TryGetValue(index,out var g))
+                                {
+                                    //use this graph to test 
+                                }
                                 //now we can use this group ref
                                 throw new NotSupportedException(nameof(GroupType));
                             }
                         case GroupType.BackwardPositiveGroup:
                         case GroupType.BackwardNegativeGroup:
                             {
+                                if (this.GroupGraphs.TryGetValue(index, out var g))
+                                {
+
+                                }
                                 //now we can use this group ref
                                 throw new NotSupportedException(nameof(GroupType));
                             }
@@ -284,71 +299,13 @@ public class Regex
         captures.Last().Add(i);
     }
 
-    protected bool[] Indicators = new bool[8];
-
-    protected const int BeginTextIndex = 0;
-    protected const int EndTextIndex = 1;
-    protected const int BeginLineIndex = 2;
-    protected const int EndLineIndex = 3;
-    protected const int BeginWordIndex = 4;
-    protected const int EndWordIndex = 5;
-    protected const int WordBoundaryIndex = 6;
-    protected const int NotWordBoundaryIndex = 7;
-
-    protected Dictionary<int, int> IndicatorsDict = new()
-    {
-        [BeginTextIndex] = RegExTextReader.BEGIN_TEXT,
-        [EndTextIndex] = RegExTextReader.END_TEXT,
-        [BeginLineIndex] = RegExTextReader.BEGIN_LINE,
-        [EndLineIndex] = RegExTextReader.END_LINE,
-        [BeginWordIndex] = RegExTextReader.BEGIN_WORD,
-        [EndWordIndex] = RegExTextReader.END_WORD,
-        [WordBoundaryIndex] = RegExTextReader.WORD_BOUNDARY,
-        [NotWordBoundaryIndex] = RegExTextReader.NOT_WORD_BOUNDARY,
-    };
-
-    protected void UpdateIndicators(string input, int i, int first, int tail, int direction)
-    {
-        direction = FixDirection(direction);
-        int start = first;
-        if (!(i >= first && i < tail)) return;
-
-        int end = tail - 1;
-        char? Last = i > start && i < tail ? input[i - direction] : null;
-        char? This = i >= start && i < tail ? input[i + 0] : null;
-        char? Next = i < end ? input[i + direction] : null;
-
-        if (direction < 0) (start, end) = (end, first);
-
-        this.Indicators[BeginTextIndex] = i == start;
-        this.Indicators[EndTextIndex] = i == end;
-
-        this.Indicators[BeginLineIndex] = Last is '\n' or null;
-        this.Indicators[EndLineIndex] = This == '\n';
-
-        this.Indicators[BeginWordIndex]
-            = (Last is null || !Unicode.IsRuneWord(Last.Value))
-            && (This is not null && Unicode.IsRuneWord(This.Value));
-
-        this.Indicators[EndWordIndex]
-            = (This is not null && Unicode.IsRuneWord(This.Value))
-            && (Next is null || !Unicode.IsRuneWord(Next.Value));
-
-        this.Indicators[WordBoundaryIndex]
-            = this.Indicators[BeginWordIndex]
-            || this.Indicators[EndWordIndex]
-            ;
-
-        this.Indicators[NotWordBoundaryIndex]
-            = !this.Indicators[WordBoundaryIndex];
-    }
-    protected bool TryHitHode(Node node)
+    protected static bool TryHitHode(Node node, RegExIndicators indicators)
     {
         if (!node.IsLink)
         {
-            foreach (var kv in this.IndicatorsDict)
+            foreach (var kv in indicators.IndicatorsDict)
             {
-                if (Check(this.Indicators[kv.Key], node, kv.Value))
+                if (Check(indicators.Indicators[kv.Key], node, kv.Value))
                     return true;
             }
         }
@@ -365,7 +322,7 @@ public class Regex
         if (length < 0) length = input.Length - start;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
 
-        int direction = FixDirection(reversely ? -1 : 1);
+        int direction = RegexHelpers.FixDirection(reversely ? -1 : 1);
         Node? last = null;
         var groups = new ListLookups<int, List<int>>();
         int sp = 0, ep = 0;
@@ -400,8 +357,11 @@ public class Regex
                             $"{_name}-{group.Count}",
                             capture.Min(),
                             capture.Max() + 1,
+                            //NOTICE: we should use distinct 
+                            //because it's possible to get
+                            //two same index while emitting
                             new string(capture
-                                .Where(p => p != -1)
+                                .Where(p => p != -1).Distinct() //!!!
                                 .Select(p => input[p]).ToArray())));
                 }
                 if (group.Count > 0)
@@ -492,6 +452,4 @@ public class Regex
         if (first < input.Length) result.Add(input[first..]);
         return result.ToArray();
     }
-    private static int FixDirection(int direction) => direction >= 0 ? 1 : -1;
-    
 }

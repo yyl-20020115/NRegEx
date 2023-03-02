@@ -139,7 +139,7 @@ public class RegExDomParser
                         {
                             this.Push(
                                 new(TokenTypes.OpenParenthesis, Reader.Take(),
-                                CaptureIndex: ++CaptureIndex, Position: Position, PatternName: this.Name));
+                                CaptureIndex: ++CaptureIndex, GroupType: GroupType.NormalGroup, Position: Position, PatternName: this.Name));
                         }
                         level++;
                     }
