@@ -81,11 +81,11 @@ public class BasicUnitTests
     [TestMethod]
     public void TestMethod00()
     {
-        var regexString0 = "abcd";
+        var regexString0 = "a";
         var regex0 = new Regex(regexString0);
         ExportAsDot(regex0);
+        Assert.IsTrue(regex0.IsFullyMatch("a"));
         Assert.IsFalse(regex0.IsFullyMatch("bcda"));
-        Assert.IsTrue(regex0.IsFullyMatch("abcd"));
     }
 
     [TestMethod]

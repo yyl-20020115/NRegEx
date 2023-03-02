@@ -68,7 +68,7 @@ public class Regex
         int sp = 0, ep = 0;
         return this.IsMatchInternal(input, start, length, ref sp, ref ep, ref last, null, Math.Sign(direction));
     }
-    protected bool IsMatchInternal(string input, int first, int length, ref int sp, ref int ep, ref Node? last, ListLookups<int,List<int>>? groups = null, int direction = 1)
+    protected bool IsMatchInternal(string input, int first, int length, ref int sp, ref int ep, ref Node? last, ListLookups<int, List<int>>? groups = null, int direction = 1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
         if (first < 0 || first > input.Length) throw new ArgumentOutOfRangeException(nameof(first));
@@ -141,7 +141,8 @@ public class Regex
                                 }
                             }
                         }
-                    }else if (node.TryHit(input[i]) == true)
+                    }
+                    else if (node.TryHit(input[i]) == true)
                     {
                         return i;
                     }
@@ -159,7 +160,10 @@ public class Regex
         Node? last = null;
         return IsMatchInternal(input, start, length, ref start, ref last, true, null, direction);
     }
-    protected bool IsMatchInternal(string input, int first, int length, ref int i, ref Node? last, bool strict, ListLookups<int,List<int>>? groups = null, int direction = +1)
+    protected int END_INDICATOR =>
+                       ((this.Options & Options.ONE_LINE) == Options.ONE_LINE)
+                        ? RegExTextReader.END_LINE : RegExTextReader.END_TEXT;
+    protected bool IsMatchInternal(string input, int first, int length, ref int i, ref Node? last, bool strict, ListLookups<int, List<int>>? groups = null, int direction = +1)
     {
         if (length == 0 && RegExGraphBuilder.HasPassThrough(this.Graph)) return true;
         direction = Math.Sign(direction);
@@ -175,13 +179,13 @@ public class Regex
         this.UpdateIndicators(input, i, first, tail, direction);
         var heads = this.Graph.Nodes.Where(n => !(direction >= 0 ? n.HasInput : n.HasOutput));
         var nodes = heads.ToHashSet();
-        while (nodes.Count > 0 && i>=start && i <= end)
+        while (nodes.Count > 0 && i >= start && i <= end)
         {
             var c = input[i];
             var hit = false;
             var copies = nodes.ToArray();
             nodes.Clear();
-            var eof = false;
+            var quit = false;
             foreach (var node in copies)
             {
                 //this is for BEGIN_LINE etc
@@ -189,6 +193,8 @@ public class Regex
                 {
                     //hit = true;
                     //no advance
+                    quit |= (node.Indicator == END_INDICATOR);
+
                     node.FetchNodes(nodes, true, direction);
                     last = node;
                 }
@@ -212,22 +218,25 @@ public class Regex
             if (hit)
             {
                 i += direction;
-                if (i < start || i > end)
-                {
-                    //TODO: deal with EOF ($)
-                }
+                //if (quit &&(i < start || i > end))
+                //    return true;
                 this.UpdateIndicators(input, i, first, tail, direction);
             }
         }
-        return strict //this means having $ in the end
-            ? ((i == tail - 1)
-                && RegExGraphBuilder.HasPassThrough(this.Graph, nodes, direction))
-            : ((i >= start && i <= tail)
-                && (nodes.Count == 0 ||
-                        RegExGraphBuilder.HasPassThrough(this.Graph, nodes, direction)));
+
+        if (strict)
+        {
+            return ((direction >= 0 ? (i == end + 1) : (i == start - 1))
+                && RegExGraphBuilder.HasPassThrough(this.Graph, nodes, direction));
+        }
+        else
+        {
+            return ((direction >= 0 ? (i <= end + 1) : (i >= start - 1))
+                && (nodes.Count == 0 || RegExGraphBuilder.HasPassThrough(this.Graph, nodes, direction)));
+        }
     }
 
-    protected void Emits(Node node,int i, ListLookups<int, List<int>>? groups)
+    protected void Emits(Node node, int i, ListLookups<int, List<int>>? groups)
     {
         if (groups != null)
         {
@@ -239,12 +248,12 @@ public class Regex
     }
     protected void Emit(Node node, int i, ICollection<List<int>>? segments)
     {
-        if(segments is not null)
+        if (segments is not null)
         {
-            if((node.Ending& Ending.Start) == Ending.Start
-                ||segments.Count == 0)
+            if ((node.Ending & Ending.Start) == Ending.Start
+                || segments.Count == 0)
             {
-                segments.Add(new ());
+                segments.Add(new());
             }
             segments.Last().Add(i);
         }
@@ -332,7 +341,7 @@ public class Regex
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
         direction = Math.Abs(direction);
         Node? last = null;
-        var groups = new ListLookups<int,List<int>>();
+        var groups = new ListLookups<int, List<int>>();
         int sp = 0, ep = 0;
         var ret = this.IsMatchInternal(input, start, length, ref sp, ref ep, ref last, groups, direction);
         if (ret)
@@ -344,7 +353,7 @@ public class Regex
         }
         return new Match(this, input, false);
     }
-    protected Match BuildMatch(string input, string name, int sp, int ep, ListLookups<int,List<int>>? groups, int direction)
+    protected Match BuildMatch(string input, string name, int sp, int ep, ListLookups<int, List<int>>? groups, int direction)
     {
         var match = new Match(this, input, true, name, sp, ep, input[sp..ep]);
 
@@ -356,7 +365,7 @@ public class Regex
                 var group = new Group(true,
                     Name: _name);
                 foreach (var capture in groups[i])
-                { 
+                {
                     if (capture.Count > 0)
                         group.Captures.Add(new Capture(
                             $"{_name}-{group.Count}",
