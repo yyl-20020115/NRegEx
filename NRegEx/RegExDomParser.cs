@@ -306,14 +306,14 @@ public class RegExDomParser
     // PCRE limits names to 32 bytes.
     // Python rejects names starting with digits.
     // We don't enforce either of those.
-    private static bool IsValidCaptureName(string name)
+    public static bool IsValidCaptureNameChar(char c) => (c == '_' || Utils.Isalnum(c));
+    public static bool IsValidCaptureName(string name)
     {
         if (string.IsNullOrEmpty(name))
             return false;
         for (int i = 0; i < name.Length; ++i)
         {
-            var c = name[i];
-            if (c != '_' && !Utils.Isalnum(c))
+            if (!IsValidCaptureNameChar(name[i]))
                 return false;
         }
         return true;
