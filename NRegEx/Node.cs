@@ -45,7 +45,8 @@ public class Node
     public bool IsIndicator
         => this.charsArray != null && this.charsArray.Length == 1
         && this.charsArray[0] > Unicode.MAX_RUNE;
-
+    public int Indicator
+        => this.IsIndicator ? this.charsArray[0]: EOFChar; 
     public int Id => id;
     public bool Inverted { get => inverted; protected set => inverted = value; }
     public string Name { get => name; protected set => name = value; }

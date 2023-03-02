@@ -181,6 +181,7 @@ public class Regex
             var hit = false;
             var copies = nodes.ToArray();
             nodes.Clear();
+            var eof = false;
             foreach (var node in copies)
             {
                 //this is for BEGIN_LINE etc
@@ -213,7 +214,9 @@ public class Regex
             {
                 i += direction;
                 if (i < start || i > end)
-                    nodes.Clear();
+                {
+                    //TODO: deal with EOF ($)
+                }
                 this.UpdateIndicators(input, i, first, tail, direction);
             }
         }
@@ -339,16 +342,19 @@ public class Regex
                 int c = 0;
                 foreach (var thisCapturePositions in SplitList(thisGroupPositions.ToArray(), direction))
                 {
-                    var builder = new StringBuilder();
-                    foreach (var position in thisCapturePositions)
+                    if (thisCapturePositions.Length > 0)
                     {
-                        builder.Append(input[position]);
+                        var builder = new StringBuilder();
+                        foreach (var position in thisCapturePositions)
+                        {
+                            builder.Append(input[position]);
+                        }
+                        group.Captures.Add(new Capture(
+                            $"{groupName}-{c}",
+                            thisCapturePositions.Min(),
+                            thisCapturePositions.Max() + 1,
+                            builder.ToString()));
                     }
-                    group.Captures.Add(new Capture(
-                        $"{groupName}-{c}",
-                        thisCapturePositions.Min(),
-                        thisCapturePositions.Max() + 1,
-                        builder.ToString()));
                 }
             }
         }
@@ -362,7 +368,7 @@ public class Regex
 
         if (list.Length <= 1) return new int[][] { list };
         retry:
-        for (int i = 0; i < list.Length; i++)
+        for (int i = 0; i < list.Length - 1; i++)
         {
             int c = list[i + 0];
             int d = list[i + 1];
