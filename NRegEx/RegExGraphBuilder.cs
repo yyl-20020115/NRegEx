@@ -1,8 +1,10 @@
 ﻿namespace NRegEx;
 public class RegExGraphBuilder
 {
-    public readonly Dictionary<int, Graph> BackReferencesPoints = new();
+    public readonly Dictionary<int, Graph> GroupGraphs = new();
+    public readonly Dictionary<int, Graph> BackRefPoints = new();
     public readonly Dictionary<int, GroupType> GroupTypes = new();
+
     public Graph Build(RegExNode node, int id = 0, bool caseInsensitive = false)
         => GraphUtils.Reform(
             BuildInternal(node, caseInsensitive),id);
@@ -73,15 +75,35 @@ public class RegExGraphBuilder
                 {
                     if (node.Children.Count > 0 && node.CaptureIndex is int index)
                     {
-                        graph.GroupWith(BuildInternal(node.Children[0]), index);
-                        GroupTypes[index] = node.GroupType;
+                        var capture = BuildInternal(node.Children[0]);
+
+                        switch (GroupTypes[index] = node.GroupType)
+                        {
+                            case GroupType.NotGroup:
+                                throw new InvalidOperationException("should be a group");
+                            case GroupType.AtomicGroup:
+                            case GroupType.NormalGroup:
+                            case GroupType.NotCaptiveGroup:
+                                graph.GroupWith(capture, index);
+                                break;
+                            case GroupType.ForwardPositiveGroup:
+                            case GroupType.ForwardNegativeGroup:
+                            case GroupType.BackwardPositiveGroup:
+                            case GroupType.BackwardNegativeGroup:
+                                //this null node points to the graph for group function
+                                graph.GroupWith(new Node($"GroupRef({index})") { Parent = graph }, index);
+                                this.GroupGraphs.Add(index, capture);
+                                break;
+                            default:
+                                break;
+                        }
                     }
                 }
                 break;
             case TokenTypes.BackReference:
                 {
                     if (node.Children.Count > 0 && node.CaptureIndex is int index)
-                        this.BackReferencesPoints[index] 
+                        this.BackRefPoints[index] 
                             = graph.BackReferenceWith(BuildInternal(node.Children[0]), index);
                 }
                 break;

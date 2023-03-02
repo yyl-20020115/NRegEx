@@ -183,10 +183,16 @@ public class Graph
     public Graph GroupWith(Graph g, int i)
     {
         this.UnionWith(g);
-
         foreach (var node in this.Nodes)
             node.Groups.Add(i);
 
+        return this;
+    }
+    public Graph GroupWith(Node node, int i)
+    {
+        this.UnionWith(node);
+        foreach (var _node in this.Nodes)
+            _node.Groups.Add(i);
         return this;
     }
     public Graph BackReferenceWith(Graph g, int i)

@@ -55,7 +55,7 @@ public class Regex
         var Builder = new RegExGraphBuilder();
         this.Graph = Builder.Build(this.Model, 0,
             (this.Options & Options.CASE_INSENSITIVE) == Options.CASE_INSENSITIVE);
-        this.BackReferencePoints = Builder.BackReferencesPoints;
+        this.BackReferencePoints = Builder.BackRefPoints;
         this.GroupTypes = Builder.GroupTypes;
     }
     public bool IsMatch(string input, int first = 0, int length = -1, bool reversely = false)
@@ -257,14 +257,18 @@ public class Regex
                             if (this.BackReferencePoints.TryGetValue(index, out var graph))
                                 backs.Add(graph.InsertPointBeforeTail(new(input[i])));
                             break;
-                        case GroupType.ForwardNegativeGroup:
-                            throw new NotSupportedException(nameof(GroupType.ForwardNegativeGroup));
                         case GroupType.ForwardPositiveGroup:
-                            throw new NotSupportedException(nameof(GroupType.ForwardPositiveGroup));
+                        case GroupType.ForwardNegativeGroup:
+                            {
+                                //now we can use this group ref
+                                throw new NotSupportedException(nameof(GroupType));
+                            }
                         case GroupType.BackwardPositiveGroup:
-                            throw new NotSupportedException(nameof(GroupType.BackwardPositiveGroup));
                         case GroupType.BackwardNegativeGroup:
-                            throw new NotSupportedException(nameof(GroupType.BackwardNegativeGroup));
+                            {
+                                //now we can use this group ref
+                                throw new NotSupportedException(nameof(GroupType));
+                            }
                     }
                 }
             }

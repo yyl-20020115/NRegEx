@@ -24,7 +24,7 @@ public class RegExReplacement
         ReplacementType.PreMatch => input[..match.InclusiveStart],
         ReplacementType.PostMatch => input[match.ExclusiveEnd..],
         ReplacementType.LastGroup => match.Groups.LastOrDefault()?.Value??string.Empty,
-        ReplacementType.WholeGroup => match.Value ?? string.Empty,
+        ReplacementType.Input => input,
         _ => "",
     };
 }

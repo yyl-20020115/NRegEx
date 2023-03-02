@@ -100,7 +100,7 @@ public class RegExReplacementParser
                             repls.Add(new (ReplacementType.LastGroup, "$`"));
                             continue;
                         case '_':
-                            repls.Add(new (ReplacementType.WholeGroup, "$`"));
+                            repls.Add(new (ReplacementType.Input, "$`"));
                             continue;
                     }
                 }

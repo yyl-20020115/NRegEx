@@ -10,6 +10,6 @@ public enum ReplacementType : uint
     PreMatch = 5, //$`
     PostMatch= 6, //$'
     LastGroup = 7, //$+
-    WholeGroup = 8, //$_
+    Input = 8, //$_
 
 }
