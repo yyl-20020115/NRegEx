@@ -120,14 +120,23 @@ public class Regex
                 head.FetchNodes(nodes, true, direction);
             }
             if (direction < 0) (first, last) = (last, first);
-            for (int i = first; i != tail+direction; i += direction)
+            for (int i = first; i != last + direction; i += direction)
             {
                 this.UpdateIndicators(input, i, first, tail, direction);
                 foreach (var node in nodes)
                 {
-                    if (node.TryHit(input[i]) == true || this.TryHitHode(node))
+                    //by pass indicators if indicator matches
+                    if (node.IsIndicator && this.TryHitHode(node))
                     {
-                        return i;
+                        var subs = new HashSet<Node>();
+                        node.FetchNodes(subs, true, direction);
+                        foreach (var sub in subs)
+                        {
+                            if (sub.TryHit(input[i]) == true)
+                            {
+                                return i;
+                            }
+                        }
                     }
                 }
             }
@@ -179,7 +188,7 @@ public class Regex
                 else
                 {
                     var d = node.TryHit(c);
-                    if (!d.HasValue)
+                    if (d is null)
                     {
                         node.FetchNodes(nodes, true, direction);
                     }
@@ -200,12 +209,12 @@ public class Regex
                 this.UpdateIndicators(input, i, first, tail, direction);
             }
         }
-        return strict || this.RequestTextEnd //this means having $ in the end
-            ? (direction >= 0 ? i == input.Length : i == first)
-                && RegExGraphBuilder.HasPassThrough(this.Graph, nodes, direction)
-            : (direction >= 0 ? i <= input.Length : i >= first)
+        return strict //this means having $ in the end
+            ? ((i == tail - 1)
+                && RegExGraphBuilder.HasPassThrough(this.Graph, nodes, direction))
+            : ((i > start && i < tail)
                 && (nodes.Count == 0 ||
-                        RegExGraphBuilder.HasPassThrough(this.Graph, nodes, direction));
+                        RegExGraphBuilder.HasPassThrough(this.Graph, nodes, direction)));
     }
 
     protected bool[] Indicators = new bool[8];
@@ -241,7 +250,7 @@ public class Regex
         char? Last = i > start && i < tail ? input[i - direction] : null;
         char? This = i >= start && i < tail ? input[i + 0] : null;
         char? Next = i < end ? input[i + direction] : null;
-        
+
         if (direction < 0) (start, end) = (end, first);
 
         this.Indicators[BeginTextIndex] = i == start;
@@ -292,13 +301,13 @@ public class Regex
         Node? last = null;
         var groups = new ListLookups<int, int>();
         int sp = 0, ep = 0;
-        var ret = this.IsMatchInternal(input, start, length, ref sp, ref ep, ref last, groups,direction);
+        var ret = this.IsMatchInternal(input, start, length, ref sp, ref ep, ref last, groups, direction);
         if (ret)
         {
             var name = this.Name;
             if (last?.Parent?.SourceNode is RegExNode r)
                 name = r.PatternName ?? name;
-            return this.BuildMatch(input, name, sp, ep, groups,direction);
+            return this.BuildMatch(input, name, sp, ep, groups, direction);
         }
         return new Match(this, input, false);
     }
@@ -320,7 +329,7 @@ public class Regex
 
                 var thisGroupPositions = groups[i];
                 int c = 0;
-                foreach (var thisCapturePositions in SplitList(thisGroupPositions.ToArray(),direction))
+                foreach (var thisCapturePositions in SplitList(thisGroupPositions.ToArray(), direction))
                 {
                     var builder = new StringBuilder();
                     foreach (var position in thisCapturePositions)
@@ -340,7 +349,7 @@ public class Regex
     protected static int[][] SplitList(int[] list, int direction = 1)
     {
         var parts = new List<int[]>();
-        
+
         direction = Math.Abs(direction);
 
         if (list.Length <= 1) return new int[][] { list };
@@ -360,7 +369,7 @@ public class Regex
         {
             var copy = parts.ToArray();
             parts.Clear();
-            foreach(var part in copy)
+            foreach (var part in copy)
             {
                 Array.Reverse(part);
                 parts.Add(part);
@@ -381,16 +390,14 @@ public class Regex
         while (true)
         {
             var match = this.Match(input, first, length, direction);
-            if (null == match)
+            if (!match.Success)
                 break;
             else
             {
-                if (match.InclusiveStart < 0 || match.ExclusiveEnd < 0 || match.ExclusiveEnd < match.InclusiveStart)
-                    break;
                 matches.Add(match);
 
                 length -= Math.Abs(match.ExclusiveEnd - first);
-                first = direction>=0? match.ExclusiveEnd : match.InclusiveStart;
+                first = direction >= 0 ? match.ExclusiveEnd : match.InclusiveStart;
             }
             if (direction >= 0 && match.ExclusiveEnd >= tail) break;
             else if (direction < 0 && match.InclusiveStart <= first) break;

@@ -1,6 +1,5 @@
 ﻿using System.Collections;
 using System.Text;
-using System.Xml.Linq;
 
 namespace NRegEx;
 
@@ -43,6 +42,9 @@ public class Node
         => this.IsLink
         && !this.HasInput
         && !this.HasOutput;
+    public bool IsIndicator
+        => this.charsArray != null && this.charsArray.Length == 1
+        && this.charsArray[0] > Unicode.MAX_RUNE;
 
     public int Id => id;
     public bool Inverted { get => inverted; protected set => inverted = value; }
