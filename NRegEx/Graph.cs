@@ -173,10 +173,10 @@ public class Graph
         this.Nodes.UnionWith(g.Nodes);
         return this;
     }
-    public Graph CaptureWith(Graph g, int i)
+    public Graph GroupWith(Graph g, int i)
     {
         foreach(var node in g.Nodes)
-            node.Captures.Add(i);
+            node.Groups.Add(i);
         return this.UnionWith(g);
     }
     public Graph BackReferenceWith(Graph g, int i)

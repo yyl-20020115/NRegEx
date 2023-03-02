@@ -68,7 +68,7 @@ public class Node
     protected int[]? charsArray;
     public readonly HashSet<Node> Inputs = new();
     public readonly HashSet<Node> Outputs = new();
-    public readonly List<int> Captures = new();
+    public readonly List<int> Groups = new();
     public Node(string name = "") => Name = name;
     public Node(params int[] chars)
         : this(false, chars) { }
@@ -89,9 +89,13 @@ public class Node
                 + "'";
         }
     }
-    public void FetchNodes(HashSet<Node> nodes, bool deep = true, int direction = +1)
+    public void FetchNodes(HashSet<Node> nodes, bool deep = true, int direction = +1, int? group = null)
     {
         var subs = new HashSet<Node>(direction>=0 ? this.Outputs : this.Inputs);
+        if(group is int g1)
+        {
+            subs.RemoveWhere(n=>!n.Groups.Contains(g1));
+        }
         if (!deep)
         {
             nodes.UnionWith(subs);
@@ -116,6 +120,10 @@ public class Node
                     {
                         subs.UnionWith(
                             direction >= 0 ? sub.Outputs : sub.Inputs);
+                        if (group is int g2)
+                        {
+                            subs.RemoveWhere(n => !n.Groups.Contains(g2));
+                        }
                     }
                 }
             } while (subs.Count>0);

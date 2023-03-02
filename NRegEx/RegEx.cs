@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Xml.Linq;
 
 namespace NRegEx;
 
@@ -54,80 +55,99 @@ public class Regex
         this.Options = options;
         var Parser = new RegExDomParser(this.Name, this.Pattern, this.Options);
         this.Model = Parser.Parse();
-        this.NamedGroups = new (Parser.NamedGroups);
+        this.NamedGroups = new(Parser.NamedGroups);
         this.RequestTextBegin = Parser.RequestTextBegin;
         this.RequestTextEnd = Parser.RequestTextEnd;
         this.Graph = RegExGraphBuilder.Build(this.Model, 0,
             (this.Options & Options.FOLD_CASE) == Options.FOLD_CASE);
     }
-    public bool IsMatch(string input, int start = 0, int length = -1)
+    public bool IsMatch(string input, int start = 0, int length = -1, int direction = 1)
     {
         Node? last = null;
         int sp = 0, ep = 0;
-        return this.IsMatchInternal(input, start, length, ref sp, ref ep, ref last);
+        return this.IsMatchInternal(input, start, length, ref sp, ref ep, ref last, null, Math.Sign(direction));
     }
-    protected bool IsMatchInternal(string input, int start, int length, ref int sp, ref int ep,ref Node? last,ListLookups<int,int>? groups = null)
+    protected bool IsMatchInternal(string input, int first, int length, ref int sp, ref int ep, ref Node? last, ListLookups<int, int>? groups = null, int direction = 1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
-        if (start < 0 || start > input.Length) throw new ArgumentOutOfRangeException(nameof(start));
-        if (length < 0) length = input.Length - start;
-        if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
-        if (this.RequestTextBegin && start > 0) throw new ArgumentOutOfRangeException(nameof(start));
+        if (first < 0 || first > input.Length) throw new ArgumentOutOfRangeException(nameof(first));
+        if (length < 0) length = input.Length - first;
+        if (first + length > input.Length) throw new ArgumentOutOfRangeException(nameof(first) + "_" + nameof(length));
+        direction = Math.Sign(direction);
+        var tail = first + length;
+        var start = direction >= 0 ? first : tail - 1;
 
-        var tail = start + length;
+        int i = this.MatchFindStart(input, first, tail, direction);
 
-        int i = this.MatchFindStart(input, start, tail);
         int o = sp = ep = i;
-        while (i >= 0 && i < tail)
+
+        while (i >= first && i < tail)
         {
-            length -= (i - start);
-            if (this.IsMatchInternal(input, i, length, ref o,ref last, false,groups))
+            length -= Math.Abs(i - start);
+
+            if (this.IsMatchInternal(input, i, length, ref o, ref last, false, groups, direction))
             {
                 ep = o;
                 return true;
             }
-            else if (o > i)
+            else if (direction >= 0 && o > i)
             {
                 //we can not use o, we can only use i+1
                 //because o can bring mistakes
-                i = this.MatchFindStart(input, i + 1, tail);
+                i = this.MatchFindStart(input, i + 1, tail, direction);
+            }
+            else if (direction < 0 && o < i)
+            {
+                //we can not use o, we can only use i-1
+                //because o can bring mistakes
+                i = this.MatchFindStart(input, i - 1, tail, direction);
             }
             else
                 break;
         }
         return false;
     }
-    protected int MatchFindStart(string input, int start, int tail)
+    protected int MatchFindStart(string input, int first, int tail, int direction)
     {
-        if (start < tail)
+        if (first < tail)
         {
-            var heads = this.Graph.Nodes.Where(n => n.Inputs.Count == 0).ToArray();
+            var last = tail - 1;
+            direction = Math.Sign(direction);
+            var heads = this.Graph.Nodes.Where(n => !(direction >= 0 ? n.HasInput : n.HasOutput)).ToArray();
             var nodes = new HashSet<Node>();
             foreach (var head in heads)
             {
-                head.FetchNodes(nodes, true);
+                head.FetchNodes(nodes, true, direction);
             }
-            for (int i = start; i < tail; i++)
+            if (direction < 0) (first, last) = (last, first);
+            for (int i = first; i != tail+direction; i += direction)
             {
-                if (nodes.Any(n => n.TryHit(input[i]).GetValueOrDefault()))
-                    return i;
+                this.UpdateIndicators(input, i, first, tail, direction);
+                foreach (var node in nodes)
+                {
+                    if (node.TryHit(input[i]) == true || this.TryHitHode(node))
+                    {
+                        return i;
+                    }
+                }
             }
         }
         return -1;
+
     }
-    public bool IsFullyMatch(string input, int start = 0, int length = -1)
+    public bool IsFullyMatch(string input, int start = 0, int length = -1, int direction = 1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
         if (start < 0 || start > input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length - start;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
-        if (this.RequestTextBegin && start > 0) throw new ArgumentOutOfRangeException(nameof(start));
         Node? last = null;
-        return IsMatchInternal(input, start, length, ref start,ref last, true);
+        return IsMatchInternal(input, start, length, ref start, ref last, true, null, direction);
     }
-    protected bool IsMatchInternal(string input, int first, int length, ref int i,ref Node? last, bool strict, ListLookups<int, int>? groups = null, int direction = +1)
+    protected bool IsMatchInternal(string input, int first, int length, ref int i, ref Node? last, bool strict, ListLookups<int, int>? groups = null, int direction = +1)
     {
         if (length == 0 && RegExGraphBuilder.HasPassThrough(this.Graph)) return true;
+        direction = Math.Sign(direction);
         var start = first;
         var tail = first + length;
         var end = tail - 1;
@@ -137,7 +157,7 @@ public class Regex
         }
 
         i = start;
-        this.UpdateIndicators(input, i, first, length, direction);
+        this.UpdateIndicators(input, i, first, tail, direction);
         var heads = this.Graph.Nodes.Where(n => !(direction >= 0 ? n.HasInput : n.HasOutput));
         var nodes = heads.ToHashSet();
         while (nodes.Count > 0 && i < tail)
@@ -151,8 +171,9 @@ public class Regex
                 //this is for BEGIN_LINE etc
                 if (this.TryHitHode(node))
                 {
-                    hit = true;
-                    node.FetchNodes(nodes, false, direction);
+                    //hit = true;
+                    //no advance
+                    node.FetchNodes(nodes, true, direction);
                     last = node;
                 }
                 else
@@ -165,7 +186,7 @@ public class Regex
                     else if (d.Value)
                     {
                         if (groups != null)
-                            foreach (var cap in node.Captures)
+                            foreach (var cap in node.Groups)
                                 groups[cap].Add(i);
                         hit = true;
                         node.FetchNodes(nodes, false, direction);
@@ -176,18 +197,18 @@ public class Regex
             if (hit)
             {
                 i += direction;
-                this.UpdateIndicators(input, i, first, length, direction);
+                this.UpdateIndicators(input, i, first, tail, direction);
             }
         }
         return strict || this.RequestTextEnd //this means having $ in the end
-            ? (direction>=0 ? i == input.Length : i == first)
+            ? (direction >= 0 ? i == input.Length : i == first)
                 && RegExGraphBuilder.HasPassThrough(this.Graph, nodes, direction)
-            : (direction>=0 ? i <= input.Length : i >= first)
-                && (nodes.Count == 0 || 
+            : (direction >= 0 ? i <= input.Length : i >= first)
+                && (nodes.Count == 0 ||
                         RegExGraphBuilder.HasPassThrough(this.Graph, nodes, direction));
     }
 
-    protected bool[] Indicators =new bool[8];
+    protected bool[] Indicators = new bool[8];
 
     protected const int BeginTextIndex = 0;
     protected const int EndTextIndex = 1;
@@ -209,47 +230,47 @@ public class Regex
         [WordBoundaryIndex] = RegExTextReader.WORD_BOUNDARY,
         [NotWordBoundaryIndex] = RegExTextReader.NOT_WORD_BOUNDARY,
     };
-    protected char? last = null;
-    protected void UpdateIndicators(string input, int i, int first, int length, int direction = +1)
-    {
-        int tail = first + length;
-        int start = first;
-        int end = tail - 1;
 
-        char? Last = i > 0 && i < tail ? input[i - direction] : null;
-        char? This = i >= 0 && i < tail ? input[i + 0] : null;
-        char? Next = i + 1 < tail ? input[i + direction] : null;
-        if (direction < 0)
-        {
-            (start, end) = (end, first);
-        }
+    protected void UpdateIndicators(string input, int i, int first, int tail, int direction = +1)
+    {
+
+        int start = first;
+        if (!(i >= first && i < tail)) return;
+
+        int end = tail - 1;
+        char? Last = i > start && i < tail ? input[i - direction] : null;
+        char? This = i >= start && i < tail ? input[i + 0] : null;
+        char? Next = i < end ? input[i + direction] : null;
+        
+        if (direction < 0) (start, end) = (end, first);
+
         this.Indicators[BeginTextIndex] = i == start;
         this.Indicators[EndTextIndex] = i == end;
 
-        this.Indicators[BeginLineIndex] = Last == '\n';
+        this.Indicators[BeginLineIndex] = Last is '\n' or null;
         this.Indicators[EndLineIndex] = This == '\n';
-        
-        this.Indicators[BeginWordIndex] 
-            = (Last is null || !Unicode.IsRuneWord(Last.Value)) 
+
+        this.Indicators[BeginWordIndex]
+            = (Last is null || !Unicode.IsRuneWord(Last.Value))
             && (This is not null && Unicode.IsRuneWord(This.Value));
 
-        this.Indicators[EndWordIndex] 
+        this.Indicators[EndWordIndex]
             = (This is not null && Unicode.IsRuneWord(This.Value))
             && (Next is null || !Unicode.IsRuneWord(Next.Value));
 
-        this.Indicators[WordBoundaryIndex] 
-            =  this.Indicators[BeginWordIndex]
+        this.Indicators[WordBoundaryIndex]
+            = this.Indicators[BeginWordIndex]
             || this.Indicators[EndWordIndex]
             ;
 
-        this.Indicators[NotWordBoundaryIndex] 
+        this.Indicators[NotWordBoundaryIndex]
             = !this.Indicators[WordBoundaryIndex];
     }
     protected bool TryHitHode(Node node)
     {
         if (!node.IsLink)
-        {   
-            foreach(var kv in this.IndicatorsDict)
+        {
+            foreach (var kv in this.IndicatorsDict)
             {
                 if (Check(this.Indicators[kv.Key], node, kv.Value))
                     return true;
@@ -261,28 +282,27 @@ public class Regex
         => value && Check(node.CharsArray, other);
     protected static bool Check(int[]? values, int i)
         => values is not null && Array.IndexOf(values, i) >= 0;
-    public Match Match(string input, int start = 0, int length = -1)
+    public Match Match(string input, int start = 0, int length = -1, int direction = 1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
         if (start < 0 || start > input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length - start;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
-        if (this.RequestTextBegin && start > 0) throw new ArgumentOutOfRangeException(nameof(start));
+        direction = Math.Abs(direction);
         Node? last = null;
-        var groups = new ListLookups<int,int>();
+        var groups = new ListLookups<int, int>();
         int sp = 0, ep = 0;
-        var ret = this.IsMatchInternal(input, start, length, ref sp, ref ep, ref last,groups);
+        var ret = this.IsMatchInternal(input, start, length, ref sp, ref ep, ref last, groups,direction);
         if (ret)
         {
             var name = this.Name;
             if (last?.Parent?.SourceNode is RegExNode r)
                 name = r.PatternName ?? name;
-
-            return this.BuildMatch(input, name, sp, ep, groups);;
+            return this.BuildMatch(input, name, sp, ep, groups,direction);
         }
-        return new Match(this,input, false);
+        return new Match(this, input, false);
     }
-    protected Match BuildMatch(string input, string name, int sp, int ep, ListLookups<int, int>? groups)
+    protected Match BuildMatch(string input, string name, int sp, int ep, ListLookups<int, int>? groups, int direction)
     {
         var match = new Match(this, input, true, name, sp, ep, input[sp..ep]);
         //group 0
@@ -296,11 +316,11 @@ public class Regex
                 var group = new Group(true,
                     Name: groupName);
 
-                match.Groups.Add(group);    
+                match.Groups.Add(group);
 
                 var thisGroupPositions = groups[i];
                 int c = 0;
-                foreach (var thisCapturePositions in SplitList(thisGroupPositions.ToArray()))
+                foreach (var thisCapturePositions in SplitList(thisGroupPositions.ToArray(),direction))
                 {
                     var builder = new StringBuilder();
                     foreach (var position in thisCapturePositions)
@@ -308,47 +328,59 @@ public class Regex
                         builder.Append(input[position]);
                     }
                     group.Captures.Add(new Capture(
-                        $"{groupName}-{c}", 
-                        thisCapturePositions.Min(), 
-                        thisCapturePositions.Max() + 1, 
+                        $"{groupName}-{c}",
+                        thisCapturePositions.Min(),
+                        thisCapturePositions.Max() + 1,
                         builder.ToString()));
                 }
             }
         }
         return match;
     }
-    protected static int[][] SplitList(int[] list)
+    protected static int[][] SplitList(int[] list, int direction = 1)
     {
         var parts = new List<int[]>();
+        
+        direction = Math.Abs(direction);
 
         if (list.Length <= 1) return new int[][] { list };
-    retry:
+        retry:
         for (int i = 0; i < list.Length; i++)
         {
             int c = list[i + 0];
             int d = list[i + 1];
-            if (d != c + 1)
+            if (d != c + direction)
             {
-                parts.Add(list[..(i+1)]);
+                parts.Add(list[..(i + 1)]);
                 list = list[i..];
                 goto retry;
+            }
+        }
+        if (direction < 0)
+        {
+            var copy = parts.ToArray();
+            parts.Clear();
+            foreach(var part in copy)
+            {
+                Array.Reverse(part);
+                parts.Add(part);
             }
         }
         return parts.ToArray();
 
     }
-    public List<Match> Matches(string input, int start = 0, int length = -1)
+    public List<Match> Matches(string input, int first = 0, int length = -1, int direction = +1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
-        if (start < 0 || start > input.Length) throw new ArgumentOutOfRangeException(nameof(start));
-        if (length < 0) length = input.Length - start;
-        if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
-        if (this.RequestTextBegin && start > 0) throw new ArgumentOutOfRangeException(nameof(start));
-        var tail = start + length;
+        if (first < 0 || first > input.Length) throw new ArgumentOutOfRangeException(nameof(first));
+        if (length < 0) length = input.Length - first;
+        if (first + length > input.Length) throw new ArgumentOutOfRangeException(nameof(first) + "_" + nameof(length));
+        direction = Math.Abs(direction);
+        var tail = first + length;
         var matches = new List<Match>();
         while (true)
         {
-            var match = this.Match(input, start, length);
+            var match = this.Match(input, first, length, direction);
             if (null == match)
                 break;
             else
@@ -357,20 +389,21 @@ public class Regex
                     break;
                 matches.Add(match);
 
-                length -= (match.ExclusiveEnd - start);
-                start = match.ExclusiveEnd;
+                length -= Math.Abs(match.ExclusiveEnd - first);
+                first = direction>=0? match.ExclusiveEnd : match.InclusiveStart;
             }
-            if (match.ExclusiveEnd >= tail) break;
+            if (direction >= 0 && match.ExclusiveEnd >= tail) break;
+            else if (direction < 0 && match.InclusiveStart <= first) break;
         }
         return matches;
     }
     public string ReplaceFirst(string input, string replacement, int start = 0)
         => this.ReplaceFirst(input, (Capture capture) => replacement, start);
-    public string ReplaceFirst(string input, string replacement,Match match, int start = 0)
+    public string ReplaceFirst(string input, string replacement, Match match, int start = 0)
         => this.ReplaceFirst(input, (Capture capture) => replacement, match, start);
     public string ReplaceFirst(string input, CaptureEvaluator evaluator, int start = 0)
         => this.ReplaceFirst(input, evaluator, this.Match(input, start), start);
-    public string ReplaceFirst(string input, CaptureEvaluator evaluator,Match match, int start = 0)
+    public string ReplaceFirst(string input, CaptureEvaluator evaluator, Match match, int start = 0)
     {
         if (match is not null)
         {
@@ -388,9 +421,9 @@ public class Regex
 
     public string ReplaceAll(string input, string replacement, int start = 0)
         => this.ReplaceAll(input, (Capture capture) => replacement, start);
-    public string ReplaceAll(string input, string replacement,List<Match> matches, int start = 0)
+    public string ReplaceAll(string input, string replacement, List<Match> matches, int start = 0)
         => this.ReplaceAll(input, (Capture capture) => replacement, matches, start);
-    public string ReplaceAll(string input, CaptureEvaluator evaluator, int start = 0) 
+    public string ReplaceAll(string input, CaptureEvaluator evaluator, int start = 0)
         => ReplaceAll(input, evaluator, Matches(input, start), start);
     public string ReplaceAll(string input, CaptureEvaluator evaluator, List<Match> matches, int start = 0)
     {
@@ -406,9 +439,9 @@ public class Regex
         if (start < input.Length) result.Add(input[start..]);
         return result.Count > 0 ? result.Aggregate((a, b) => a + b) : input;
     }
-    public string[] Split(string input, int start = 0) 
+    public string[] Split(string input, int start = 0)
         => this.Split(input, this.Matches(input, start), start);
-    public string[] Split(string input,List<Match> matches, int start = 0)
+    public string[] Split(string input, List<Match> matches, int start = 0)
     {
         var result = new List<string>();
         foreach (var match in matches)

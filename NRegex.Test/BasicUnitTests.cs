@@ -449,4 +449,16 @@ public class BasicUnitTests
             Debug.WriteLine(ex);
         }
     }
+    [TestMethod]
+    public void TestMethod24()
+    {
+        string input = "area bare arena mare";
+        string pattern = @"\bare\w*\b";
+        var regex1 = new Regex(pattern);
+        ExportAsDot(regex1);
+
+        var ms = regex1.Matches(input);
+
+
+    }
 }

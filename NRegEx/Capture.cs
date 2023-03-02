@@ -6,11 +6,11 @@ public class Capture
     public readonly int InclusiveStart;
     public readonly int ExclusiveEnd;
     public readonly string? Value;
-    public Capture(string Name = "",int InclusiveStart = 0,int ExclusiveEnd = -1, string? Value=null)
+    public Capture(string Name = "", int InclusiveStart = 0, int ExclusiveEnd = int.MaxValue, string? Value = null)
     {
         this.Name = Name;
         this.InclusiveStart = InclusiveStart;
-        this.ExclusiveEnd = ExclusiveEnd;   
+        this.ExclusiveEnd = ExclusiveEnd;
         this.Value = Value;
     }
     public override string ToString() => Value ?? string.Empty;

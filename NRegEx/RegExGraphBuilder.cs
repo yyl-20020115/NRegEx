@@ -204,7 +204,7 @@ public static class RegExGraphBuilder
             case TokenTypes.Capture:
                 {
                     if (node.Children.Count > 0 && node.CaptureIndex is int index)
-                        graph.CaptureWith(BuildInternal(node.Children[0]), index);
+                        graph.GroupWith(BuildInternal(node.Children[0]), index);
                 }
                 break;
             case TokenTypes.BackReference:
