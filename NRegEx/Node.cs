@@ -30,15 +30,19 @@ public class Node
     protected bool inverted;
     protected string name = "";
     protected Graph? parent = null;
+    public bool HasInput => this.Inputs.Count > 0;
+    public bool HasOutput =>this.Outputs.Count > 0;
+    public bool HasSingleInput => this.Inputs.Count == 1;
+    public bool HasSingleOutput=>this.Outputs.Count == 1;
     public bool IsBridge
         => this.IsLink
-        && this.Inputs.Count == 1
-        && this.Outputs.Count == 1;
+        && this.HasSingleInput
+        && this.HasSingleOutput;
 
     public bool IsBroken
         => this.IsLink
-        && this.Inputs.Count == 0
-        && this.Outputs.Count == 0;
+        && !this.HasInput
+        && !this.HasOutput;
 
     public int Id => id;
     public bool Inverted { get => inverted; protected set => inverted = value; }
@@ -85,30 +89,37 @@ public class Node
                 + "'";
         }
     }
-    public Node FetchNodes(HashSet<Node> outputs, bool deep = true, HashSet<Node>? visited = null)
+    public void FetchNodes(HashSet<Node> nodes, bool deep = true, int direction = +1)
     {
-        visited ??= new();
+        var subs = new HashSet<Node>(direction>=0 ? this.Outputs : this.Inputs);
         if (!deep)
         {
-            outputs.UnionWith(this.Outputs);
-            outputs.Remove(this);
+            nodes.UnionWith(subs);
+            nodes.Remove(this);
         }
         else 
         {
-            foreach(var node in this.Outputs)
-            {   
-                if (!node.IsLink)
+            //always use loop instead of recursion to prevent stack overflow.
+            var visited = new HashSet<Node>();
+            do
+            {
+                var copy = subs.ToArray();
+                subs.Clear();
+                foreach (var sub in copy)
                 {
-                    outputs.Add(node);
-                    continue;
+                    if (sub == this) continue;
+                    else if (!sub.IsLink)
+                    {
+                        nodes.Add(sub);
+                    }
+                    else if(visited.Add(sub))
+                    {
+                        subs.UnionWith(
+                            direction >= 0 ? sub.Outputs : sub.Inputs);
+                    }
                 }
-                else if (deep && visited.Add(node))
-                {
-                    node.FetchNodes(outputs, deep, visited);
-                }
-            }
+            } while (subs.Count>0);
         }
-        return this;
     }
 
     public Node UnionWith(params int[] runes)

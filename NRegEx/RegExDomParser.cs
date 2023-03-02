@@ -4,6 +4,9 @@ namespace NRegEx;
 
 public class RegExDomParser
 {
+    public const int MatchGroupIndex = 0;
+    public const int FirstGroupIndex = 1;
+
     // Unexpected error
     private const string ERR_INTERNAL_ERROR = "regexp/syntax: internal error";
     // Parse errors
@@ -11,7 +14,7 @@ public class RegExDomParser
     private const string ERR_INVALID_CHAR_RANGE = "invalid character class range";
     private const string ERR_INVALID_ESCAPE = "invalid escape sequence";
     private const string ERR_INVALID_NAMED_CAPTURE = "invalid named capture";
-    private const string ERR_INVALID_PERL_OP = "invalid or unsupported Perl syntax";
+    private const string ERR_INVALID_PERL_OP = "invalid or unsupported syntax";
     private const string ERR_INVALID_REPEAT_OP = "invalid nested repetition operator";
     private const string ERR_INVALID_REPEAT_SIZE = "invalid repeat count";
     private const string ERR_MISSING_BRACKET = "missing closing ]";
@@ -25,7 +28,8 @@ public class RegExDomParser
     public readonly Dictionary<string, int> NamedGroups = new();
     public string Pattern => this.Reader.Pattern;
     protected readonly Stack<RegExNode> NodeStack = new();
-    protected int CaptureIndex = 1;
+    
+    protected int CaptureIndex = FirstGroupIndex;
     public bool RequestTextBegin { get; protected set; } = false;
     public bool RequestTextEnd { get; protected set; } = false;
     public RegExDomParser(string name, string pattern, Options options)
@@ -352,7 +356,7 @@ public class RegExDomParser
                     ERR_INVALID_NAMED_CAPTURE, s[..end]); // "(?P<name>"
             }
             var node = new RegExNode(TokenTypes.OpenParenthesis,
-                Value: name, CaptureIndex: ++this.CaptureIndex, Position: startPos, PatternName: this.Name);
+                Value: name, CaptureIndex: ++this.CaptureIndex, GroupType: GroupTypes.NormalGroup, Position: startPos, PatternName: this.Name);
             // Like ordinary capture, but named.
             if (NamedGroups.ContainsKey(name))
             {
@@ -376,7 +380,7 @@ public class RegExDomParser
             switch (c)
             {
                 default:
-                    goto exit;
+                    goto throws_exception;
                 // Flags.
                 case 'i':
                     flags |= Options.FOLD_CASE;
@@ -405,7 +409,7 @@ public class RegExDomParser
                     break;
                 // Switch to negation.
                 case '-':
-                    if (sign < 0) goto exit;
+                    if (sign < 0) goto throws_exception;
                     sign = -1;
                     // Invert flags so that | above turn into &~ and vice versa.
                     // We'll invert flags again before using it below.
@@ -414,26 +418,73 @@ public class RegExDomParser
                     break;
 
                 // End of flags, starting group or not.
-                case ':':
+                //case ':':
                 case ')':
                     if (sign < 0)
                     {
                         if (!sawFlag)
                         {
-                            goto exit;
+                            goto throws_exception;
                         }
                         flags = ~flags;
                     }
                     if (c == ':')
                     {
                         // Open new group
-                        this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, PatternName: this.Name));
+                        this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupTypes.NormalGroup, PatternName: this.Name));
                     }
                     this.Options = flags;
                     return;
+                //NOTICE:conditions like followings are not supported
+                //(?(name)
+                //(?(?=
+                //(?(?!
+                //(?(?<=
+                //(?(?<!
+                case '(':
+                    goto throws_exception;
+                //atomic group
+                case '>':
+                    this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupTypes.AtomicGroup, PatternName: this.Name));
+                    return; 
+                //non captive
+                case ':':
+                    //capture index = -1
+                    this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupTypes.NotCaptiveGroup, PatternName: this.Name));
+                    return;
+                //forward inspection
+                //Windows(?=95|98|NT|2000) - 可以匹配 Windows2000 中的 Windows , 但是不能匹配 Windows10 中的 Windows
+                case '=':
+                    this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupTypes.ForwardPositiveGroup, PatternName: this.Name));
+                    return;
+                //Window(?!95|98|NT|2000) - 可以匹配 Windows10 中的 Windows , 但是不能匹配 Windows2000 中的 Windows
+                case '!':
+                    this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupTypes.ForwardNegativeGroup, PatternName: this.Name));
+                    return;
+                //backward inspection
+                case '<':
+                    {
+                        if (Reader.HasMore)
+                        {
+                            switch(this.Reader.Peek())
+                            {
+                                //(?<=95|98|NT|2000)Windows - 可以匹配 2000Windows 中的 Windows , 但是不能匹配 10Windows 中的 Windows
+                                case '=':
+                                    this.Reader.Pop();
+                                    this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupTypes.BackwardPositiveGroup, PatternName: this.Name));
+                                    return;
+                                //(?<!95|98|NT|2000)Windows - 可以匹配 10Windows中的 Windows , 但是不能匹配 2000Windows 中的 Windows
+                                case '!':
+                                    this.Reader.Pop();
+                                    this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupTypes.BackwardPositiveGroup, PatternName: this.Name));
+                                    return;
+                            }
+                        }
+                    }
+                    return;
             }
         }
-    exit:
+    throws_exception:
         throw new PatternSyntaxException(ERR_INVALID_PERL_OP, Reader.From(startPos));
     }
     // parseUnicodeClass() parses a leading Unicode character class like \p{Han}

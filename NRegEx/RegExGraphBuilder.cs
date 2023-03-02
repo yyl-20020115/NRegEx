@@ -103,18 +103,18 @@ public static class RegExGraphBuilder
         }
         return graph.Clean();
     }
-    public static bool HasPassThrough(Graph graph)
-        => HasPassThrough(graph.Tail,graph.Head);
-    public static bool HasPassThrough(Graph graph, Node[] nodes)
-        => HasPassThrough(graph.Tail, nodes);
-    public static bool HasPassThrough(Node tail,params Node[] nodes)
-        => HasPassThrough(tail,nodes.ToHashSet());
+    public static bool HasPassThrough(Graph graph, int direction = 1)
+        => HasPassThrough(direction >= 0 ? graph.Tail : graph.Head, new Node[] { direction >= 1 ? graph.Head : graph.Tail });
+    public static bool HasPassThrough(Graph graph, IEnumerable<Node> nodes, int direction = 1)
+        => HasPassThrough((direction >= 0 ? graph.Tail : graph.Head), nodes, direction);
+    public static bool HasPassThrough(Node target, IEnumerable<Node> nodes, int direction = 1)
+        => HasPassThrough(target,nodes.ToHashSet(), direction);
     /// <summary>
     /// Check if there is a way to pass through the whole graph
     /// </summary>
     /// <param name="graph"></param>
     /// <returns></returns>
-    public static bool HasPassThrough(Node tail, HashSet<Node> nodes)
+    public static bool HasPassThrough(Node target, HashSet<Node> nodes, int direction = 1)
     {
         var visited = new HashSet<Node>();
         do
@@ -125,10 +125,10 @@ public static class RegExGraphBuilder
             {
                 if (visited.Add(node))
                 {
-                    if (node == tail)
+                    if (node == target)
                         return true;
                     else if (node.IsLink)
-                        nodes.UnionWith(node.Outputs);
+                        nodes.UnionWith(direction>=0? node.Outputs : node.Inputs);
                 }
             }
         } while (nodes.Count > 0);

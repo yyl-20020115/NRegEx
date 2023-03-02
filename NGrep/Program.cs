@@ -253,7 +253,7 @@ public static class Program
     }
     public static void Main(string[] args)
     {
-        //TestMethod19();
+        TestMethod19();
         string greedyPattern = @".+(\d+)\.";
         string lazyPattern = @".+?(\d+)\.";
 

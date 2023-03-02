@@ -125,13 +125,20 @@ public class Regex
         Node? last = null;
         return IsMatchInternal(input, start, length, ref start,ref last, true);
     }
-    protected bool IsMatchInternal(string input, int start, int length, ref int i,ref Node? last, bool strict, ListLookups<int, int>? groups = null)
+    protected bool IsMatchInternal(string input, int first, int length, ref int i,ref Node? last, bool strict, ListLookups<int, int>? groups = null, int direction = +1)
     {
         if (length == 0 && RegExGraphBuilder.HasPassThrough(this.Graph)) return true;
-        var tail = start + length;
+        var start = first;
+        var tail = first + length;
+        var end = tail - 1;
+        if (direction < 0)
+        {
+            (start, end) = (end, start);
+        }
+
         i = start;
-        this.UpdateIndicators(input, i, start, length);
-        var heads = this.Graph.Nodes.Where(n => n.Inputs.Count == 0);
+        this.UpdateIndicators(input, i, first, length, direction);
+        var heads = this.Graph.Nodes.Where(n => !(direction >= 0 ? n.HasInput : n.HasOutput));
         var nodes = heads.ToHashSet();
         while (nodes.Count > 0 && i < tail)
         {
@@ -145,14 +152,15 @@ public class Regex
                 if (this.TryHitHode(node))
                 {
                     hit = true;
-                    last = node.FetchNodes(nodes, false);
+                    node.FetchNodes(nodes, false, direction);
+                    last = node;
                 }
                 else
                 {
                     var d = node.TryHit(c);
                     if (!d.HasValue)
                     {
-                        node.FetchNodes(nodes, true);
+                        node.FetchNodes(nodes, true, direction);
                     }
                     else if (d.Value)
                     {
@@ -160,20 +168,23 @@ public class Regex
                             foreach (var cap in node.Captures)
                                 groups[cap].Add(i);
                         hit = true;
-                        last = node.FetchNodes(nodes, false);
+                        node.FetchNodes(nodes, false, direction);
+                        last = node;
                     }
                 }
             }
             if (hit)
             {
-                this.UpdateIndicators(input,++i,start,length);
+                i += direction;
+                this.UpdateIndicators(input, i, first, length, direction);
             }
         }
         return strict || this.RequestTextEnd //this means having $ in the end
-            ? i == input.Length
-                && RegExGraphBuilder.HasPassThrough(this.Graph, nodes.ToArray())
-            : i <= input.Length
-                && (nodes.Count == 0 || RegExGraphBuilder.HasPassThrough(this.Graph, nodes.ToArray()));
+            ? (direction>=0 ? i == input.Length : i == first)
+                && RegExGraphBuilder.HasPassThrough(this.Graph, nodes, direction)
+            : (direction>=0 ? i <= input.Length : i >= first)
+                && (nodes.Count == 0 || 
+                        RegExGraphBuilder.HasPassThrough(this.Graph, nodes, direction));
     }
 
     protected bool[] Indicators =new bool[8];
@@ -199,15 +210,21 @@ public class Regex
         [NotWordBoundaryIndex] = RegExTextReader.NOT_WORD_BOUNDARY,
     };
     protected char? last = null;
-    protected void UpdateIndicators(string input, int i, int start, int length)
+    protected void UpdateIndicators(string input, int i, int first, int length, int direction = +1)
     {
-        int tail = start + length;
-        char? Last = i > 0 && i < tail ? input[i - 1] : null;
-        char? This = i >= 0 && i < tail ? input[i + 0] : null;
-        char? Next = i + 1 < tail ? input[i + 1] : null;
+        int tail = first + length;
+        int start = first;
+        int end = tail - 1;
 
+        char? Last = i > 0 && i < tail ? input[i - direction] : null;
+        char? This = i >= 0 && i < tail ? input[i + 0] : null;
+        char? Next = i + 1 < tail ? input[i + direction] : null;
+        if (direction < 0)
+        {
+            (start, end) = (end, first);
+        }
         this.Indicators[BeginTextIndex] = i == start;
-        this.Indicators[EndTextIndex] = i == tail - 1;
+        this.Indicators[EndTextIndex] = i == end;
 
         this.Indicators[BeginLineIndex] = Last == '\n';
         this.Indicators[EndLineIndex] = This == '\n';
