@@ -205,6 +205,8 @@ public class Regex
             if (hit)
             {
                 i += direction;
+                if (i < start || i > end)
+                    nodes.Clear();
                 this.UpdateIndicators(input, i, first, tail, direction);
             }
         }

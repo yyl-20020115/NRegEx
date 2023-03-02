@@ -470,4 +470,15 @@ public class BasicUnitTests
         var ms = regex1.Matches(input);
 
     }
+    [TestMethod]
+    public void TestMethod26()
+    {
+        string input = "hello world abc";
+        string pattern = @"(\w+)\s";
+
+        var regex1 = new Regex(pattern);
+
+        var ms = regex1.Matches(input);
+
+    }
 }
