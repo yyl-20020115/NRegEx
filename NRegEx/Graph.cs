@@ -175,9 +175,12 @@ public class Graph
     }
     public Graph GroupWith(Graph g, int i)
     {
-        foreach(var node in g.Nodes)
+        this.UnionWith(g);
+
+        foreach (var node in this.Nodes)
             node.Groups.Add(i);
-        return this.UnionWith(g);
+
+        return this;
     }
     public Graph BackReferenceWith(Graph g, int i)
     {

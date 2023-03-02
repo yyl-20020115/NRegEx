@@ -5,7 +5,6 @@ namespace NRegEx;
 public class RegExDomParser
 {
     public const int MatchGroupIndex = 0;
-    public const int FirstGroupIndex = 1;
 
     // Unexpected error
     private const string ERR_INTERNAL_ERROR = "regexp/syntax: internal error";
@@ -29,7 +28,7 @@ public class RegExDomParser
     public string Pattern => this.Reader.Pattern;
     protected readonly Stack<RegExNode> NodeStack = new();
     
-    protected int CaptureIndex = FirstGroupIndex;
+    protected int CaptureIndex = MatchGroupIndex;
     public bool RequestTextBegin { get; protected set; } = false;
     public bool RequestTextEnd { get; protected set; } = false;
     public RegExDomParser(string name, string pattern, Options options)

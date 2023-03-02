@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.ComponentModel.Design;
+using System.Text;
 using System.Xml.Linq;
 
 namespace NRegEx;
@@ -126,17 +127,23 @@ public class Regex
                 foreach (var node in nodes)
                 {
                     //by pass indicators if indicator matches
-                    if (node.IsIndicator && this.TryHitHode(node))
+                    if (node.IsIndicator)
                     {
-                        var subs = new HashSet<Node>();
-                        node.FetchNodes(subs, true, direction);
-                        foreach (var sub in subs)
+                        if (this.TryHitHode(node))
                         {
-                            if (sub.TryHit(input[i]) == true)
+                            var subs = new HashSet<Node>();
+                            node.FetchNodes(subs, true, direction);
+                            foreach (var sub in subs)
                             {
-                                return i;
+                                if (sub.TryHit(input[i]) == true)
+                                {
+                                    return i;
+                                }
                             }
                         }
+                    }else if (node.TryHit(input[i]) == true)
+                    {
+                        return i;
                     }
                 }
             }
