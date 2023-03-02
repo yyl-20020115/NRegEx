@@ -78,7 +78,7 @@ public class Node
     protected int[]? charsArray;
     public readonly HashSet<Node> Inputs = new();
     public readonly HashSet<Node> Outputs = new();
-    public readonly List<int> TargetGroups = new();
+    public readonly List<int> Groups = new();
     public Node(string name = "") => Name = name;
     public Node(params int[] chars)
         : this(false, chars) { }
@@ -104,7 +104,7 @@ public class Node
         var subs = new HashSet<Node>(direction>=0 ? this.Outputs : this.Inputs);
         if(group is int g1)
         {
-            subs.RemoveWhere(n=>!n.TargetGroups.Contains(g1));
+            subs.RemoveWhere(n=>!n.Groups.Contains(g1));
         }
         if (!deep)
         {
@@ -132,7 +132,7 @@ public class Node
                             direction >= 0 ? sub.Outputs : sub.Inputs);
                         if (group is int g2)
                         {
-                            subs.RemoveWhere(n => !n.TargetGroups.Contains(g2));
+                            subs.RemoveWhere(n => !n.Groups.Contains(g2));
                         }
                     }
                 }

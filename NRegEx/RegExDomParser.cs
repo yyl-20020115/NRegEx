@@ -29,8 +29,6 @@ public class RegExDomParser
     protected readonly Stack<RegExNode> NodeStack = new();
     
     protected int CaptureIndex = MatchGroupIndex;
-    public bool RequestTextBegin { get; protected set; } = false;
-    public bool RequestTextEnd { get; protected set; } = false;
     public RegExDomParser(string name, string pattern, Options options)
     {
         this.Name = name;
@@ -82,7 +80,6 @@ public class RegExDomParser
                     this.Push(new(TokenTypes.Alternate, this.Reader.Take(), Position: Position, PatternName: this.Name));
                     continue;
                 case '^':
-                    this.RequestTextBegin = true;
                     this.Push(new(
                         ((this.Options & Options.ONE_LINE) != Options.None)
                         ? TokenTypes.BeginLine
@@ -90,7 +87,6 @@ public class RegExDomParser
                         , this.Reader.Take(), Position: Position, PatternName: this.Name));
                     break;
                 case '$':
-                    this.RequestTextEnd = true;
                     this.Push(new(
                         ((this.Options & Options.ONE_LINE) != Options.None)
                         ? TokenTypes.EndLine
@@ -202,7 +198,7 @@ public class RegExDomParser
                 ERR_MISSING_PAREN, this.Pattern);
         if (level > 0)
         {
-            result = new RegExNode(TokenTypes.Capture, PatternName: this.Name,CaptureIndex:open.CaptureIndex) 
+            result = new RegExNode(TokenTypes.Capture, GroupType:open.GroupType, PatternName: this.Name,CaptureIndex:open.CaptureIndex) 
             {
                 Children = new() { result }
             };
@@ -355,7 +351,7 @@ public class RegExDomParser
                     ERR_INVALID_NAMED_CAPTURE, s[..end]); // "(?P<name>"
             }
             var node = new RegExNode(TokenTypes.OpenParenthesis,
-                Value: name, CaptureIndex: ++this.CaptureIndex, GroupType: GroupTypes.NormalGroup, Position: startPos, PatternName: this.Name);
+                Value: name, CaptureIndex: ++this.CaptureIndex, GroupType: GroupType.NormalGroup, Position: startPos, PatternName: this.Name);
             // Like ordinary capture, but named.
             if (NamedGroups.ContainsKey(name))
             {
@@ -430,7 +426,7 @@ public class RegExDomParser
                     if (c == ':')
                     {
                         // Open new group
-                        this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupTypes.NormalGroup, PatternName: this.Name));
+                        this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupType.NormalGroup, PatternName: this.Name));
                     }
                     this.Options = flags;
                     return;
@@ -444,21 +440,21 @@ public class RegExDomParser
                     goto throws_exception;
                 //atomic group
                 case '>':
-                    this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupTypes.AtomicGroup, PatternName: this.Name));
+                    this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupType.AtomicGroup, PatternName: this.Name));
                     return; 
                 //non captive
                 case ':':
                     //capture index = -1
-                    this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupTypes.NotCaptiveGroup, PatternName: this.Name));
+                    this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupType.NotCaptiveGroup, PatternName: this.Name));
                     return;
                 //forward inspection
                 //Windows(?=95|98|NT|2000) - 可以匹配 Windows2000 中的 Windows , 但是不能匹配 Windows10 中的 Windows
                 case '=':
-                    this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupTypes.ForwardPositiveGroup, PatternName: this.Name));
+                    this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupType.ForwardPositiveGroup, PatternName: this.Name));
                     return;
                 //Window(?!95|98|NT|2000) - 可以匹配 Windows10 中的 Windows , 但是不能匹配 Windows2000 中的 Windows
                 case '!':
-                    this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupTypes.ForwardNegativeGroup, PatternName: this.Name));
+                    this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupType.ForwardNegativeGroup, PatternName: this.Name));
                     return;
                 //backward inspection
                 case '<':
@@ -470,12 +466,12 @@ public class RegExDomParser
                                 //(?<=95|98|NT|2000)Windows - 可以匹配 2000Windows 中的 Windows , 但是不能匹配 10Windows 中的 Windows
                                 case '=':
                                     this.Reader.Pop();
-                                    this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupTypes.BackwardPositiveGroup, PatternName: this.Name));
+                                    this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupType.BackwardPositiveGroup, PatternName: this.Name));
                                     return;
                                 //(?<!95|98|NT|2000)Windows - 可以匹配 10Windows中的 Windows , 但是不能匹配 2000Windows 中的 Windows
                                 case '!':
                                     this.Reader.Pop();
-                                    this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupTypes.BackwardPositiveGroup, PatternName: this.Name));
+                                    this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupType.BackwardPositiveGroup, PatternName: this.Name));
                                     return;
                             }
                         }

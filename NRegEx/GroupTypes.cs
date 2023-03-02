@@ -1,6 +1,6 @@
 ﻿namespace NRegEx;
 
-public enum GroupTypes : int
+public enum GroupType : int
 {
     NotGroup = -1,
     NormalGroup = 0,

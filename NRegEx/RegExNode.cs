@@ -7,7 +7,7 @@ public record class RegExNode(
     int? Min = null,
     int? Max = null,
     int? CaptureIndex = null,
-    GroupTypes GroupType = GroupTypes.NotGroup,
+    GroupType GroupType = GroupType.NotGroup,
     int[]? Runes = null,
     Options Options = Options.None,
     BehaviourOptions BehaviourOptions = BehaviourOptions.Greedy,

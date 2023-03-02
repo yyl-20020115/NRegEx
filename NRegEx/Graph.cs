@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace NRegEx;
+﻿namespace NRegEx;
 public class Graph
 {
     protected static int Gid = 0;
@@ -186,17 +184,15 @@ public class Graph
     {
         this.UnionWith(g);
 
-        foreach (var node in g.Nodes)
-            node.TargetGroups.Add(i);
+        foreach (var node in this.Nodes)
+            node.Groups.Add(i);
 
         return this;
     }
     public Graph BackReferenceWith(Graph g, int i)
     {
-        //BackReference are on Graphs, not nodes
-        g.BackReferences.Add(i);
-        //g.ReferenceGraphs.Add(this);
-        this.ReferenceGraphs.Add(g);
+        this.UnionWith(g);
+
         return this;
     }
     public Graph ZeroPlus(Graph g, HashSet<Node>? loopset = null)
@@ -256,51 +252,60 @@ public class Graph
 
     public override string ToString() => $"H:{this.Head},T:{this.Tail}";
 
-    public Graph RemoveNode(Node node)
-    {
-        foreach(var n in this.Nodes)
-        {
-            n.Inputs.Remove(node);
-            n.Outputs.Remove(node);
-        }
-
-        this.Edges.RemoveWhere(e => e.Head == node || e.Tail == node);
-        this.Nodes.Remove(node);        
-        return this;
-    }
-    public Graph InsertBeforeTail(Node node)
+    public Node InsertPointBeforeTail(Node node)
     {
         var tail = this.Tail;
-        var beforeTails = this.Tail.Inputs.ToList();
+        var pres = this.Tail.Inputs.ToList();
 
-        this.Edges.RemoveWhere(e=> beforeTails.Contains(e.Head) && e.Tail == this.Tail);
+        this.Edges.RemoveWhere(e => pres.Contains(e.Head) && e.Tail == this.Tail);
 
-        foreach(var bt in beforeTails)
+        foreach (var pre in pres)
         {
-            this.Edges.Add(new Edge(bt, node));
+            this.Edges.Add(new Edge(pre, node));
         }
         this.Edges.Add(new Edge(node, tail));
 
         this.Nodes.Add(node);
 
-        return this;
+        return node;
     }
-    public Graph RemoveLine(List<Node> nodes)
+    public Graph UnlinkNode(Node node)
     {
-        if (nodes.Count > 0 
-            && nodes[^1].Outputs.Contains(this.Tail))
-        {
-            var first = nodes[0];
-            foreach(var p in first.Inputs.ToArray())
-            {
-                this.Edges.Add(new Edge(p, this.Tail));
-            }
+        var ins = this.Edges.Where(e => e.Tail == node).ToList();
+        var ous = this.Edges.Where(e => e.Head == node).ToList();
 
-            this.RemoveNodes(nodes);
+        this.Edges.ExceptWith(ins);
+        this.Edges.ExceptWith(ous);
+        
+        var nins = node.Inputs.ToList();
+        var nous = node.Outputs.ToList();
+        
+        nins.ForEach(n => n.Outputs.Remove(node));
+        nous.ForEach(n => n.Inputs.Remove(node));
+
+        node.Inputs.Clear();
+        node.Outputs.Clear();
+        this.Nodes.Remove(node);
+
+        foreach(var pins in nins)
+        {
+            foreach(var pous in nous)
+            {
+                this.Edges.Add(new Edge(pins, pous));
+            }
         }
+
         return this;
     }
-    public Graph RemoveNodes(IEnumerable<Node> nodes)
+
+    public Graph UnlinkNodes(IEnumerable<Node> nodes)
+    {
+        foreach (var node in nodes)
+            this.UnlinkNode(node);
+        return this;
+    }
+
+    public Graph Clean(IEnumerable<Node> nodes)
     {
         var set = nodes.ToHashSet();
         foreach (var n in this.Nodes)

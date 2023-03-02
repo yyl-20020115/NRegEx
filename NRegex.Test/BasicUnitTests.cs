@@ -52,7 +52,7 @@ public class BasicUnitTests
         => ExportAsDot(regex.Graph, png, dot);
 
     public static int ExportAsDot(Graph graph, string? png = null, string? dot = null) 
-        => ExportAsDot(RegExGraphBuilder.ExportAsDot(graph).ToString(), png, dot);
+        => ExportAsDot(NRegEx.GraphUtils.ExportAsDot(graph).ToString(), png, dot);
     public static int ExportAsDot(string content, string? png = null, string? dot = null)
     {
         var trace = new StackTrace();
