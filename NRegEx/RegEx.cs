@@ -168,7 +168,7 @@ public class Regex
         this.UpdateIndicators(input, i, first, tail, direction);
         var heads = this.Graph.Nodes.Where(n => !(direction >= 0 ? n.HasInput : n.HasOutput));
         var nodes = heads.ToHashSet();
-        while (nodes.Count > 0 && i < tail)
+        while (nodes.Count > 0 && i>=start && i <= end)
         {
             var c = input[i];
             var hit = false;
@@ -177,7 +177,7 @@ public class Regex
             foreach (var node in copies)
             {
                 //this is for BEGIN_LINE etc
-                if (this.TryHitHode(node))
+                if (node.IsIndicator && this.TryHitHode(node))
                 {
                     //hit = true;
                     //no advance
@@ -211,7 +211,7 @@ public class Regex
         return strict //this means having $ in the end
             ? ((i == tail - 1)
                 && RegExGraphBuilder.HasPassThrough(this.Graph, nodes, direction))
-            : ((i > start && i < tail)
+            : ((i >= start && i <= tail)
                 && (nodes.Count == 0 ||
                         RegExGraphBuilder.HasPassThrough(this.Graph, nodes, direction)));
     }
