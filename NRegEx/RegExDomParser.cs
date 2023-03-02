@@ -198,10 +198,13 @@ public class RegExDomParser
                 ERR_MISSING_PAREN, this.Pattern);
         if (level > 0)
         {
-            result = new RegExNode(TokenTypes.Capture, GroupType:open.GroupType, PatternName: this.Name,CaptureIndex:open.CaptureIndex) 
+            if((this.Options & Options.NO_CAPTURE) == 0)
             {
-                Children = new() { result }
-            };
+                result = new RegExNode(TokenTypes.Capture, GroupType: open.GroupType, PatternName: this.Name, CaptureIndex: open.CaptureIndex)
+                {
+                    Children = new() { result }
+                };
+            }
         }
         this.Push(result);
     }
@@ -378,11 +381,15 @@ public class RegExDomParser
                     goto throws_exception;
                 // Flags.
                 case 'i':
-                    flags |= Options.FOLD_CASE;
+                    flags |= Options.CASE_INSENSITIVE;
                     sawFlag = true;
                     break;
                 case 'm':
                     flags &= ~Options.ONE_LINE;
+                    sawFlag = true;
+                    break;
+                case 'n':
+                    flags |= Options.NO_CAPTURE;
                     sawFlag = true;
                     break;
                 case 's':
@@ -393,12 +400,23 @@ public class RegExDomParser
                     flags |= Options.NON_GREEDY;
                     sawFlag = true;
                     break;
+                case 'x':
+                    flags |= Options.SHARP_LINE_COMMENT;
+                    sawFlag = true;
+                    break;
                 case '#': //#comments
                     { //skip comments
                         while (this.Reader.HasMore)
                         {
                             c = this.Reader.Pop();
-                            if (c == ')') return;
+                            if ((flags & Options.SHARP_LINE_COMMENT) == Options.SHARP_LINE_COMMENT)
+                            {
+                                if (c is '\n' or ')') return;
+                            }
+                            else
+                            {
+                                if (c == ')') return;
+                            }
                         }
                     }
                     break;
@@ -544,7 +562,7 @@ public class RegExDomParser
         var fold = pair.second; // fold-equivalent table
 
         RuneClass.FromTable(tab, sign < 0, list, startPos);
-        if ((Options & Options.FOLD_CASE) == Options.FOLD_CASE)
+        if ((Options & Options.CASE_INSENSITIVE) == Options.CASE_INSENSITIVE)
         {
             RuneClass.FromTable(fold, sign < 0, list, startPos);
         }

@@ -6,7 +6,7 @@ public enum Options : uint
 {
     None = 0,
     // Fold case during matching (case-insensitive).
-    FOLD_CASE = 0x01,
+    CASE_INSENSITIVE = 0x01,
     // Treat pattern as a literal string instead of a regexp.
     LITERAL = 0x02,
     // Allow character classes like [^a-z] and [[:space:]] to match newline.
@@ -35,6 +35,8 @@ public enum Options : uint
     UNICODE_GROUPS = 0x80,
     // Regexp END_TEXT was $, not \z.  Internal use only.
     WAS_DOLLAR = 0x100,
+    SHARP_LINE_COMMENT = 0x200, //#..\n as comment
+    NO_CAPTURE = 0x400,
     MATCH_NL = CLASS_NL | DOT_NL,
     // As close to Perl as possible.
     PERL = CLASS_NL | ONE_LINE | PERL_X | UNICODE_GROUPS,

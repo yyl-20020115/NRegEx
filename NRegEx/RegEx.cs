@@ -54,7 +54,7 @@ public class Regex
         this.NamedGroups = new(Parser.NamedGroups);
         var Builder = new RegExGraphBuilder();
         this.Graph = Builder.Build(this.Model, 0,
-            (this.Options & Options.FOLD_CASE) == Options.FOLD_CASE);
+            (this.Options & Options.CASE_INSENSITIVE) == Options.CASE_INSENSITIVE);
         this.BackReferencePoints = Builder.BackReferencesPoints;
         this.GroupTypes = Builder.GroupTypes;
     }
