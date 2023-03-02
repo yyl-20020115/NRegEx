@@ -15,6 +15,14 @@ public class DualDictionary<TKey, TValue> :
     IDictionary
     where TKey : notnull where TValue : notnull
 {
+    public DualDictionary()
+    {
+        
+    }
+    public DualDictionary(IDictionary<TKey,TValue> dictionary)
+    {
+        foreach(var kvp in dictionary) this.Add(kvp);
+    }
     public IDictionary<TKey, TValue> MainData { get; } = new Dictionary<TKey, TValue>();
     public IDictionary<TValue, TKey> AuxData { get; } = new Dictionary<TValue, TKey>();
     public TValue this[TKey key]

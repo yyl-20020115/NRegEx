@@ -40,11 +40,11 @@ public class RegExDomParser
     /// </summary>
     /// <param name="c"></param>
     /// <returns></returns>
-    public static TokenOptions ParseTokenOptions(int c) => c switch
+    public static BehaviourOptions ParseTokenOptions(int c) => c switch
     {
-        '?' => TokenOptions.Lazy,
-        '+' => TokenOptions.Possessive,
-        _ => TokenOptions.Normal,
+        '?' => BehaviourOptions.Lazy,
+        '+' => BehaviourOptions.Possessive,
+        _ => BehaviourOptions.Greedy,
     };
     public RegExNode Parse()
     {
@@ -105,9 +105,9 @@ public class RegExDomParser
                     {
                         var text = this.Reader.Take();
                         var tops = ParseTokenOptions(this.Reader.Peek());
-                        if (tops != TokenOptions.Normal) this.Reader.Skip();
+                        if (tops != BehaviourOptions.Greedy) this.Reader.Skip();
                         this.Push(new(TokenTypes.OnePlus,
-                            text, "", 1, -1, TokenOptions: tops, Position: Position, PatternName: this.Name)
+                            text, "", 1, -1, BehaviourOptions: tops, Position: Position, PatternName: this.Name)
                         { Children = new() { this.NodeStack.Pop() } });
                     }
                     continue;
@@ -115,9 +115,9 @@ public class RegExDomParser
                     {
                         var text = this.Reader.Take();
                         var tops = ParseTokenOptions(this.Reader.Peek());
-                        if (tops != TokenOptions.Normal) this.Reader.Skip();
+                        if (tops != BehaviourOptions.Greedy) this.Reader.Skip();
                         this.Push(new(TokenTypes.ZeroPlus,
-                            text, "", 0, -1, TokenOptions: tops, Position: Position, PatternName: this.Name)
+                            text, "", 0, -1, BehaviourOptions: tops, Position: Position, PatternName: this.Name)
                         { Children = new() { this.NodeStack.Pop() } });
                     }
                     continue;
@@ -125,9 +125,9 @@ public class RegExDomParser
                     {
                         var text = this.Reader.Take();
                         var tops = ParseTokenOptions(this.Reader.Peek());
-                        if (tops != TokenOptions.Normal) this.Reader.Skip();
+                        if (tops != BehaviourOptions.Greedy) this.Reader.Skip();
                         this.Push(new(TokenTypes.ZeroOne,
-                            text, "", 0, 1, TokenOptions: tops, Position: Position, PatternName: this.Name)
+                            text, "", 0, 1, BehaviourOptions: tops, Position: Position, PatternName: this.Name)
                         { Children = new() { this.NodeStack.Pop() } });
                     }
                     continue;

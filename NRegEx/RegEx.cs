@@ -1,6 +1,4 @@
-﻿using System.Net.Http.Headers;
-using System.Text;
-using System.Xml.Linq;
+﻿using System.Text;
 
 namespace NRegEx;
 
@@ -42,7 +40,7 @@ public class Regex
     public readonly Options Options;
     public readonly string Pattern;
     public readonly string Name;
-    public readonly DualDictionary<string, int> NamedGroups =new();
+    public readonly DualDictionary<string, int> NamedGroups;
     public RegExNode Model { get; protected set; }
     public Graph Graph { get; protected set; }
 
@@ -56,10 +54,7 @@ public class Regex
         this.Options = options;
         var Parser = new RegExDomParser(this.Name, this.Pattern, this.Options);
         this.Model = Parser.Parse();
-        foreach(var pair in Parser.NamedGroups)
-        {
-            this.NamedGroups.Add(pair.Key, pair.Value);
-        }
+        this.NamedGroups = new (Parser.NamedGroups);
         this.RequestTextBegin = Parser.RequestTextBegin;
         this.RequestTextEnd = Parser.RequestTextEnd;
         this.Graph = RegExGraphBuilder.Build(this.Model, 0,

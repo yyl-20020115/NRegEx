@@ -10,7 +10,7 @@ public record class RegExNode(
     bool? Negate = null,
     int[]? Runes = null,
     Options Options = Options.None,
-    TokenOptions TokenOptions = TokenOptions.Normal,
+    BehaviourOptions BehaviourOptions = BehaviourOptions.Greedy,
     bool Inverted = false,
     int Position = -1,
     int Length = -1,

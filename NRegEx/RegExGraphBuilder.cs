@@ -22,8 +22,10 @@ public static class RegExGraphBuilder
 
     public static HashSet<Node> GetFollowings(Graph graph, Node current, HashSet<Node> visited)
         => graph.Edges.Where(e => e.Head == current && visited.Add(e.Tail)).Select(e => e.Tail).ToHashSet();
-    public static Graph Recompose(Graph graph, int id = 0)
+    public static Graph Reform(Graph graph, int id = 0) => Reorder(Compact(graph), id);
+    public static Graph Reorder(Graph graph, int id = 0)
     {
+
         var visited = new HashSet<Node>();
         var followings = GetFollowings(graph, graph.Head, visited);
         var list = new List<HashSet<Node>>
@@ -53,9 +55,9 @@ public static class RegExGraphBuilder
                 node.SetId(id++);
             }
         }
-        return CompactDoubles(graph);
+        return graph;
     }
-    public static Graph CompactDoubles(Graph graph, int minlength =2)
+    public static Graph Compact(Graph graph, int minlength =2)
     {
         var pairs = new List<(List<Node> nodes, List<Edge> edges)>();
         var bridges = new HashSet<Node>();
@@ -96,7 +98,7 @@ public static class RegExGraphBuilder
                 var first = edges[0];
                 var last = edges[^1];
                 graph.Edges.Add(new (first.Head, last.Tail));
-                graph.RemoveNodes(nodes.ToHashSet());
+                graph.RemoveNodes(nodes);
             }
         }
         return graph.Clean();
@@ -135,7 +137,7 @@ public static class RegExGraphBuilder
     }
 
     public static Graph Build(RegExNode node,int id = 0,bool caseInsensitive = false) 
-        => Recompose(BuildInternal(node, caseInsensitive),id);
+        => Reform(BuildInternal(node, caseInsensitive),id);
     private static Graph BuildInternal(RegExNode node, bool caseInsensitive = false)
     {
         var graph = new Graph(node.Name) { SourceNode = node };

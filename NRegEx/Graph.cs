@@ -1,4 +1,6 @@
-﻿namespace NRegEx;
+﻿using System.Collections.Generic;
+
+namespace NRegEx;
 public class Graph
 {
     protected static int Gid = 0;
@@ -254,17 +256,51 @@ public class Graph
         this.Nodes.Remove(node);        
         return this;
     }
-    public Graph RemoveNodes(HashSet<Node> nodes)
+    public Graph InsertBeforeTail(Node node)
     {
+        var tail = this.Tail;
+        var beforeTails = this.Tail.Inputs.ToList();
+
+        this.Edges.RemoveWhere(e=> beforeTails.Contains(e.Head) && e.Tail == this.Tail);
+
+        foreach(var bt in beforeTails)
+        {
+            this.Edges.Add(new Edge(bt, node));
+        }
+        this.Edges.Add(new Edge(node, tail));
+
+        this.Nodes.Add(node);
+
+        return this;
+    }
+    public Graph RemoveLine(List<Node> nodes)
+    {
+        if (nodes.Count > 0 
+            && nodes[^1].Outputs.Contains(this.Tail))
+        {
+            var first = nodes[0];
+            foreach(var p in first.Inputs.ToArray())
+            {
+                this.Edges.Add(new Edge(p, this.Tail));
+            }
+
+            this.RemoveNodes(nodes);
+        }
+        return this;
+    }
+    public Graph RemoveNodes(IEnumerable<Node> nodes)
+    {
+        var set = nodes.ToHashSet();
         foreach (var n in this.Nodes)
         {
-            n.Inputs.ExceptWith(nodes);
-            n.Outputs.ExceptWith(nodes);
+            n.Inputs.ExceptWith(set);
+            n.Outputs.ExceptWith(set);
         }
 
         this.Edges.RemoveWhere(
-            e => nodes.Contains( e.Head ) || nodes.Contains(e.Tail));
-        this.Nodes.ExceptWith(nodes);
+            e => nodes.Contains( e.Head ) 
+                || nodes.Contains(e.Tail));
+        this.Nodes.ExceptWith(set);
         return this;
     }
     public Graph Clean()

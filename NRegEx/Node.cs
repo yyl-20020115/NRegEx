@@ -85,14 +85,15 @@ public class Node
                 + "'";
         }
     }
-    public Node FetchNodes(HashSet<Node> outputs, bool deep = true)
+    public Node FetchNodes(HashSet<Node> outputs, bool deep = true, HashSet<Node>? visited = null)
     {
+        visited ??= new();
         if (!deep)
         {
             outputs.UnionWith(this.Outputs);
             outputs.Remove(this);
         }
-        else if(!outputs.Contains(this))
+        else 
         {
             foreach(var node in this.Outputs)
             {   
@@ -101,9 +102,9 @@ public class Node
                     outputs.Add(node);
                     continue;
                 }
-                else if (deep)
+                else if (deep && visited.Add(node))
                 {
-                    node.FetchNodes(outputs, deep);
+                    node.FetchNodes(outputs, deep, visited);
                 }
             }
         }

@@ -1,8 +1,8 @@
 ﻿namespace NRegEx;
 
-public enum TokenOptions : uint
+public enum BehaviourOptions : uint
 {
-    Normal = 0,
+    Greedy = 0,
     Lazy = 1,
     Possessive = 2,
 }
