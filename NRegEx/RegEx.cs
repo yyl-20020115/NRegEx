@@ -142,7 +142,6 @@ public class Regex
             }
         }
         return -1;
-
     }
     public bool IsFullyMatch(string input, int start = 0, int length = -1, int direction = 1)
     {
