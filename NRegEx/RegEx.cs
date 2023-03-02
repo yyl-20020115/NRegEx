@@ -68,7 +68,7 @@ public class Regex
         int sp = 0, ep = 0;
         return this.IsMatchInternal(input, start, length, ref sp, ref ep, ref last, null, Math.Sign(direction));
     }
-    protected bool IsMatchInternal(string input, int first, int length, ref int sp, ref int ep, ref Node? last, ListLookups<int, int>? groups = null, int direction = 1)
+    protected bool IsMatchInternal(string input, int first, int length, ref int sp, ref int ep, ref Node? last, ListLookups<int,List<int>>? groups = null, int direction = 1)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
         if (first < 0 || first > input.Length) throw new ArgumentOutOfRangeException(nameof(first));
@@ -159,7 +159,7 @@ public class Regex
         Node? last = null;
         return IsMatchInternal(input, start, length, ref start, ref last, true, null, direction);
     }
-    protected bool IsMatchInternal(string input, int first, int length, ref int i, ref Node? last, bool strict, ListLookups<int, int>? groups = null, int direction = +1)
+    protected bool IsMatchInternal(string input, int first, int length, ref int i, ref Node? last, bool strict, ListLookups<int,List<int>>? groups = null, int direction = +1)
     {
         if (length == 0 && RegExGraphBuilder.HasPassThrough(this.Graph)) return true;
         direction = Math.Sign(direction);
@@ -201,9 +201,8 @@ public class Regex
                     }
                     else if (d.Value)
                     {
-                        if (groups != null)
-                            foreach (var cap in node.Groups)
-                                groups[cap].Add(i);
+                        if (groups != null) this.Emits(node, i, groups);
+
                         hit = true;
                         node.FetchNodes(nodes, false, direction);
                         last = node;
@@ -226,6 +225,29 @@ public class Regex
             : ((i >= start && i <= tail)
                 && (nodes.Count == 0 ||
                         RegExGraphBuilder.HasPassThrough(this.Graph, nodes, direction)));
+    }
+
+    protected void Emits(Node node,int i, ListLookups<int, List<int>>? groups)
+    {
+        if (groups != null)
+        {
+            foreach (var cap in node.TargetGroups)
+            {
+                this.Emit(node, i, groups[cap]);
+            }
+        }
+    }
+    protected void Emit(Node node, int i, ICollection<List<int>>? segments)
+    {
+        if(segments is not null)
+        {
+            if((node.Ending& Ending.Start) == Ending.Start
+                ||segments.Count == 0)
+            {
+                segments.Add(new ());
+            }
+            segments.Last().Add(i);
+        }
     }
 
     protected bool[] Indicators = new bool[8];
@@ -310,7 +332,7 @@ public class Regex
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
         direction = Math.Abs(direction);
         Node? last = null;
-        var groups = new ListLookups<int, int>();
+        var groups = new ListLookups<int,List<int>>();
         int sp = 0, ep = 0;
         var ret = this.IsMatchInternal(input, start, length, ref sp, ref ep, ref last, groups, direction);
         if (ret)
@@ -322,75 +344,31 @@ public class Regex
         }
         return new Match(this, input, false);
     }
-    protected Match BuildMatch(string input, string name, int sp, int ep, ListLookups<int, int>? groups, int direction)
+    protected Match BuildMatch(string input, string name, int sp, int ep, ListLookups<int,List<int>>? groups, int direction)
     {
         var match = new Match(this, input, true, name, sp, ep, input[sp..ep]);
-        //group 0
-        match.Groups.Add(match);
 
         if (groups != null)
         {
             for (int i = 0; i < groups.Count; i++)
             {
-                var groupName = this.NamedGroups.TryGetValue(i, out var n) ? n : i.ToString();
+                var _name = this.NamedGroups.TryGetValue(i, out var n) ? n : i.ToString();
                 var group = new Group(true,
-                    Name: groupName);
-
-                match.Groups.Add(group);
-
-                var thisGroupPositions = groups[i];
-                int c = 0;
-                foreach (var thisCapturePositions in SplitList(thisGroupPositions.ToArray(), direction))
-                {
-                    if (thisCapturePositions.Length > 0)
-                    {
-                        var builder = new StringBuilder();
-                        foreach (var position in thisCapturePositions)
-                        {
-                            builder.Append(input[position]);
-                        }
+                    Name: _name);
+                foreach (var capture in groups[i])
+                { 
+                    if (capture.Count > 0)
                         group.Captures.Add(new Capture(
-                            $"{groupName}-{c}",
-                            thisCapturePositions.Min(),
-                            thisCapturePositions.Max() + 1,
-                            builder.ToString()));
-                    }
+                            $"{_name}-{group.Count}",
+                            capture.Min(),
+                            capture.Max() + 1,
+                            new string(capture.Select(p => input[p]).ToArray())));
                 }
+                if (group.Count > 0)
+                    match.Groups.Add(group);
             }
         }
         return match;
-    }
-    protected static int[][] SplitList(int[] list, int direction = 1)
-    {
-        var parts = new List<int[]>();
-
-        direction = Math.Abs(direction);
-
-        if (list.Length <= 1) return new int[][] { list };
-        retry:
-        for (int i = 0; i < list.Length - 1; i++)
-        {
-            int c = list[i + 0];
-            int d = list[i + 1];
-            if (d != c + direction)
-            {
-                parts.Add(list[..(i + 1)]);
-                list = list[i..];
-                goto retry;
-            }
-        }
-        if (direction < 0)
-        {
-            var copy = parts.ToArray();
-            parts.Clear();
-            foreach (var part in copy)
-            {
-                Array.Reverse(part);
-                parts.Add(part);
-            }
-        }
-        return parts.ToArray();
-
     }
     public List<Match> Matches(string input, int first = 0, int length = -1, int direction = +1)
     {

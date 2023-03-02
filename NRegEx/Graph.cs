@@ -28,7 +28,7 @@ public class Graph
         }
         else
         {
-            this.Nodes.Add(this.Head = new(name) { Parent = this });
+            this.Nodes.Add(this.Head = new(name) { Parent = this});
             this.Nodes.Add(this.Tail = new(name) { Parent = this });
         }
     }
@@ -67,16 +67,18 @@ public class Graph
         => this.ComposeLiteral(sequence.ToList());
 
     public Graph ComposeLiteral(List<Node> sequence)
-    {        
-        for(int i= 0; i < sequence.Count; i++)
+    {
+        for (int i = 0; i < sequence.Count; i++)
         {
             var before = i <= 0 ? this.Head : sequence[i - 1];
             var current = sequence[i];
             var after = i >= sequence.Count - 1 ? this.Tail : sequence[i + 1];
-            this.Edges.Add(new (before, current));
+            this.Edges.Add(new(before, current));
             this.Edges.Add(new(current, after));
             this.Nodes.Add(current);
         }
+        this.Head.Ending |= Ending.Start;
+        this.Tail.Ending |= Ending.End;
         return this;
     }
     public Graph Concate(IEnumerable<Graph> graphs, bool plus = false)
@@ -132,6 +134,13 @@ public class Graph
                 this.Edges.Add(new (current.Tail, after.Head));
             }
         }
+        var starts = new HashSet<Node>();
+        var ends = new HashSet<Node>();
+        this.Head.FetchNodes(starts, true, 1);
+        this.Tail.FetchNodes(ends, true, -1);
+
+        foreach (var s in starts) s.Ending |= Ending.Start;
+        foreach (var e in ends) e.Ending |= Ending.End;
 
         if (plus)
         {
@@ -177,8 +186,8 @@ public class Graph
     {
         this.UnionWith(g);
 
-        foreach (var node in this.Nodes)
-            node.Groups.Add(i);
+        foreach (var node in g.Nodes)
+            node.TargetGroups.Add(i);
 
         return this;
     }

@@ -477,6 +477,7 @@ public class BasicUnitTests
         string pattern = @"(\w+)\s";
 
         var regex1 = new Regex(pattern);
+        ExportAsDot(regex1);
 
         var ms = regex1.Matches(input);
 

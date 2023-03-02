@@ -14,4 +14,6 @@ public class Match : Group
         this.Source = Source;
         this.Input = Input;
     }
+    public override string ToString()
+        => this.Value ?? base.ToString();
 }

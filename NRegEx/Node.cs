@@ -3,6 +3,13 @@ using System.Text;
 
 namespace NRegEx;
 
+[Flags]
+public enum Ending :uint
+{
+    None = 0,
+    Start = 1,
+    End = 2,
+}
 public class Node
 {
     public const int EOFChar = -1;
@@ -55,7 +62,7 @@ public class Node
     public int[]? CharsArray => charsArray;
 
     public Graph? Parent { get => parent; set => parent = value; }
-
+    public Ending Ending = Ending.None;
     public Node Copy(Graph? parent = null) => new()
     {
         name = name,
@@ -71,7 +78,7 @@ public class Node
     protected int[]? charsArray;
     public readonly HashSet<Node> Inputs = new();
     public readonly HashSet<Node> Outputs = new();
-    public readonly List<int> Groups = new();
+    public readonly List<int> TargetGroups = new();
     public Node(string name = "") => Name = name;
     public Node(params int[] chars)
         : this(false, chars) { }
@@ -97,7 +104,7 @@ public class Node
         var subs = new HashSet<Node>(direction>=0 ? this.Outputs : this.Inputs);
         if(group is int g1)
         {
-            subs.RemoveWhere(n=>!n.Groups.Contains(g1));
+            subs.RemoveWhere(n=>!n.TargetGroups.Contains(g1));
         }
         if (!deep)
         {
@@ -125,7 +132,7 @@ public class Node
                             direction >= 0 ? sub.Outputs : sub.Inputs);
                         if (group is int g2)
                         {
-                            subs.RemoveWhere(n => !n.Groups.Contains(g2));
+                            subs.RemoveWhere(n => !n.TargetGroups.Contains(g2));
                         }
                     }
                 }

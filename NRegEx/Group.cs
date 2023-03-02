@@ -13,5 +13,6 @@ public class Group : Capture
     {
         this.Success = Success;
     }
-    public override string ToString() => string.Join<Capture>(' ', Captures.ToArray());
+    public override string ToString()
+        => this.Count > 0 ? string.Join(' ', this.Captures) : this.Value ?? string.Empty;
 }

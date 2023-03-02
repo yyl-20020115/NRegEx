@@ -136,8 +136,9 @@ public static class RegExGraphBuilder
         return false;
     }
 
-    public static Graph Build(RegExNode node,int id = 0,bool caseInsensitive = false) 
-        => Reform(BuildInternal(node, caseInsensitive),id);
+    public static Graph Build(RegExNode node, int id = 0, bool caseInsensitive = false)
+        => Reform(
+            BuildInternal(node, caseInsensitive),id);
     private static Graph BuildInternal(RegExNode node, bool caseInsensitive = false)
     {
         var graph = new Graph(node.Name) { SourceNode = node };
