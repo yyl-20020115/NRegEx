@@ -491,26 +491,5 @@ public class Regex
         return result.ToArray();
     }
     private static int FixDirection(int direction) => direction >= 0 ? 1 : -1;
-
-
-    public static string DoReplace(string input, string pattern, string replacement)
-    {
-        var regex = new Regex(pattern);
-        var matches = regex.Matches(input);
-        return DoReplace(input, matches, replacement);
-    }
-    public static string DoReplace(string input, List<Match> matches, string replacement)
-    {
-        var builder = new StringBuilder();
-        var parser = new RegExReplacementParser(replacement);
-        var list = parser.Parse();
-        foreach(var match in matches)
-        {
-            foreach (var repl in list)
-            {
-                builder.Append(repl.Replace(input, match));
-            }
-        }
-        return builder.ToString();
-    }
+    
 }
