@@ -1,6 +1,4 @@
-﻿using System.Text;
-
-namespace NRegEx;
+﻿namespace NRegEx;
 
 public delegate string CaptureEvaluator(Capture capture);
 public class Regex

@@ -6,7 +6,7 @@ public enum TokenTypes : int
     EOF = -1,
     Literal = 0,
     RuneClass = 1,
-    FoldCase = 2, //NOT USED
+    CaseInsensitive = 2,
     AnyCharExcludingNewLine = 3,
     AnyCharIncludingNewLine = 4,
     BeginLine = 5,
@@ -29,4 +29,6 @@ public enum TokenTypes : int
     CloseParenthesis = 22,     //)
     BeginWord = 23, //<
     EndWord = 24, //>
+    BackReferenceCondition = 25,
+    LookAroundConditon = 26,
 }

@@ -449,12 +449,45 @@ public class RegExDomParser
                     this.Options = flags;
                     return;
                 //NOTICE:conditions like followings are not supported
+                //(?(number)
                 //(?(name)
                 //(?(?=
                 //(?(?!
                 //(?(?<=
                 //(?(?<!
+                //  ^
                 case '(':
+                    {
+#if false
+                        if (Reader.HasMore)
+                        {
+                            if (Reader.Rest.StartsWith("?="))
+                            {
+
+                            }
+                            else if (Reader.Rest.StartsWith("?!"))
+                            {
+
+                            }
+                            else if (Reader.Rest.StartsWith("?<="))
+                            {
+
+                            }
+                            else if (Reader.Rest.StartsWith("?<!"))
+                            {
+
+                            }else
+                            {
+                                c = this.Reader.Peek();
+                                if (c >= '1' && c <= '9')
+                                {
+
+                                }
+                            }
+                            goto throws_exception;
+                        }
+#endif
+                    }
                     goto throws_exception;
                 //atomic group
                 case '>':
