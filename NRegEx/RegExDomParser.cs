@@ -422,8 +422,12 @@ public class RegExDomParser
                                 Position: startPos, GroupType: GroupType.BackReferenceCondition, PatternName: this.Name));
                             return;
                         }
-                        else if (IsValidCaptureName(text) && this.NamedGroups.TryGetValue(text, out index))
+                        else if (IsValidCaptureName(text))
                         {
+                            if(!this.NamedGroups.TryGetValue(text, out index))
+                            {
+                                index = -1;
+                            }
                             //name
                             this.Push(new(TokenTypes.BackReference, CaptureIndex: index, Position: startPos, GroupType: GroupType.BackReferenceCondition, PatternName: this.Name));
                             return;
