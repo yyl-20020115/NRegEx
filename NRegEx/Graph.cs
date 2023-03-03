@@ -1,4 +1,6 @@
-﻿namespace NRegEx;
+﻿using System.Xml.Linq;
+
+namespace NRegEx;
 public class Graph
 {
     protected static int Gid = 0;
@@ -260,54 +262,26 @@ public class Graph
 
     public Node InsertPointBeforeTail(Node node)
     {
-        var tail = this.Tail;
-        var pres = this.Tail.Inputs.ToList();
+        this.Edges.RemoveWhere(e => this.Tail.Inputs.Contains(e.Head) && e.Tail == this.Tail);
 
-        this.Edges.RemoveWhere(e => pres.Contains(e.Head) && e.Tail == this.Tail);
-
-        foreach (var pre in pres)
+        foreach (var pre in this.Tail.Inputs)
         {
-            this.Edges.Add(new Edge(pre, node));
+            pre.Outputs.Remove(this.Tail);
+            this.Edges.Add(new (pre, node));
         }
-        this.Edges.Add(new Edge(node, tail));
-
+        this.Tail.Inputs.Clear();
+        this.Edges.Add(new (node, this.Tail));
         this.Nodes.Add(node);
 
         return node;
     }
-    public Graph UnlinkNode(Node node)
+
+    public Graph Reset()
     {
-        var ins = this.Edges.Where(e => e.Tail == node).ToList();
-        var ous = this.Edges.Where(e => e.Head == node).ToList();
+        this.Nodes.RemoveWhere(n => n != this.Head && n != this.Tail);
+        this.Edges.Clear();
+        this.Edges.Add(new Edge(this.Head, this.Tail));
 
-        this.Edges.ExceptWith(ins);
-        this.Edges.ExceptWith(ous);
-        
-        var nins = node.Inputs.ToList();
-        var nous = node.Outputs.ToList();
-        
-        nins.ForEach(n => n.Outputs.Remove(node));
-        nous.ForEach(n => n.Inputs.Remove(node));
-
-        node.Inputs.Clear();
-        node.Outputs.Clear();
-        this.Nodes.Remove(node);
-
-        foreach(var pins in nins)
-        {
-            foreach(var pous in nous)
-            {
-                this.Edges.Add(new Edge(pins, pous));
-            }
-        }
-
-        return this;
-    }
-
-    public Graph UnlinkNodes(IEnumerable<Node> nodes)
-    {
-        foreach (var node in nodes)
-            this.UnlinkNode(node);
         return this;
     }
 

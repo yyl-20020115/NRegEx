@@ -70,7 +70,7 @@ public class Regex
 
         Node? last = null;
         int sp = 0, ep = 0;
-        return this.IsMatchInternal(input, first, length, ref sp, ref ep, ref last, null, reversely ? -1 : 1);
+        return IsMatchInternal(this.Graph, input, first, length, ref sp, ref ep, ref last, null, reversely ? -1 : 1, this.Options, this.TryWithGroup);
     }
     public bool IsFullyMatch(string input, int start = 0, int length = -1, bool reversely = false)
     {
@@ -79,173 +79,10 @@ public class Regex
         if (length < 0) length = input.Length - start;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
         Node? last = null;
-        return IsMatchInternal(input, start, length, ref start, ref last, true, null, reversely ? -1 : 1);
+        return IsMatchCore(this.Graph, input, start, length, ref start, ref last, true, null, reversely ? -1 : 1, this.Options, this.TryWithGroup);
     }
-    protected bool IsMatchInternal(string input, int first, int length, ref int sp, ref int ep, ref Node? last, ListLookups<int, List<int>>? groups, int direction)
-    {
-        direction = RegexHelpers.FixDirection(direction);
-        var tail = first + length;
-        var start = direction >= 0 ? first : tail - 1;
-
-        int i = this.MatchFindStart(input, first, tail, direction);
-
-        int o = sp = ep = i;
-
-        while (i >= first && i < tail)
-        {
-            length -= Math.Abs(i - start);
-
-            if (this.IsMatchInternal(input, i, length, ref o, ref last, false, groups, direction))
-            {
-                ep = o;
-                return true;
-            }
-            else if (direction >= 0 && o > i)
-            {
-                //we can not use o, we can only use i+1
-                //because o can bring mistakes
-                i = this.MatchFindStart(input, i + 1, tail, direction);
-            }
-            else if (direction < 0 && o < i)
-            {
-                //we can not use o, we can only use i-1
-                //because o can bring mistakes
-                i = this.MatchFindStart(input, i - 1, tail, direction);
-            }
-            else
-                break;
-        }
-        return false;
-    }
-    protected int MatchFindStart(string input, int first, int tail, int direction)
-    {
-        var indicators = new RegExIndicators();
-
-        direction = RegexHelpers.FixDirection(direction);
-        if (first < tail)
-        {
-            var last = tail - 1;
-            direction = Math.Sign(direction);
-            var heads = this.Graph.Nodes.Where(
-                n => !(direction >= 0 ? n.HasInput : n.HasOutput)).ToArray();
-            var nodes = new HashSet<Node>();
-            foreach (var head in heads)
-            {
-                head.FetchNodes(nodes, true, direction);
-            }
-            if (direction < 0) (first, last) = (last, first);
-            for (int i = first; i != last + direction; i += direction)
-            {
-                indicators.UpdateIndicators(input, i, first, tail, direction);
-                foreach (var node in nodes)
-                {
-                    //by pass indicators if indicator matches
-                    if (node.IsIndicator)
-                    {
-                        if (TryHitHode(node,indicators))
-                        {
-                            var subs = new HashSet<Node>();
-                            node.FetchNodes(subs, true, direction);
-                            foreach (var sub in subs)
-                            {
-                                if (sub.TryHit(input[i]) == true)
-                                {
-                                    return i;
-                                }
-                            }
-                        }
-                    }
-                    else if (node.TryHit(input[i]) == true)
-                    {
-                        return i;
-                    }
-                }
-            }
-        }
-        return -1;
-    }
-    protected int END_INDICATOR =>
-                       ((this.Options & Options.ONE_LINE) == Options.ONE_LINE)
-                        ? RegExTextReader.END_LINE : RegExTextReader.END_TEXT;
-    protected bool IsMatchInternal(string input, int first, int length, ref int i, ref Node? last, bool strict, ListLookups<int, List<int>>? groups, int direction)
-    {
-        if (length == 0 && GraphUtils.HasPassThrough(this.Graph)) return true;
-        var indicators = new RegExIndicators();
-
-        direction = Math.Sign(direction);
-        var start = first;
-        var tail = first + length;
-        var end = tail - 1;
-        if (direction < 0) (start, end) = (end, start);
-
-        i = start;
-        indicators.UpdateIndicators(input, i, first, tail, direction);
-        var heads = this.Graph.Nodes.Where(n => !(direction >= 0 ? n.HasInput : n.HasOutput));
-        var nodes = heads.ToHashSet();
-        var backs = new HashSet<Node>();
-        while (nodes.Count > 0 && i >= start && i <= end)
-        {
-            var c = input[i];
-            var hit = false;
-            var copies = nodes.ToArray();
-            nodes.Clear();
-            var quit = false;
-            foreach (var node in copies)
-            {
-                //this is for BEGIN_LINE etc
-                if (node.IsIndicator && TryHitHode(node,indicators))
-                {
-                    //hit = true;
-                    //no advance
-                    quit |= (node.Indicator == END_INDICATOR);
-
-                    node.FetchNodes(nodes, true, direction);
-                    last = node;
-                }
-                else
-                {
-                    var d = node.TryHit(c);
-                    if (d is null)
-                    {
-                        node.FetchNodes(nodes, true, direction);
-                    }
-                    else if (d.Value)
-                    {
-                        if (groups != null)
-                            this.TryWithGroup(node, input, i, groups, backs);
-
-                        hit = true;
-                        node.FetchNodes(nodes, false, direction);
-                        last = node;
-                    }
-                }
-            }
-            if (hit)
-            {
-                i += direction;
-                //if (quit &&(i < start || i > end))
-                //    return true;
-                indicators.UpdateIndicators(input, i, first, tail, direction);
-            }
-        }
-        if (backs.Count > 0)
-        {
-            this.Graph.UnlinkNodes(backs);
-        }
-
-        if (strict)
-        {
-            return ((direction >= 0 ? (i == end + 1) : (i == start - 1))
-                && GraphUtils.HasPassThrough(this.Graph, nodes, direction));
-        }
-        else
-        {
-            return ((direction >= 0 ? (i <= end + 1) : (i >= start - 1))
-                && (nodes.Count == 0 || GraphUtils.HasPassThrough(this.Graph, nodes, direction)));
-        }
-    }
-
-    protected void TryWithGroup(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs)
+    public delegate bool? TryWithGroupFunction(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Graph> backs, int direction);
+    protected bool? TryWithGroup(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Graph> backs, int direction)
     {
         if (groups != null)
         {
@@ -261,33 +98,49 @@ public class Regex
                         case GroupType.NormalGroup:
                         case GroupType.AtomicGroup:
                             EmitPosition(node, i, groups[index]);
-                            if (this.BackRefPoints.TryGetValue(index, out var graph))
-                                backs.Add(graph.InsertPointBeforeTail(new(input[i])));
+                            if (this.BackRefPoints.TryGetValue(index, out var graph) && graph != null)
+                            {
+                                graph.InsertPointBeforeTail(new(input[i]) { Parent = graph });
+                                backs.Add(graph);
+                            }
                             break;
                         case GroupType.ForwardPositiveGroup:
+                            {
+                                if (this.GroupGraphs.TryGetValue(index, out var g))
+                                {
+                                    return VerifyMatchCore(g, input, 0, input.Length, i, direction, Options);
+                                }
+                            }
+                            break;
                         case GroupType.ForwardNegativeGroup:
                             {
-                                if(this.GroupGraphs.TryGetValue(index,out var g))
+                                if (this.GroupGraphs.TryGetValue(index, out var g))
                                 {
-                                    //use this graph to test 
+                                    return !VerifyMatchCore(g, input, 0, input.Length, i, direction, Options);
                                 }
-                                //now we can use this group ref
-                                throw new NotSupportedException(nameof(GroupType));
                             }
+                            break;
                         case GroupType.BackwardPositiveGroup:
+                            {
+                                if (this.GroupGraphs.TryGetValue(index, out var g))
+                                {
+                                    return VerifyMatchCore(g, input, 0, input.Length, i, -direction, Options);
+                                }
+                            }
+                            break;
                         case GroupType.BackwardNegativeGroup:
                             {
                                 if (this.GroupGraphs.TryGetValue(index, out var g))
                                 {
-
+                                    return !VerifyMatchCore(g, input, 0, input.Length, i, -direction, Options);
                                 }
-                                //now we can use this group ref
-                                throw new NotSupportedException(nameof(GroupType));
                             }
+                            break;
                     }
                 }
             }
         }
+        return null;
     }
     protected static void EmitPosition(Node node, int i, ICollection<List<int>> captures)
     {
@@ -298,7 +151,6 @@ public class Regex
         }
         captures.Last().Add(i);
     }
-
     protected static bool TryHitHode(Node node, RegExIndicators indicators)
     {
         if (!node.IsLink)
@@ -326,49 +178,15 @@ public class Regex
         Node? last = null;
         var groups = new ListLookups<int, List<int>>();
         int sp = 0, ep = 0;
-        var ret = this.IsMatchInternal(input, start, length, ref sp, ref ep, ref last, groups, direction);
+        var ret = IsMatchInternal(this.Graph, input, start, length, ref sp, ref ep, ref last, groups, direction, this.Options, this.TryWithGroup);
         if (ret)
         {
             var name = this.Name;
             if (last?.Parent?.SourceNode is RegExNode r)
                 name = r.PatternName ?? name;
-            return this.BuildMatch(input, name, sp, ep, groups, direction);
+            return BuildMatch(this, input, name, sp, ep, groups, direction,this.NamedGroups);
         }
         return new Match(this, input, false);
-    }
-    protected Match BuildMatch(string input, string name, int sp, int ep, ListLookups<int, List<int>>? groups, int direction)
-    {
-        //direction
-        (sp, ep) = (Math.Min(sp, ep), Math.Max(sp, ep));
-
-        var match = new Match(this, input, true, name, sp, ep, input[sp..ep]);
-
-        if (groups != null)
-        {
-            for (int i = 0; i < groups.Count; i++)
-            {
-                var _name = this.NamedGroups.TryGetValue(i, out var n) ? n : i.ToString();
-                var group = new Group(true,
-                    Name: _name);
-                foreach (var capture in groups[i])
-                {
-                    if (capture.Count > 0)
-                        group.Captures.Add(new Capture(
-                            $"{_name}-{group.Count}",
-                            capture.Min(),
-                            capture.Max() + 1,
-                            //NOTICE: we should use distinct 
-                            //because it's possible to get
-                            //two same index while emitting
-                            new string(capture
-                                .Where(p => p != -1).Distinct() //!!!
-                                .Select(p => input[p]).ToArray())));
-                }
-                if (group.Count > 0)
-                    match.Groups.Add(group);
-            }
-        }
-        return match;
     }
     public List<Match> Matches(string input, int first = 0, int length = -1, bool reversely = false)
     {
@@ -387,7 +205,7 @@ public class Regex
             {
                 matches.Add(match);
 
-                length -= Math.Abs((reversely? match.InclusiveStart : match.ExclusiveEnd) - first);
+                length -= Math.Abs((reversely ? match.InclusiveStart : match.ExclusiveEnd) - first);
                 first = reversely ? match.InclusiveStart : match.ExclusiveEnd;
             }
             if (!reversely && match.ExclusiveEnd >= tail) break;
@@ -452,4 +270,222 @@ public class Regex
         if (first < input.Length) result.Add(input[first..]);
         return result.ToArray();
     }
+
+    protected static bool IsMatchInternal(Graph graph, string input, int first, int length, ref int sp, ref int ep, ref Node? last, ListLookups<int, List<int>>? groups, int direction, Options options, TryWithGroupFunction function)
+    {
+        direction = RegexHelpers.FixDirection(direction);
+        var tail = first + length;
+        var start = direction >= 0 ? first : tail - 1;
+
+        int i = IsMatchFindStart(graph, input, first, tail, direction);
+
+        int o = sp = ep = i;
+
+        while (i >= first && i < tail)
+        {
+            length -= RegexHelpers.Abs(i - start);
+
+            if (IsMatchCore(graph, input, i, length, ref o, ref last, false, groups, direction, options, function))
+            {
+                ep = o;
+                return true;
+            }
+            else if (direction >= 0 && o > i)
+            {
+                //we can not use o, we can only use i+1
+                //because o can bring mistakes
+                i = IsMatchFindStart(graph, input, i + 1, tail, direction);
+            }
+            else if (direction < 0 && o < i)
+            {
+                //we can not use o, we can only use i-1
+                //because o can bring mistakes
+                i = IsMatchFindStart(graph, input, i - 1, tail, direction);
+            }
+            else
+                break;
+        }
+        return false;
+    }
+    protected static int IsMatchFindStart(Graph graph, string input, int first, int tail, int direction)
+    {
+        var indicators = new RegExIndicators();
+
+        direction = RegexHelpers.FixDirection(direction);
+        if (first < tail)
+        {
+            var last = tail - 1;
+            direction = Math.Sign(direction);
+            var heads = graph.Nodes.Where(
+                n => !(direction >= 0 ? n.HasInput : n.HasOutput)).ToArray();
+            var nodes = new HashSet<Node>();
+            foreach (var head in heads)
+            {
+                head.FetchNodes(nodes, true, direction);
+            }
+            if (direction < 0) (first, last) = (last, first);
+            for (int i = first; i != last + direction; i += direction)
+            {
+                indicators.UpdateIndicators(input, i, first, tail, direction);
+                foreach (var node in nodes)
+                {
+                    //by pass indicators if indicator matches
+                    if (node.IsIndicator)
+                    {
+                        if (TryHitHode(node, indicators))
+                        {
+                            var subs = new HashSet<Node>();
+                            node.FetchNodes(subs, true, direction);
+                            foreach (var sub in subs)
+                            {
+                                if (sub.TryHit(input[i]) == true)
+                                {
+                                    return i;
+                                }
+                            }
+                        }
+                    }
+                    else if (node.TryHit(input[i]) == true)
+                    {
+                        return i;
+                    }
+                }
+            }
+        }
+        return -1;
+    }
+    protected static bool VerifyMatchCore(
+        Graph graph, string input, int first, int length,
+        int i, int direction, Options options)
+    {
+        Node? last = null;
+        return IsMatchCore(graph, input, first, length, ref i, ref last, false, null,direction, options, null);
+    }
+
+    protected static bool IsMatchCore(Graph graph, string input, int first, int length, ref int i, ref Node? last, bool strict, ListLookups<int, List<int>>? groups, int direction, Options options, TryWithGroupFunction function)
+    {
+        if (length == 0 && GraphUtils.HasPassThrough(graph)) return true;
+        var indicators = new RegExIndicators();
+
+        direction = RegexHelpers.FixDirection(direction);
+
+        var start = first;
+        var tail = first + length;
+        var end = tail - 1;
+        if (direction < 0) (start, end) = (end, start);
+
+        i = start;
+        indicators.UpdateIndicators(input, i, first, tail, direction);
+        var heads = graph.Nodes.Where(n => !(direction >= 0 ? n.HasInput : n.HasOutput));
+        var nodes = heads.ToHashSet();
+        var backs = new HashSet<Graph>();
+        while (nodes.Count > 0 && i >= start && i <= end)
+        {
+            var c = input[i];
+            var hit = false;
+            var quit = false;
+            var copies = nodes.ToArray();
+            nodes.Clear();
+            foreach (var node in copies)
+            {
+                //this is for BEGIN_LINE etc
+                if (node.IsIndicator && TryHitHode(node, indicators))
+                {
+                    //hit = true;
+                    //no advance
+                    quit |= (node.Indicator == END_INDICATOR());
+
+                    node.FetchNodes(nodes, true, direction);
+                    last = node;
+                }
+                else
+                {
+                    var d = node.TryHit(c);
+                    if (d is null)
+                    {
+                        node.FetchNodes(nodes, true, direction);
+                    }
+                    else if (d.Value)
+                    {
+                        if (groups != null && function != null)
+                        {
+                            //if fail, quit matching 
+                            //to support look around
+                            var ret = function(node, input, i, groups, backs, direction);
+                            if (ret == false)
+                                return false;
+                        }
+
+                        hit = true;
+                        node.FetchNodes(nodes, false, direction);
+                        last = node;
+                    }
+                }
+            }
+            if (hit)
+            {
+                i += direction;
+                //if (quit &&(i < start || i > end))
+                //    return true;
+                indicators.UpdateIndicators(input, i, first, tail, direction);
+            }
+        }
+        if (backs.Count > 0)
+        {
+            foreach(var back in backs)
+            {
+                back.Reset();
+            }
+        }
+
+        if (strict)
+        {
+            return ((direction >= 0 ? (i == end + 1) : (i == start - 1))
+                && GraphUtils.HasPassThrough(graph, nodes, direction));
+        }
+        else
+        {
+            return ((direction >= 0 ? (i <= end + 1) : (i >= start - 1))
+                && (nodes.Count == 0 || GraphUtils.HasPassThrough(graph, nodes, direction)));
+        }
+
+        int END_INDICATOR() =>
+                       ((options & Options.ONE_LINE) == Options.ONE_LINE)
+                        ? RegExTextReader.END_LINE : RegExTextReader.END_TEXT;
+    }
+    protected static Match BuildMatch(Regex source, string input, string name, int sp, int ep, ListLookups<int, List<int>>? groups, int direction, DualDictionary<string, int> namedGroups)
+    {
+        //direction
+        (sp, ep) = (Math.Min(sp, ep), Math.Max(sp, ep));
+
+        var match = new Match(source, input, true, name, sp, ep, input[sp..ep]);
+
+        if (groups != null)
+        {
+            for (int i = 0; i < groups.Count; i++)
+            {
+                var _name = namedGroups.TryGetValue(i, out var n) ? n : i.ToString();
+                var group = new Group(true,
+                    Name: _name);
+                foreach (var capture in groups[i])
+                {
+                    if (capture.Count > 0)
+                        group.Captures.Add(new Capture(
+                            $"{_name}-{group.Count}",
+                            capture.Min(),
+                            capture.Max() + 1,
+                            //NOTICE: we should use distinct 
+                            //because it's possible to get
+                            //two same index while emitting
+                            new string(capture
+                                .Where(p => p != -1).Distinct() //!!!
+                                .Select(p => input[p]).ToArray())));
+                }
+                if (group.Count > 0)
+                    match.Groups.Add(group);
+            }
+        }
+        return match;
+    }
+
 }
