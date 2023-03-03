@@ -23,7 +23,7 @@ public static class RegExTools
             {
                 foreach (var repl in list)
                     builder.Append(
-                        repl.Replace(segment.input, segment.match));
+                        repl.Replace(segment.match, segment.input, segment.pre, segment.post));
             }
             else
             {
@@ -34,13 +34,13 @@ public static class RegExTools
         return builder.ToString();
     }
 
-    public static List<(Match? match,string input)> SegmentInput(string input,params Match[] matches)
+    public static List<(Match? match, string input, string pre, string post)> SegmentInput(string input,params Match[] matches)
     {
-        var segments = new List<(Match? match, string input)>();
+        var segments = new List<(Match? match, string input, string pre, string post)>();
 
         if (matches.Length == 0)
         {
-            segments.Add((null, input));
+            segments.Add((null, input,"",""));
         }
         else
         {
@@ -49,16 +49,30 @@ public static class RegExTools
             {
                 if (matches[i].InclusiveStart > last)
                 {
-                    segments.Add((null, input[last..matches[i].InclusiveStart]));
+                    segments.Add((null, input[last..matches[i].InclusiveStart],"",""));
                 }
 
-                segments.Add((matches[i], input[matches[i].InclusiveStart..(last = matches[i].ExclusiveEnd)]));
+                segments.Add((matches[i], input[matches[i].InclusiveStart..(last = matches[i].ExclusiveEnd)],"",""));
             }
             if (last < input.Length)
             {
-                segments.Add((null, input[last..]));
+                segments.Add((null, input[last..],"",""));
             }
         }
-        return segments;
+        var rebuild = new List<(Match? match, string input, string pre, string post)>();
+        for(int i= 0; i < segments.Count; i++)
+        {
+            var segment = segments[i];
+            if (i > 0)
+            {
+                segment.pre = segments[i - 1].input;
+            }
+            if (i < segments.Count - 1)
+            {
+                segment.post = segments[i + 1].input;
+            }
+            rebuild.Add(segment);
+        }
+        return rebuild;
     }
 }

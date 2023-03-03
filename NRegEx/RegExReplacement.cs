@@ -13,16 +13,15 @@ public class RegExReplacement
         this.Index = index;
         this.Name = Name;
     }
-    //TODO: check replace logic
-    public string Replace(string input, Match match) => Type switch
+    public string Replace(Match match,string input,string pre,string post) => Type switch
     {
         ReplacementType.Dollar => "$",
         ReplacementType.PlainText => this.Value??string.Empty,
         ReplacementType.GroupIndex => match[this.Index]?.Value??string.Empty,
         ReplacementType.GroupName => match[this.Name]?.Value??string.Empty,
         ReplacementType.WholeMatch => match.Value??string.Empty,
-        ReplacementType.PreMatch => input[..match.InclusiveStart],
-        ReplacementType.PostMatch => input[match.ExclusiveEnd..],
+        ReplacementType.PreMatch => pre,
+        ReplacementType.PostMatch => post,
         ReplacementType.LastGroup => match.Groups.LastOrDefault()?.Value??string.Empty,
         ReplacementType.Input => input,
         _ => "",
