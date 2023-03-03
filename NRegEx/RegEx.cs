@@ -126,11 +126,13 @@ public class Regex
             case GroupType.BackReferenceConditionGroup:
                 {
                     //TODO: how to do conditions 
+                    // we can link the conditioned graphs with edges
                 }
                 break;
             case GroupType.BackReferenceCondition:
                 {
                     //TODO: how to do conditions 
+                    // we can link the conditioned graphs with edges
                 }
                 break;
             default:
