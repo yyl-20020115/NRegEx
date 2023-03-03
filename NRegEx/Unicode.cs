@@ -135,6 +135,8 @@ public static class Unicode
         or System.Globalization.UnicodeCategory.LetterNumber
         or System.Globalization.UnicodeCategory.OtherNumber)
         ;
+    public static bool IsRuneLetterOrDigit(int i)
+        => IsRuneDigit(i) || IsRuneLetter(i);
 
     public static bool IsRuneWord(int i)
          => IsRuneLetter(i) || IsRuneDigit(i) || (i == '_');

@@ -12,8 +12,6 @@ public enum GroupType : int
     BackwardNegativeGroup = 6,
 
     BackReferenceCondition = 7,
-    
-    LookAroundConditionGroup = 9,
-    NamedBackReferenceConditionGroup = 10,
-    IndexedBackReferenceConditionGroup = 11,
+    LookAroundConditionGroup = 8,
+    BackReferenceConditionGroup = 9,
 }

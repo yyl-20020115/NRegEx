@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Xml.Linq;
 
 namespace NRegEx;
 
@@ -396,10 +397,10 @@ public class RegExDomParser
             int c = 0;
             switch (n.GroupType)
             {
-                case GroupType.IndexedBackReferenceConditionGroup:
-                    Reader.Skip(1);
-                    //this should be a number
+                case GroupType.BackReferenceConditionGroup:
                     {
+                        Reader.Skip(1);
+                        //this should be a number or a name
                         var lb = new StringBuilder(((char)c).ToString());
                         while (this.Reader.HasMore)
                         {
@@ -417,47 +418,20 @@ public class RegExDomParser
                             }
                         }
                         var text = lb.ToString();
-                        if (int.TryParse(text, out var index))
+                        if (int.TryParse(text, out int index))
                         {
                             //index
-                            this.Push(new(TokenTypes.BackReference, 
+                            this.Push(new(TokenTypes.BackReference,
                                 Position: startPos, GroupType: GroupType.BackReferenceCondition, PatternName: this.Name));
+                            return;
                         }
-                        else
+                        else if (IsValidCaptureName(text) && this.NamedGroups.TryGetValue(text, out index))
                         {
-                            throw new Exception("invalid group index");
+                            //name
+                            this.Push(new(TokenTypes.BackReference, CaptureIndex: index, Position: startPos, GroupType: GroupType.BackReferenceCondition, PatternName: this.Name));
+                            return;
                         }
-                    }
-                    break;
-                case GroupType.NamedBackReferenceConditionGroup:
-                    Reader.Skip(1);
-                    {
-                        var lb = new StringBuilder();
-                        while (this.Reader.HasMore)
-                        {
-                            c = this.Reader.Peek();
-                            if (c == ')')
-                            {
-                                this.Reader.Pop();
-                                var name = lb.ToString();
-                                
-                                if(this.NamedGroups.TryGetValue(name, out var index))
-                                {
-                                    //use Value to store name
-                                    this.Push(new(TokenTypes.BackReference, CaptureIndex:index, Position: startPos, GroupType: GroupType.BackReferenceCondition, PatternName: this.Name));
-                                    break;
-                                }
-                                if (!IsValidCaptureNameChar(c))
-                                    throw new Exception($"invalid group name:{lb}");
-                            }
-                            else
-                            {
-                                lb.Append((char)(c = this.Reader.Pop()));
-                            }
-                            if (!IsValidCaptureNameChar(c))
-                                throw new Exception($"invalid group name:{lb}");
-                        }
-                        throw new Exception($"invalid group name{lb}");
+                        throw new Exception($"invalid group name:{lb}");
                     }
                 case GroupType.LookAroundConditionGroup:
                     //fallthrough
@@ -565,20 +539,15 @@ public class RegExDomParser
                         this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, GroupType: GroupType.LookAroundConditionGroup, PatternName: this.Name));
                         //retry this condition
                         this.Reader.Skip(-1);
+                        return;
                     }
-                    else if (Unicode.IsRuneLetter(this.Reader.Peek()))
+                    else if (Unicode.IsRuneLetterOrDigit(this.Reader.Peek()))
                     {
                         //started a condition group
-                        this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, GroupType: GroupType.NamedBackReferenceConditionGroup, PatternName: this.Name));
+                        this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, GroupType: GroupType.BackReferenceConditionGroup, PatternName: this.Name));
                         //retry this condition
                         this.Reader.Skip(-1);
-                    }
-                    else if (Unicode.IsRuneDigit(this.Reader.Peek()))
-                    {
-                        //started a condition group
-                        this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, GroupType: GroupType.IndexedBackReferenceConditionGroup, PatternName: this.Name));
-                        //retry this condition
-                        this.Reader.Skip(-1);
+                        return;
                     }
                     goto throws_exception;
                 //atomic group

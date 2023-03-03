@@ -123,8 +123,7 @@ public class Regex
                 }
                 break;
             case GroupType.LookAroundConditionGroup:
-            case GroupType.NamedBackReferenceConditionGroup:
-            case GroupType.IndexedBackReferenceConditionGroup:
+            case GroupType.BackReferenceConditionGroup:
                 {
                     //TODO: how to do conditions 
                 }
