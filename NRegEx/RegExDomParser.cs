@@ -134,7 +134,8 @@ public class RegExDomParser
                 case '(':
                     {
                         if (((this.Options & Options.PERL) != Options.None) &&
-                            this.Reader.LookingAt("(?"))
+                            (this.Reader.LookingAt("(?"))
+                            ||this.NestPeek()?.GroupType == GroupType.BackReferenceConditionGroup)
                             this.ParsePerlFlags(Reader);
                         else
                         {
@@ -194,16 +195,13 @@ public class RegExDomParser
         if (open.Type != TokenTypes.OpenParenthesis)
             throw new RegExSyntaxException(
                 ERR_MISSING_PAREN, this.Pattern);
-        
-        if (this.NestCount > 0)
+
+        if ((this.Options & Options.NO_CAPTURE) == 0)
         {
-            if((this.Options & Options.NO_CAPTURE) == 0)
+            result = new RegExNode(TokenTypes.Capture, GroupType: open.GroupType, PatternName: this.Name, CaptureIndex: open.CaptureIndex)
             {
-                result = new RegExNode(TokenTypes.Capture, GroupType: open.GroupType, PatternName: this.Name, CaptureIndex: open.CaptureIndex)
-                {
-                    Children = new() { result }
-                };
-            }
+                Children = new() { result }
+            };
         }
 
         this.Push(result);
@@ -361,7 +359,7 @@ public class RegExDomParser
         // Google source tree, (?P<expr>name) is the dominant form,
         // so that's the one we implement.  One is enough.
         var s = Reader.Rest;
-        if (s.StartsWith("(?P<") || s.StartsWith("(?<") || s.StartsWith("(?'"))
+        if (s.StartsWith("(?P<") || (s.StartsWith("(?<")&&!s.StartsWith("(?<="))&&!s.StartsWith("(?<!") || s.StartsWith("(?'"))
         {
             var delta = (s.StartsWith("(?<") || s.StartsWith("(?'")) ? -1 : 0;
             // Pull out name.
@@ -401,16 +399,15 @@ public class RegExDomParser
                     {
                         Reader.Skip(1);
                         //this should be a number or a name
-                        var lb = new StringBuilder(((char)c).ToString());
+                        var lb = new StringBuilder();
                         while (this.Reader.HasMore)
                         {
-                            c = this.Reader.Peek();
+                            c = this.Reader.Pop();
                             if (c == ')')
                                 break;
-                            else if (c is >= '0' and <= '9')
+                            else if (IsValidCaptureNameChar(c))
                             {
-                                this.Reader.Pop();
-                                lb.Append(c);
+                                lb.Append((char)c);
                             }
                             else
                             {
@@ -556,7 +553,7 @@ public class RegExDomParser
                     return; 
                 //non captive
                 case ':':
-                    //capture index = -1
+                    //NOT CAPTIVE
                     this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupType.NotCaptiveGroup, PatternName: this.Name));
                     return;
                 //forward inspection

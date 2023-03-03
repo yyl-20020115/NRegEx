@@ -482,4 +482,43 @@ public class BasicUnitTests
         var ms = regex1.Matches(input);
 
     }
+    [TestMethod]
+    public void TestMethod27()
+    {
+        var pattern = @"(?:abc)";
+        var regex1 = new Regex(pattern);
+
+        pattern = @"(?=abc)";
+        regex1 = new Regex(pattern);
+
+        pattern = @"(?!abc)";
+        regex1 = new Regex(pattern);
+
+        pattern = @"(?<=abc)";
+        regex1 = new Regex(pattern);
+
+        pattern = @"(?<!abc)";
+        regex1 = new Regex(pattern);
+
+
+        pattern = @"(?(name)abc)";
+
+        regex1 = new Regex(pattern);
+
+        pattern = @"(?(321)abc)";
+        regex1 = new Regex(pattern);
+
+        pattern = @"(?(?=xyz)abc)";
+        regex1 = new Regex(pattern);
+        
+        pattern = @"(?(?!xyz)abc)";
+        regex1 = new Regex(pattern);
+        pattern = @"(?(?<=xyz)abc)";
+        regex1 = new Regex(pattern);
+        
+        pattern = @"(?(?<!xyz)abc)";
+        regex1 = new Regex(pattern);
+        
+    }
+
 }
