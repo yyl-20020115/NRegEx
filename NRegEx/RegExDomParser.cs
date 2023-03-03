@@ -421,7 +421,7 @@ public class RegExDomParser
                         {
                             //index
                             this.Push(new(TokenTypes.BackReference, 
-                                Position: startPos, GroupType: GroupType.NamedBackReferenceCondition, PatternName: this.Name));
+                                Position: startPos, GroupType: GroupType.BackReferenceCondition, PatternName: this.Name));
                         }
                         else
                         {
@@ -444,7 +444,7 @@ public class RegExDomParser
                                 if(this.NamedGroups.TryGetValue(name, out var index))
                                 {
                                     //use Value to store name
-                                    this.Push(new(TokenTypes.BackReference, CaptureIndex:index, Position: startPos, GroupType: GroupType.NamedBackReferenceCondition, PatternName: this.Name));
+                                    this.Push(new(TokenTypes.BackReference, CaptureIndex:index, Position: startPos, GroupType: GroupType.BackReferenceCondition, PatternName: this.Name));
                                     break;
                                 }
                                 if (!IsValidCaptureNameChar(c))

@@ -127,7 +127,7 @@ public class RegExGraphBuilder
 
                                         if (condition.Type == TokenTypes.BackReference)
                                         {
-                                            int index = 
+                                            
                                             //TODO:
                                         }
 

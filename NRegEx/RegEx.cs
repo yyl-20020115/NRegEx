@@ -112,19 +112,24 @@ public class Regex
                 break;
             case GroupType.NormalGroup:
             case GroupType.AtomicGroup:
-                EmitPosition(node, i, groups[index]);
-                if (this.BackRefPoints.TryGetValue(index, out var graph) && graph != null)
+                if (groups != null)
                 {
-                    graph.InsertPointBeforeTail(new(input[i]) { Parent = graph });
-                    backs.Add(graph.Nodes.Single(n => n.Groups.Contains(i)));
+                    EmitPosition(node, i, groups[index]);
+                    if (this.BackRefPoints.TryGetValue(index, out var graph) && graph != null)
+                    {
+                        graph.InsertPointBeforeTail(new(input[i]) { Parent = graph });
+                        backs.Add(graph.Nodes.Single(n => n.Groups.Contains(i)));
+                    }
                 }
                 break;
             case GroupType.LookAroundConditionGroup:
+            case GroupType.NamedBackReferenceConditionGroup:
+            case GroupType.IndexedBackReferenceConditionGroup:
                 {
                     //TODO: how to do conditions 
                 }
                 break;
-            case GroupType.NamedBackReferenceCondition:
+            case GroupType.BackReferenceCondition:
                 {
                     //TODO: how to do conditions 
                 }
