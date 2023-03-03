@@ -312,4 +312,16 @@ public class Graph
         this.Nodes.RemoveWhere(n => n.IsBroken);
         return this;
     }
+
+    public Graph RemoveEdges(IEnumerable<Edge> edges)
+    {
+        foreach(var edge in edges)
+        {
+            edge.Head.Outputs.Remove(edge.Tail);
+            edge.Tail.Inputs.Remove(edge.Head);
+            this.Edges.Remove(edge);
+        }
+        
+        return this;
+    }
 }

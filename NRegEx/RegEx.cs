@@ -87,8 +87,8 @@ public class Regex
         Node? last = null;
         return IsMatchCore(this.Graph, input, start, length, ref start, ref last, true, null, reversely ? -1 : 1, this.Options, this.TryWithGroups);
     }
-    public delegate bool? TryWithGroupsFunction(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, int direction);
-    protected bool? TryWithGroups(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, int direction)
+    public delegate bool? TryWithGroupsFunction(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, HashSet<Edge> edges, int direction);
+    protected bool? TryWithGroups(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, HashSet<Edge> edges, int direction)
     {
         if (groups != null)
         {
@@ -96,14 +96,14 @@ public class Regex
             {
                 if (this.GroupTypes.TryGetValue(index, out var type))
                 {
-                    this.TryWithGroup(node, input, i, groups, backs, direction, index, type);
+                    this.TryWithGroup(node, input, i, groups, backs,edges, direction, index, type);
                 }
             }
         }
         return null;
     }
 
-    protected bool? TryWithGroup(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, int direction,int index, GroupType type)
+    protected bool? TryWithGroup(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, HashSet<Edge> edges, int direction, int index, GroupType type)
     {
         switch (type)
         {
@@ -220,7 +220,7 @@ public class Regex
             var name = this.Name;
             if (last?.Parent?.SourceNode is RegExNode r)
                 name = r.PatternName ?? name;
-            return BuildMatch(this, input, name, sp, ep, groups, direction,this.NamedGroups);
+            return BuildMatch(this, input, name, sp, ep, groups, direction, this.NamedGroups);
         }
         return new Match(this, input, false);
     }
@@ -289,7 +289,7 @@ public class Regex
             start = match.ExclusiveEnd;
         }
         if (start < input.Length) builder.Append(input[start..]);
-        return builder.Length>0? builder.ToString() : input;
+        return builder.Length > 0 ? builder.ToString() : input;
     }
     public string[] Split(string input, int first = 0, int length = -1, bool reverselySearch = false)
         => this.Split(input, this.Matches(input, first, length, reverselySearch));
@@ -395,7 +395,7 @@ public class Regex
         int i, int direction, Options options)
     {
         Node? last = null;
-        return IsMatchCore(graph, input, first, length, ref i, ref last, false, null,direction, options, null);
+        return IsMatchCore(graph, input, first, length, ref i, ref last, false, null, direction, options, null);
     }
 
     protected static bool IsMatchCore(Graph graph, string input, int first, int length, ref int i, ref Node? last, bool strict, ListLookups<int, List<int>>? groups, int direction, Options options, TryWithGroupsFunction function)
@@ -415,6 +415,7 @@ public class Regex
         var heads = graph.Nodes.Where(n => !(direction >= 0 ? n.HasInput : n.HasOutput));
         var nodes = heads.ToHashSet();
         var backs = new HashSet<Node>();
+        var edges = new HashSet<Edge>();
         while (nodes.Count > 0 && i >= start && i <= end)
         {
             var c = input[i];
@@ -447,7 +448,7 @@ public class Regex
                         {
                             //if fail, quit matching 
                             //to support look around
-                            var ret = function(node, input, i, groups, backs, direction);
+                            var ret = function(node, input, i, groups, backs, edges, direction);
                             if (ret == false)
                                 return false;
                         }
@@ -468,10 +469,14 @@ public class Regex
         }
         if (backs.Count > 0)
         {
-            foreach(var back in backs)
+            foreach (var back in backs)
             {
                 back?.Parent?.RestoreNode(back);
             }
+        }
+        if (edges.Count > 0)
+        {
+            graph.RemoveEdges(edges);
         }
 
         if (strict)
