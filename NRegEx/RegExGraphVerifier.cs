@@ -70,7 +70,7 @@ public static class RegExGraphVerifier
                 foreach (var outEdge in graph.Edges.Where(e => e.Head == current))
                 {
                     var tail = outEdge.Tail;
-                    if (!path.HasVisited(tail))
+                    if (!path.Contains(tail))
                         paths.Add(path.Copy().AddNodes(tail));
                     else
                     {

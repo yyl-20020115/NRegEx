@@ -1,6 +1,6 @@
 ﻿namespace NRegEx;
 
-public record class Path
+public class Path
 {
     public readonly List<Node> Nodes = new();
     public readonly HashSet<Node> InternalNodeSet = new();
@@ -27,9 +27,9 @@ public record class Path
         }
         return this;
     }
-    public bool HasVisited(Node node) => InternalNodeSet.Contains(node);
+    public bool Contains(Node node) => InternalNodeSet.Contains(node);
 
-    public Path Copy() => new Path(
+    public Path Copy() => new (
             this.Nodes.ToList(),
             this.InternalNodeSet.ToHashSet());
 
