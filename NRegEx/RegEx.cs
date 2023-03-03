@@ -1,4 +1,6 @@
-﻿namespace NRegEx;
+﻿using System.Text;
+
+namespace NRegEx;
 
 public delegate string CaptureEvaluator(Capture capture);
 public class Regex
@@ -223,14 +225,14 @@ public class Regex
     {
         if (match is not null)
         {
-            var result = new List<string>();
+            var builder = new StringBuilder();
             var delta = match.InclusiveStart - start;
-            if (delta > 0) result.Add(input[start..match.InclusiveStart]);
+            if (delta > 0) builder.Append(input[start..match.InclusiveStart]);
             var replacement = evaluator(match) ?? "";
-            result.Add(replacement);
+            builder.Append(replacement);
             start = match.ExclusiveEnd;
-            if (start < input.Length) result.Add(input[start..]);
-            return result.Aggregate((a, b) => a + b);
+            if (start < input.Length) builder.Append(input[start..]);
+            return builder.Length > 0 ? builder.ToString() : input;
         }
         return input;
     }
@@ -243,17 +245,17 @@ public class Regex
         => ReplaceAll(input, evaluator, Matches(input, start), start);
     public string ReplaceAll(string input, CaptureEvaluator evaluator, List<Match> matches, int start = 0)
     {
-        var result = new List<string>();
+        var builder = new StringBuilder();
         foreach (var match in matches)
         {
             var delta = match.InclusiveStart - start;
-            if (delta > 0) result.Add(input[start..match.InclusiveStart]);
+            if (delta > 0) builder.Append(input[start..match.InclusiveStart]);
             var replacement = evaluator(match) ?? "";
-            result.Add(replacement);
+            builder.Append(replacement);
             start = match.ExclusiveEnd;
         }
-        if (start < input.Length) result.Add(input[start..]);
-        return result.Count > 0 ? result.Aggregate((a, b) => a + b) : input;
+        if (start < input.Length) builder.Append(input[start..]);
+        return builder.Length>0? builder.ToString() : input;
     }
     public string[] Split(string input, int first = 0, int length = -1, bool reverselySearch = false)
         => this.Split(input, this.Matches(input, first, length, reverselySearch));

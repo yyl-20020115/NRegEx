@@ -448,7 +448,7 @@ public class RegExDomParser
                     }
                     this.Options = flags;
                     return;
-                //NOTICE:conditions like followings are not supported
+                //NOTICE:conditions 
                 //(?(number)
                 //(?(name)
                 //(?(?=
@@ -457,38 +457,11 @@ public class RegExDomParser
                 //(?(?<!
                 //  ^
                 case '(':
-                    {
-#if false
-                        if (Reader.HasMore)
-                        {
-                            if (Reader.Rest.StartsWith("?="))
-                            {
-
-                            }
-                            else if (Reader.Rest.StartsWith("?!"))
-                            {
-
-                            }
-                            else if (Reader.Rest.StartsWith("?<="))
-                            {
-
-                            }
-                            else if (Reader.Rest.StartsWith("?<!"))
-                            {
-
-                            }else
-                            {
-                                c = this.Reader.Peek();
-                                if (c >= '1' && c <= '9')
-                                {
-
-                                }
-                            }
-                            goto throws_exception;
-                        }
-#endif
-                    }
-                    goto throws_exception;
+                    //started a condition group
+                    this.Push(new(TokenTypes.ConditionStart, Position: startPos, GroupType: GroupType.Condition, PatternName: this.Name));
+                    //retry this condition
+                    this.Reader.Skip(-1);
+                    return;
                 //atomic group
                 case '>':
                     this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupType.AtomicGroup, PatternName: this.Name));

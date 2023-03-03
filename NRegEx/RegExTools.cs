@@ -4,23 +4,57 @@ namespace NRegEx;
 
 public static class RegExTools
 {
-    public static string Result(this Match match, string replacement)
-        => DoReplace(match.Input, match, replacement);
     public static string DoReplace(string input, string pattern, string replacement)
     {
         var regex = new Regex(pattern);
-        var match = regex.Match(input);
-        return DoReplace(input, match, replacement);
-    }
-    public static string DoReplace(string input, Match match, string replacement)
-    {
+        var matches = regex.Matches(input);
         var builder = new StringBuilder();
         var parser = new RegExReplacementParser(replacement);
         var list = parser.Parse();
-        foreach (var repl in list)
+        var segments = SegmentInput(input, matches);
+
+        foreach (var segment in segments)
         {
-            builder.Append(repl.Replace(input, match));
+            if (segment.match != null)
+            {
+                foreach (var repl in list)
+                    builder.Append(
+                        repl.Replace(segment.input, segment.match));
+            }
+            else
+            {
+                builder.Append(segment.input);
+            }
         }
+
         return builder.ToString();
+    }
+
+    public static List<(Match? match,string input)> SegmentInput(string input,List<Match> matches)
+    {
+        var segments = new List<(Match? match, string input)>();
+
+        if (matches.Count == 0)
+        {
+            segments.Add((null, input));
+        }
+        else
+        {
+            var last = 0;
+            for (int i = 0; i < matches.Count; i++)
+            {
+                if (matches[i].InclusiveStart > last)
+                {
+                    segments.Add((null, input[last..matches[i].InclusiveStart]));
+                }
+
+                segments.Add((matches[i], input[matches[i].InclusiveStart..(last = matches[i].ExclusiveEnd)]));
+            }
+            if (last < input.Length)
+            {
+                segments.Add((null, input[last..]));
+            }
+        }
+        return segments;
     }
 }

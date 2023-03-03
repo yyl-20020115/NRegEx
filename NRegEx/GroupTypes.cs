@@ -10,4 +10,5 @@ public enum GroupType : int
     ForwardNegativeGroup = 4,
     BackwardPositiveGroup = 5,
     BackwardNegativeGroup = 6,
+    Condition = 7,
 }
