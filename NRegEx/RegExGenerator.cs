@@ -104,7 +104,7 @@ public class RegExGenerator
     {
         TokenTypes.Literal => this.GenerateLiteral(node,builder),
         TokenTypes.Union => this.GenerateUnion(node,builder),
-        TokenTypes.Capture=> this.GenerateCapture(node,builder),
+        TokenTypes.Group=> this.GenerateCapture(node,builder),
         TokenTypes.Sequence => this.GenerateSequence(node, builder),
         TokenTypes.AnyCharExcludingNewLine => this.GenerateAnyChar(false,builder),
         TokenTypes.AnyCharIncludingNewLine => this.GenerateAnyChar(true, builder),

@@ -198,7 +198,7 @@ public class RegExDomParser
 
         if ((this.Options & Options.NO_CAPTURE) == 0)
         {
-            result = new RegExNode(TokenTypes.Capture, GroupType: open.GroupType, PatternName: this.Name, CaptureIndex: open.CaptureIndex)
+            result = new RegExNode(TokenTypes.Group, GroupType: open.GroupType, PatternName: this.Name, CaptureIndex: open.CaptureIndex)
             {
                 Children = new() { result }
             };
@@ -229,6 +229,7 @@ public class RegExDomParser
                     continue;
             }
         }
+        nlist.Reverse();
         var alts = new RegExNode(TokenTypes.Union, PatternName: this.Name);
         foreach (var ds in nlist)
         {
@@ -418,7 +419,8 @@ public class RegExDomParser
                         if (int.TryParse(text, out int index))
                         {
                             //index
-                            this.Push(new(TokenTypes.BackReference,
+                            this.Push(new(TokenTypes.Group,
+                                CaptureIndex: index,
                                 Position: startPos, GroupType: GroupType.BackReferenceCondition, PatternName: this.Name));
                             return;
                         }
@@ -428,8 +430,8 @@ public class RegExDomParser
                             {
                                 index = -1;
                             }
-                            //name
-                            this.Push(new(TokenTypes.BackReference, CaptureIndex: index, Position: startPos, GroupType: GroupType.BackReferenceCondition, PatternName: this.Name));
+                            //name as Value and index as CaptureIndex
+                            this.Push(new(TokenTypes.Group, Value:text, CaptureIndex: index, Position: startPos, GroupType: GroupType.BackReferenceCondition, PatternName: this.Name));
                             return;
                         }
                         throw new Exception($"invalid group name:{lb}");

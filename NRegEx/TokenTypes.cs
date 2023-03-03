@@ -15,7 +15,7 @@ public enum TokenTypes : int
     EndText = 8,
     WordBoundary = 9,
     NotWordBoundary = 10,
-    Capture = 11,       //
+    Group = 11,       //
     BackReference = 12,
     ZeroPlus = 13,      //*
     OnePlus = 14,       //+

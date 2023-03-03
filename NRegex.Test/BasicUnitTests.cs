@@ -485,9 +485,11 @@ public class BasicUnitTests
     [TestMethod]
     public void TestMethod27()
     {
+        //not captives
         var pattern = @"(?:abc)";
         var regex1 = new Regex(pattern);
 
+        //lookaround
         pattern = @"(?=abc)";
         regex1 = new Regex(pattern);
 
@@ -501,13 +503,18 @@ public class BasicUnitTests
         regex1 = new Regex(pattern);
 
 
+        //conditions with back reference
         pattern = @"(?(name)abc)";
+        regex1 = new Regex(pattern);
 
+        pattern = @"(?(name)abc|def)";
         regex1 = new Regex(pattern);
 
         pattern = @"(?(321)abc)";
         regex1 = new Regex(pattern);
 
+
+        //conditions
         pattern = @"(?(?=xyz)abc)";
         regex1 = new Regex(pattern);
         

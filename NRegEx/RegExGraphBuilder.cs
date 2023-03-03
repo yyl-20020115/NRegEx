@@ -71,9 +71,70 @@ public class RegExGraphBuilder
                         graph.Concate(node.Children.Select(c => BuildInternal(c)));
                 }
                 break;
-            case TokenTypes.Capture:
+            case TokenTypes.Group:
                 {
-                    if (node.Children.Count > 0 && node.CaptureIndex is int index)
+                    //this is for condition
+                    if ((node.GroupType == GroupType.BackReferenceConditionGroup 
+                        ||node.GroupType == GroupType.LookAroundConditionGroup)
+                        && node.Children.Count > 0 && node.Children[0].Type == TokenTypes.Union)
+                    {
+                        var unode = node.Children[0];
+                        RegExNode? condition = null;
+                        List<RegExNode> actions = new();
+                        List<RegExNode> elseAction = new();
+                        if (unode.Children.Count == 1)
+                        {
+                            var snode = unode.Children[0];
+                            if (snode.Type == TokenTypes.Sequence && snode.Children.Count >= 2)
+                            {
+                                condition = snode.Children[0];
+                                actions.AddRange(snode.Children.Skip(1));
+                            }
+                        }
+                        else if (unode.Children.Count == 2)
+                        {
+                            var snode = unode.Children[0];
+                            var tnode = unode.Children[1];
+                            if (snode.Type == TokenTypes.Sequence && snode.Children.Count >= 2)
+                            {
+                                condition = snode.Children[0];
+                                actions.AddRange(snode.Children.Skip(1));
+                            }
+                            if (tnode.Type == TokenTypes.Sequence && tnode.Children.Count >0)
+                            {
+                                elseAction.AddRange(tnode.Children);
+                            }
+                        }
+                        if (condition != null)
+                        {
+                            var conditionGroupGraph = this.BuildInternal(condition, caseInsensitive);
+                            var actionGroupGraph = new Graph() { SourceNode = node };
+                            var elseActionGroupGraph = new Graph() { SourceNode = node };
+
+                            var index = condition.CaptureIndex;
+                            if (index is not null)
+                            {
+                                ConditionsGraphs[index.Value] = new List<Graph> {
+                                        actionGroupGraph, elseActionGroupGraph };
+                                //TODO:
+                                if (condition.Type == TokenTypes.BackReference)
+                                {
+                                    graph.GroupWith(new Node() { Parent = conditionGroupGraph }, index.Value);
+                                }
+                                else
+                                {
+                                    //TODO: 
+                                    graph.BackReferenceWith(conditionGroupGraph, index.Value);
+                                }
+                            }
+                            else
+                            {
+                                throw new InvalidOperationException($"index is not found conditon");
+                            }
+                        }
+                    }
+                    //this is for lookaround
+                    else if (node.Children.Count > 0 && node.CaptureIndex is int index)
                     {
                         var capture = BuildInternal(node.Children[0]);
 
@@ -95,60 +156,6 @@ public class RegExGraphBuilder
                                 this.GroupGraphs.Add(index, capture);
                                 break;
                             case GroupType.LookAroundConditionGroup:
-                                if(node.Type == TokenTypes.Union)
-                                {
-                                    RegExNode? condition = null;
-                                    RegExNode? action = null;
-                                    RegExNode? elseAction = null;
-                                    if (node.Children.Count == 1)
-                                    {
-                                        //TODO: backreference?
-                                        if (node.Children[0].Type== TokenTypes.Sequence&& node.Children[0].Children.Count==2)
-                                        {
-                                            condition = node.Children[0].Children[0];
-                                            action = node.Children[0].Children[1];
-                                        }
-
-                                    }else if (node.Children.Count == 2)
-                                    {
-                                        if (node.Children[0].Type == TokenTypes.Sequence && node.Children[0].Children.Count == 2)
-                                        {
-                                            condition = node.Children[0].Children[0];
-                                            action = node.Children[0].Children[1];
-                                        }
-                                        if (node.Children[1].Type == TokenTypes.Sequence && node.Children[0].Children.Count == 1)
-                                        {
-                                            elseAction = node.Children[0].Children[0];
-                                        }
-                                    }
-                                    if (condition != null)
-                                    {
-                                        var conditionGroup = this.BuildInternal(condition, caseInsensitive);
-
-                                        if (condition.Type == TokenTypes.BackReference)
-                                        {
-                                            
-                                            //TODO:
-                                        }
-
-                                        var actionGroup = this.BuildInternal(action, caseInsensitive);
-                                        var elseActionGroup = this.BuildInternal(elseAction, caseInsensitive);
-                                        var unionGroup = new Graph(node.Name) { SourceNode = node };
-
-                                        unionGroup.UnionWith(actionGroup, elseActionGroup);
-                                        var sequenceGroup = new Graph(node.Name) { SourceNode = node };
-                                        sequenceGroup.Concate(conditionGroup, sequenceGroup);
-
-                                        ConditionsGraphs[index].Add(actionGroup);
-                                        if (elseActionGroup != null)
-                                        {
-                                            ConditionsGraphs[index].Add(elseActionGroup);
-                                        }
-                                        graph.GroupWith(sequenceGroup, index);
-
-                                    }
-
-                                }
                                 break;
                             default:
                                 break;
