@@ -1,7 +1,4 @@
-﻿using NRegEx;
-using System.Collections;
-using System.Runtime.CompilerServices;
-using System.Text;
+﻿using System.Text;
 /*
  * Copyright (c) 2020 The Go Authors. All rights reserved.
  *
@@ -88,7 +85,8 @@ public static class Unicode
             || IsIn(UnicodeTables.M, r)
             || IsIn(UnicodeTables.N, r)
             || IsIn(UnicodeTables.P, r)
-            || IsIn(UnicodeTables.S, r);
+            || IsIn(UnicodeTables.S, r)
+        ;
 
     // simpleFold iterates over Unicode code points equivalent under
     // the Unicode-defined simple case folding.  Among the code points
@@ -124,20 +122,22 @@ public static class Unicode
         return l != r ? l : Characters.ToUpperCase(r);
     }
     public static bool IsRuneLetter(int i)
-        => Rune.GetUnicodeCategory(new Rune(i))
+        => IsValidUTF32(i) && (Rune.GetUnicodeCategory(new Rune(i))
             is System.Globalization.UnicodeCategory.LowercaseLetter
             or System.Globalization.UnicodeCategory.UppercaseLetter
             or System.Globalization.UnicodeCategory.TitlecaseLetter
             or System.Globalization.UnicodeCategory.ModifierLetter
-            or System.Globalization.UnicodeCategory.OtherLetter
+            or System.Globalization.UnicodeCategory.OtherLetter)
             ;
-    public static bool IsRuneWord(int i)
-         => IsRuneLetter(i) || 
-        (Rune.GetUnicodeCategory(new Rune(i))
+    public static bool IsRuneDigit(int i)
+        => IsValidUTF32(i) && (Rune.GetUnicodeCategory(new Rune(i))
         is System.Globalization.UnicodeCategory.DecimalDigitNumber
         or System.Globalization.UnicodeCategory.LetterNumber
-        or System.Globalization.UnicodeCategory.OtherNumber
-        )||(i=='_');
+        or System.Globalization.UnicodeCategory.OtherNumber)
+        ;
+
+    public static bool IsRuneWord(int i)
+         => IsRuneLetter(i) || IsRuneDigit(i) || (i == '_');
 }
 public static class Characters
 {
@@ -152,5 +152,4 @@ public static class Characters
         ? (char.IsSurrogate((char)codePoint)
         ? -1 : char.ToUpper((char)codePoint)) :
         char.ConvertToUtf32(char.ConvertFromUtf32(codePoint).ToUpper(), 0);
-
 }

@@ -13,7 +13,7 @@ public class BasicUnitTests
     static BasicUnitTests()
     {
         Environment.CurrentDirectory =
-            Path.Combine(Environment.CurrentDirectory, "..\\..\\..\\Graphs\\");
+            System.IO.Path.Combine(Environment.CurrentDirectory, "..\\..\\..\\Graphs\\");
     }
     public static string GetApplicationFullPath(string filePath)
     {
@@ -24,7 +24,7 @@ public class BasicUnitTests
 
             foreach (var path in paths)
             {
-                var fp = Path.Combine(path, filePath);
+                var fp = System.IO.Path.Combine(path, filePath);
                 if (File.Exists(fp))
                 {
                     filePath = fp;
@@ -66,8 +66,8 @@ public class BasicUnitTests
         fnn ??= "graph";
         png ??= fnn + ".png";
         dot ??= fnn + ".dot";
-        dot = Path.Combine(Environment.CurrentDirectory, dot);
-        png = Path.Combine(Environment.CurrentDirectory, png);
+        dot = System.IO.Path.Combine(Environment.CurrentDirectory, dot);
+        png = System.IO.Path.Combine(Environment.CurrentDirectory, png);
         File.WriteAllText(dot, content);
         return RunProcess("dot.exe", $"-Grankdir=LR -T png {dot} -o {png}");
     }

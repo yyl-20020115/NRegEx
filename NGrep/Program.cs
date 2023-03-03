@@ -234,10 +234,9 @@ public static class Program
             @"^[^$]$"
         };
 
-        var results = new List<string>();
         foreach (var reg in regs)
         {
-            string text = "";
+            var text = "";
             try
             {
                 var g = new RegExGenerator(reg);
@@ -275,9 +274,6 @@ public static class Program
         {
             Debug.WriteLine(ex);
         }
-
-
-
 
         try
         {

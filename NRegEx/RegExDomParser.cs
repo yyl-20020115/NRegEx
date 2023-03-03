@@ -27,7 +27,8 @@ public class RegExDomParser
     public readonly Dictionary<string, int> NamedGroups = new();
     public string Pattern => this.Reader.Pattern;
     protected readonly Stack<RegExNode> NodeStack = new();
-    
+    protected readonly Stack<RegExNode> NestStack = new ();
+
     protected int CaptureIndex = MatchGroupIndex;
     public RegExDomParser(string name, string pattern, Options options)
     {
@@ -49,7 +50,6 @@ public class RegExDomParser
     };
     public RegExNode Parse()
     {
-        int level = 0;
         int c;
         char d;
         while (-1 != (c = this.Reader.Peek()))
@@ -137,17 +137,14 @@ public class RegExDomParser
                             this.ParsePerlFlags(Reader);
                         else
                         {
-                            this.Push(
-                                new(TokenTypes.OpenParenthesis, Reader.Take(),
+                            this.Push(new(TokenTypes.OpenParenthesis, Reader.Take(),
                                 CaptureIndex: ++CaptureIndex, GroupType: GroupType.NormalGroup, Position: Position, PatternName: this.Name));
                         }
-                        level++;
                     }
                     continue;
                 case ')':
                     {
-                        this.ProcessCloseParenthesis(level);
-                        level--;
+                        this.ProcessCloseParenthesis();
                     }
                     continue;
                 case '{':
@@ -175,19 +172,19 @@ public class RegExDomParser
             }
         }
 
-        if (level != 0)
+        if (this.NestCount != 0)
             throw new RegExSyntaxException(
                 ERR_INTERNAL_ERROR, this.Pattern);
 
         this.ProcessStack();
 
-        if (level != 0 || this.NodeStack.Count != 1)
+        if (this.NestCount != 0 || this.NodeStack.Count != 1)
             throw new RegExSyntaxException(
                 ERR_MISSING_PAREN, this.Pattern);
 
         return this.NodeStack.Pop();
     }
-    protected void ProcessCloseParenthesis(int level)
+    protected void ProcessCloseParenthesis()
     {
         this.Reader.Skip();
         this.ProcessStack();
@@ -196,7 +193,8 @@ public class RegExDomParser
         if (open.Type != TokenTypes.OpenParenthesis)
             throw new RegExSyntaxException(
                 ERR_MISSING_PAREN, this.Pattern);
-        if (level > 0)
+        
+        if (this.NestCount > 0)
         {
             if((this.Options & Options.NO_CAPTURE) == 0)
             {
@@ -206,6 +204,7 @@ public class RegExDomParser
                 };
             }
         }
+
         this.Push(result);
     }
     protected void ProcessStack()
@@ -241,12 +240,35 @@ public class RegExDomParser
         this.Push(alts);
     }
 
-    protected void Push(RegExNode node)
-        => this.NodeStack.Push(node);
+    protected int NestCount 
+        => this.NestStack.Count;
+    protected RegExNode Push(RegExNode node)
+    {
+        var nest = node.Type == TokenTypes.OpenParenthesis;
+        if (nest)
+        {
+            NestStack.Push(node);
+        }
+        this.NodeStack.Push(node);
+        return node;
+    }
 
     protected RegExNode Pop()
-        => this.NodeStack.Pop();
-
+    { 
+        var node = this.NodeStack.Pop();
+        if (this.NestStack.Count>0 && node == this.NestStack.Peek())
+        {
+            this.NestStack.Pop();
+        }
+        return node;
+    }
+    protected RegExNode NestPop()
+    {
+        var node = this.NestStack.Pop();
+        return node;
+    }
+    protected RegExNode? NestPeek() 
+        => NestCount > 0 ? this.NestStack.Peek() : null;
     protected RegExNode Peek()
         => this.NodeStack.Peek();
 
@@ -306,7 +328,7 @@ public class RegExDomParser
     // PCRE limits names to 32 bytes.
     // Python rejects names starting with digits.
     // We don't enforce either of those.
-    public static bool IsValidCaptureNameChar(char c) => (c == '_' || Utils.Isalnum(c));
+    public static bool IsValidCaptureNameChar(int c) => (c == '_' || Utils.Isalnum(c));
     public static bool IsValidCaptureName(string name)
     {
         if (string.IsNullOrEmpty(name))
@@ -363,7 +385,86 @@ public class RegExDomParser
             NamedGroups.Add(name, this.CaptureIndex);
 
             this.Push(node);
+
             return;
+        }
+
+        //if parent is condition
+        var n = this.NestPeek();
+        if (n is not null)
+        {
+            int c = 0;
+            switch (n.GroupType)
+            {
+                case GroupType.IndexedBackReferenceConditionGroup:
+                    Reader.Skip(1);
+                    //this should be a number
+                    {
+                        var lb = new StringBuilder(((char)c).ToString());
+                        while (this.Reader.HasMore)
+                        {
+                            c = this.Reader.Peek();
+                            if (c == ')')
+                                break;
+                            else if (c is >= '0' and <= '9')
+                            {
+                                this.Reader.Pop();
+                                lb.Append(c);
+                            }
+                            else
+                            {
+                                throw new Exception("invalid group index");
+                            }
+                        }
+                        var text = lb.ToString();
+                        if (int.TryParse(text, out var index))
+                        {
+                            //index
+                            this.Push(new(TokenTypes.BackReference, 
+                                Position: startPos, GroupType: GroupType.NamedBackReferenceCondition, PatternName: this.Name));
+                        }
+                        else
+                        {
+                            throw new Exception("invalid group index");
+                        }
+                    }
+                    break;
+                case GroupType.NamedBackReferenceConditionGroup:
+                    Reader.Skip(1);
+                    {
+                        var lb = new StringBuilder();
+                        while (this.Reader.HasMore)
+                        {
+                            c = this.Reader.Peek();
+                            if (c == ')')
+                            {
+                                this.Reader.Pop();
+                                var name = lb.ToString();
+                                
+                                if(this.NamedGroups.TryGetValue(name, out var index))
+                                {
+                                    //use Value to store name
+                                    this.Push(new(TokenTypes.BackReference, CaptureIndex:index, Position: startPos, GroupType: GroupType.NamedBackReferenceCondition, PatternName: this.Name));
+                                    break;
+                                }
+                                if (!IsValidCaptureNameChar(c))
+                                    throw new Exception($"invalid group name:{lb}");
+                            }
+                            else
+                            {
+                                lb.Append((char)(c = this.Reader.Pop()));
+                            }
+                            if (!IsValidCaptureNameChar(c))
+                                throw new Exception($"invalid group name:{lb}");
+                        }
+                        throw new Exception($"invalid group name{lb}");
+                    }
+                case GroupType.LookAroundConditionGroup:
+                    //fallthrough
+                    break;
+                default:
+                    break;
+            }
         }
 
         // Non-capturing group.  Might also twiddle Perl flags.
@@ -451,17 +552,35 @@ public class RegExDomParser
                 //NOTICE:conditions 
                 //(?(number)
                 //(?(name)
+
                 //(?(?=
                 //(?(?!
                 //(?(?<=
                 //(?(?<!
                 //  ^
                 case '(':
-                    //started a condition group
-                    this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, GroupType: GroupType.Condition, PatternName: this.Name));
-                    //retry this condition
-                    this.Reader.Skip(-1);
-                    return;
+                    if (this.Reader.Peek() == '?')
+                    {
+                        //started a condition group
+                        this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, GroupType: GroupType.LookAroundConditionGroup, PatternName: this.Name));
+                        //retry this condition
+                        this.Reader.Skip(-1);
+                    }
+                    else if (Unicode.IsRuneLetter(this.Reader.Peek()))
+                    {
+                        //started a condition group
+                        this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, GroupType: GroupType.NamedBackReferenceConditionGroup, PatternName: this.Name));
+                        //retry this condition
+                        this.Reader.Skip(-1);
+                    }
+                    else if (Unicode.IsRuneDigit(this.Reader.Peek()))
+                    {
+                        //started a condition group
+                        this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, GroupType: GroupType.IndexedBackReferenceConditionGroup, PatternName: this.Name));
+                        //retry this condition
+                        this.Reader.Skip(-1);
+                    }
+                    goto throws_exception;
                 //atomic group
                 case '>':
                     this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupType.AtomicGroup, PatternName: this.Name));

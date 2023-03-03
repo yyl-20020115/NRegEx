@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
+using System.Xml.Linq;
 
 namespace NRegEx;
 
@@ -74,7 +76,7 @@ public class Regex
 
         Node? last = null;
         int sp = 0, ep = 0;
-        return IsMatchInternal(this.Graph, input, first, length, ref sp, ref ep, ref last, null, reversely ? -1 : 1, this.Options, this.TryWithGroup);
+        return IsMatchInternal(this.Graph, input, first, length, ref sp, ref ep, ref last, null, reversely ? -1 : 1, this.Options, this.TryWithGroups);
     }
     public bool IsFullyMatch(string input, int start = 0, int length = -1, bool reversely = false)
     {
@@ -83,10 +85,10 @@ public class Regex
         if (length < 0) length = input.Length - start;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
         Node? last = null;
-        return IsMatchCore(this.Graph, input, start, length, ref start, ref last, true, null, reversely ? -1 : 1, this.Options, this.TryWithGroup);
+        return IsMatchCore(this.Graph, input, start, length, ref start, ref last, true, null, reversely ? -1 : 1, this.Options, this.TryWithGroups);
     }
-    public delegate bool? TryWithGroupFunction(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, int direction);
-    protected bool? TryWithGroup(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, int direction)
+    public delegate bool? TryWithGroupsFunction(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, int direction);
+    protected bool? TryWithGroups(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, int direction)
     {
         if (groups != null)
         {
@@ -94,58 +96,84 @@ public class Regex
             {
                 if (this.GroupTypes.TryGetValue(index, out var type))
                 {
-                    switch (type)
-                    {
-                        case GroupType.NotGroup:
-                        case GroupType.NotCaptiveGroup:
-                            break;
-                        case GroupType.NormalGroup:
-                        case GroupType.AtomicGroup:
-                            EmitPosition(node, i, groups[index]);
-                            if (this.BackRefPoints.TryGetValue(index, out var graph) && graph != null)
-                            {
-                                graph.InsertPointBeforeTail(new(input[i]) { Parent = graph });
-                                backs.Add(graph.Nodes.Single(n=>n.Groups.Contains(i)));
-                            }
-                            break;
-                        case GroupType.ForwardPositiveGroup:
-                            {
-                                if (this.GroupGraphs.TryGetValue(index, out var g))
-                                {
-                                    return VerifyMatchCore(g, input, 0, input.Length, i, direction, Options);
-                                }
-                            }
-                            break;
-                        case GroupType.ForwardNegativeGroup:
-                            {
-                                if (this.GroupGraphs.TryGetValue(index, out var g))
-                                {
-                                    return !VerifyMatchCore(g, input, 0, input.Length, i, direction, Options);
-                                }
-                            }
-                            break;
-                        case GroupType.BackwardPositiveGroup:
-                            {
-                                if (this.GroupGraphs.TryGetValue(index, out var g))
-                                {
-                                    return VerifyMatchCore(g, input, 0, input.Length, i, -direction, Options);
-                                }
-                            }
-                            break;
-                        case GroupType.BackwardNegativeGroup:
-                            {
-                                if (this.GroupGraphs.TryGetValue(index, out var g))
-                                {
-                                    return !VerifyMatchCore(g, input, 0, input.Length, i, -direction, Options);
-                                }
-                            }
-                            break;
-                    }
+                    this.TryWithGroup(node, input, i, groups, backs, direction, index, type);
                 }
             }
         }
         return null;
     }
+
+    protected bool? TryWithGroup(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, int direction,int index, GroupType type)
+    {
+        switch (type)
+        {
+            case GroupType.NotGroup:
+            case GroupType.NotCaptiveGroup:
+                break;
+            case GroupType.NormalGroup:
+            case GroupType.AtomicGroup:
+                EmitPosition(node, i, groups[index]);
+                if (this.BackRefPoints.TryGetValue(index, out var graph) && graph != null)
+                {
+                    graph.InsertPointBeforeTail(new(input[i]) { Parent = graph });
+                    backs.Add(graph.Nodes.Single(n => n.Groups.Contains(i)));
+                }
+                break;
+            case GroupType.LookAroundConditionGroup:
+                {
+                    //TODO: how to do conditions 
+                }
+                break;
+            case GroupType.NamedBackReferenceCondition:
+                {
+                    //TODO: how to do conditions 
+                }
+                break;
+            default:
+                return this.TryWithConditionGroup(node, input, i, groups, backs, direction, index, type);
+        }
+        return null;
+    }
+    protected bool? TryWithConditionGroup(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, int direction, int index, GroupType type)
+    {
+        switch (type)
+        {
+            case GroupType.ForwardPositiveGroup:
+                {
+                    if (this.GroupGraphs.TryGetValue(index, out var g))
+                    {
+                        return VerifyMatchCore(g, input, 0, input.Length, i, direction, Options);
+                    }
+                }
+                break;
+            case GroupType.ForwardNegativeGroup:
+                {
+                    if (this.GroupGraphs.TryGetValue(index, out var g))
+                    {
+                        return !VerifyMatchCore(g, input, 0, input.Length, i, direction, Options);
+                    }
+                }
+                break;
+            case GroupType.BackwardPositiveGroup:
+                {
+                    if (this.GroupGraphs.TryGetValue(index, out var g))
+                    {
+                        return VerifyMatchCore(g, input, 0, input.Length, i, -direction, Options);
+                    }
+                }
+                break;
+            case GroupType.BackwardNegativeGroup:
+                {
+                    if (this.GroupGraphs.TryGetValue(index, out var g))
+                    {
+                        return !VerifyMatchCore(g, input, 0, input.Length, i, -direction, Options);
+                    }
+                }
+                break;
+        }
+        return null;
+    }
+
     protected static void EmitPosition(Node node, int i, ICollection<List<int>> captures)
     {
         if ((node.Ending & Ending.Start) == Ending.Start
@@ -182,7 +210,7 @@ public class Regex
         Node? last = null;
         var groups = new ListLookups<int, List<int>>();
         int sp = 0, ep = 0;
-        var ret = IsMatchInternal(this.Graph, input, start, length, ref sp, ref ep, ref last, groups, direction, this.Options, this.TryWithGroup);
+        var ret = IsMatchInternal(this.Graph, input, start, length, ref sp, ref ep, ref last, groups, direction, this.Options, this.TryWithGroups);
         if (ret)
         {
             var name = this.Name;
@@ -275,7 +303,7 @@ public class Regex
         return result.ToArray();
     }
 
-    protected static bool IsMatchInternal(Graph graph, string input, int first, int length, ref int sp, ref int ep, ref Node? last, ListLookups<int, List<int>>? groups, int direction, Options options, TryWithGroupFunction function)
+    protected static bool IsMatchInternal(Graph graph, string input, int first, int length, ref int sp, ref int ep, ref Node? last, ListLookups<int, List<int>>? groups, int direction, Options options, TryWithGroupsFunction function)
     {
         direction = RegexHelpers.FixDirection(direction);
         var tail = first + length;
@@ -366,7 +394,7 @@ public class Regex
         return IsMatchCore(graph, input, first, length, ref i, ref last, false, null,direction, options, null);
     }
 
-    protected static bool IsMatchCore(Graph graph, string input, int first, int length, ref int i, ref Node? last, bool strict, ListLookups<int, List<int>>? groups, int direction, Options options, TryWithGroupFunction function)
+    protected static bool IsMatchCore(Graph graph, string input, int first, int length, ref int i, ref Node? last, bool strict, ListLookups<int, List<int>>? groups, int direction, Options options, TryWithGroupsFunction function)
     {
         if (length == 0 && GraphUtils.HasPassThrough(graph)) return true;
         var indicators = new RegExIndicators();

@@ -77,7 +77,7 @@ public class RegExReplacementParser
                                     }
                                     else
                                     {
-                                        builder.Append(c = this.ReadChar());
+                                        lb.Append(c = this.ReadChar());
                                     }
                                     if (!RegExDomParser.IsValidCaptureNameChar(c))
                                         throw new Exception($"invalid group name:{lb}");
