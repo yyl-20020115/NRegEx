@@ -29,7 +29,4 @@ public enum TokenTypes : int
     CloseParenthesis = 22,     //)
     BeginWord = 23, //<
     EndWord = 24, //>
-    ConditionStart = 25,
-    BackReferenceCondition = 26,
-    LookAroundConditon = 27,
 }

@@ -83,6 +83,8 @@ public class Graph
     }
     public Graph Concate(IEnumerable<Graph> graphs, bool plus = false)
         => this.Concate(graphs.ToList(),plus);
+    public Graph Concate(params Graph[] graphs)
+        => this.Concate(graphs.ToList());
     public Graph Concate(List<Graph> graphs, bool plus = false)
     {
         if(graphs.Count == 0)
@@ -175,11 +177,14 @@ public class Graph
     }
     public Graph UnionWith(Graph g)
     {
-        this.Edges.Add(new(this.Head, g.Head));
-        this.Edges.Add(new(g.Tail, this.Tail));
-        
-        this.Edges.UnionWith(g.Edges);
-        this.Nodes.UnionWith(g.Nodes);
+        if (g != null)
+        {
+            this.Edges.Add(new(this.Head, g.Head));
+            this.Edges.Add(new(g.Tail, this.Tail));
+
+            this.Edges.UnionWith(g.Edges);
+            this.Nodes.UnionWith(g.Nodes);
+        }
         return this;
     }
     public Graph GroupWith(Graph g, int i)

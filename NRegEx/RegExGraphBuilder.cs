@@ -4,7 +4,7 @@ public class RegExGraphBuilder
     public readonly Dictionary<int, Graph> GroupGraphs = new();
     public readonly Dictionary<int, Graph> BackRefPoints = new();
     public readonly Dictionary<int, GroupType> GroupTypes = new();
-
+    public readonly ListLookups<int,Graph> ConditionsGraphs = new();
     public Graph Build(RegExNode node, int id = 0, bool caseInsensitive = false)
         => GraphUtils.Reform(
             BuildInternal(node, caseInsensitive),id);
@@ -93,6 +93,49 @@ public class RegExGraphBuilder
                                 //this null node points to the graph for group function
                                 graph.GroupWith(new Node($"GroupRef({index})") { Parent = graph }, index);
                                 this.GroupGraphs.Add(index, capture);
+                                break;
+                            case GroupType.Condition:
+                                if(node.Type == TokenTypes.Union)
+                                {
+                                    RegExNode? condition = null;
+                                    RegExNode? action = null;
+                                    RegExNode? elseAction = null;
+                                    if (node.Children.Count == 1)
+                                    {
+                                        if (node.Children[0].Type== TokenTypes.Sequence&& node.Children[0].Children.Count==2)
+                                        {
+                                            condition = node.Children[0].Children[0];
+                                            action = node.Children[0].Children[1];
+                                        }
+
+                                    }else if (node.Children.Count == 2)
+                                    {
+                                        if (node.Children[0].Type == TokenTypes.Sequence && node.Children[0].Children.Count == 2)
+                                        {
+                                            condition = node.Children[0].Children[0];
+                                            action = node.Children[0].Children[1];
+                                        }
+                                        if (node.Children[1].Type == TokenTypes.Sequence && node.Children[0].Children.Count == 1)
+                                        {
+                                            elseAction = node.Children[0].Children[0];
+                                        }
+                                    }
+                                    var conditionGroup = this.BuildInternal(condition, caseInsensitive);
+                                    var actionGroup = this.BuildInternal(action, caseInsensitive);
+                                    var elseActionGroup = this.BuildInternal(elseAction, caseInsensitive);
+                                    var unionGroup = new Graph(node.Name) { SourceNode = node };
+                                    
+                                    unionGroup.UnionWith(actionGroup, elseActionGroup);
+                                    var sequenceGroup = new Graph(node.Name) { SourceNode = node };
+                                    sequenceGroup.Concate(conditionGroup, sequenceGroup);
+
+                                    ConditionsGraphs[index].Add(actionGroup);
+                                    if(elseActionGroup != null)
+                                    {
+                                        ConditionsGraphs[index].Add(elseActionGroup);
+                                    }
+                                    graph.GroupWith(sequenceGroup,index);
+                                }
                                 break;
                             default:
                                 break;

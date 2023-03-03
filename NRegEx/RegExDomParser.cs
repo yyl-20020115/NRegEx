@@ -458,7 +458,7 @@ public class RegExDomParser
                 //  ^
                 case '(':
                     //started a condition group
-                    this.Push(new(TokenTypes.ConditionStart, Position: startPos, GroupType: GroupType.Condition, PatternName: this.Name));
+                    this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, GroupType: GroupType.Condition, PatternName: this.Name));
                     //retry this condition
                     this.Reader.Skip(-1);
                     return;

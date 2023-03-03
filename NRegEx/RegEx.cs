@@ -44,6 +44,7 @@ public class Regex
     protected readonly Dictionary<int, Graph> BackRefPoints;
     protected readonly Dictionary<int, Graph> GroupGraphs;
     protected readonly Dictionary<int, GroupType> GroupTypes;
+    protected readonly ListLookups<int, Graph> ConditionsGraphs;
 
     public RegExNode Model { get; protected set; }
     public Graph Graph { get; protected set; }
@@ -62,6 +63,7 @@ public class Regex
         this.BackRefPoints = Builder.BackRefPoints;
         this.GroupTypes = Builder.GroupTypes;
         this.GroupGraphs = Builder.GroupGraphs;
+        this.ConditionsGraphs = Builder.ConditionsGraphs;
     }
     public bool IsMatch(string input, int first = 0, int length = -1, bool reversely = false)
     {
