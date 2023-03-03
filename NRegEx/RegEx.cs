@@ -83,8 +83,8 @@ public class Regex
         Node? last = null;
         return IsMatchCore(this.Graph, input, start, length, ref start, ref last, true, null, reversely ? -1 : 1, this.Options, this.TryWithGroup);
     }
-    public delegate bool? TryWithGroupFunction(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Graph> backs, int direction);
-    protected bool? TryWithGroup(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Graph> backs, int direction)
+    public delegate bool? TryWithGroupFunction(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, int direction);
+    protected bool? TryWithGroup(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, int direction)
     {
         if (groups != null)
         {
@@ -103,7 +103,7 @@ public class Regex
                             if (this.BackRefPoints.TryGetValue(index, out var graph) && graph != null)
                             {
                                 graph.InsertPointBeforeTail(new(input[i]) { Parent = graph });
-                                backs.Add(graph);
+                                backs.Add(graph.Nodes.Single(n=>n.Groups.Contains(i)));
                             }
                             break;
                         case GroupType.ForwardPositiveGroup:
@@ -380,7 +380,7 @@ public class Regex
         indicators.UpdateIndicators(input, i, first, tail, direction);
         var heads = graph.Nodes.Where(n => !(direction >= 0 ? n.HasInput : n.HasOutput));
         var nodes = heads.ToHashSet();
-        var backs = new HashSet<Graph>();
+        var backs = new HashSet<Node>();
         while (nodes.Count > 0 && i >= start && i <= end)
         {
             var c = input[i];
@@ -436,7 +436,7 @@ public class Regex
         {
             foreach(var back in backs)
             {
-                back.Reset();
+                back?.Parent?.RestoreNode(back);
             }
         }
 

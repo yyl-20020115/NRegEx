@@ -32,4 +32,20 @@ public record class Path
     public Path Copy() => new Path(
             this.Nodes.ToList(),
             this.InternalNodeSet.ToHashSet());
+
+    public bool HasPathTo(Path path, bool original = true)
+    {
+        foreach(var node in this.Nodes)
+        {
+            var targets = new HashSet<Node>();
+            node.FetchNodes(targets, true);
+            if(original)
+                targets.Add(node); //count self
+    
+            if (targets.Overlaps(path.InternalNodeSet))
+                return true;
+            
+        }
+        return false;
+    }
 }

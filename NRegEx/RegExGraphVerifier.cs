@@ -1,14 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics.SymbolStore;
-using System.IO;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace NRegEx;
+﻿namespace NRegEx;
 public static class RegExGraphVerifier
 {
     /// <summary>
@@ -19,15 +9,49 @@ public static class RegExGraphVerifier
     /// </summary>
     /// <param name="graph"></param>
     /// <returns></returns>
-    public static bool IsPossiblyCatastrophicBacktracking(Regex regex)
-        => IsPossiblyCatastrophicBacktracking(regex.Graph,(regex.Options& Options.DOT_NL)== Options.DOT_NL);
-    public static bool IsPossiblyCatastrophicBacktracking(Graph graph, bool withNewLine)
+    public static bool IsCatastrophicBacktrackingPossibe(Regex regex)
+        => IsCatastrophicBacktrackingPossible(regex.Graph,(regex.Options& Options.DOT_NL)== Options.DOT_NL);
+    public static bool IsCatastrophicBacktrackingPossible(Graph graph, bool withNewLine = true)
     {
-        var nodeChars = CollectNodeChars(graph, withNewLine); 
+        var nodeChars = new Dictionary<Node, HashSet<int>>();
         var circles = GetCircles(graph);
 
+        var affects = new HashSet<Node>();
+        foreach(var path in circles)
+        {
+            affects.UnionWith(path.InternalNodeSet.Where(n => !n.IsLink));
+        }
+        
+        CollectNodeChars(affects, nodeChars, withNewLine);
 
-        //TODO:
+        var pairs = new List<(Path pi, Path pj)>();
+
+        var paths = circles.ToArray();
+        for(int i = 0;i< paths.Length; i++)
+        {
+            for(int j = i+1;j< paths[i].Length; j++)
+            {
+                var cli = paths[i];
+                var clj = paths[j];
+                if (cli.HasPathTo(clj) || clj.HasPathTo(cli)){
+                    pairs.Add((cli, clj));
+                }
+            }
+        }
+        foreach(var (pi, pj) in pairs)
+        {
+            var ri = pi.InternalNodeSet.Where(i => !i.IsLink).ToArray();
+            var rj = pj.InternalNodeSet.Where(j => !j.IsLink).ToList();
+            foreach (var inode in ri)
+            {
+                foreach(var jnode in rj)
+                {
+                    if (nodeChars[inode].Overlaps(nodeChars[jnode]))
+                        return true;
+                }
+            }
+        }
+
         return false;
     }
     
@@ -58,10 +82,9 @@ public static class RegExGraphVerifier
         }
         return circles;
     }
-    public static Dictionary<Node,HashSet<int>> CollectNodeChars(Graph graph, bool withNewLine)
+    public static Dictionary<Node,HashSet<int>> CollectNodeChars(HashSet<Node> nodes, Dictionary<Node, HashSet<int>> nodeChars, bool withNewLine)
     {
-        var nodeChars = new Dictionary<Node, HashSet<int>>();
-        foreach (var node in graph.Nodes)
+        foreach (var node in nodes)
         {
             if (!node.IsLink && node.CharsArray != null)
             {

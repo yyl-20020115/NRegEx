@@ -276,11 +276,13 @@ public class Graph
         return node;
     }
 
-    public Graph Reset()
+    public Graph RestoreNode(Node node)
     {
         this.Nodes.RemoveWhere(n => n != this.Head && n != this.Tail);
         this.Edges.Clear();
-        this.Edges.Add(new Edge(this.Head, this.Tail));
+        this.Edges.Add(new (this.Head, node));
+        this.Edges.Add(new (node, this.Tail));
+        this.Nodes.Add(node);
 
         return this;
     }
