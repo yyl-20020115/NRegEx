@@ -1,64 +1,87 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.SymbolStore;
+using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace NRegEx;
-
 public static class RegExGraphVerifier
 {
     /// <summary>
-    /// 判断是否可能出现灾难性回溯
-    /// 
+    /// 判断对于NFA（非PNFA）引擎是否可能出现灾难性回溯
+    /// 判别标准：
+    ///     1. 一个非链接有效输入同时属于两个或者两个以上的环
+    ///     2. 一个非链接有效输入和另一个非链接有效输入各自在不同的环中，两者具有通路，且输入具有非空交集。
     /// </summary>
     /// <param name="graph"></param>
     /// <returns></returns>
     public static bool IsPossiblyCatastrophicBacktracking(Regex regex)
-        => IsPossiblyCatastrophicBacktracking(regex.Graph);
-    public static bool IsPossiblyCatastrophicBacktracking(Graph graph)
+        => IsPossiblyCatastrophicBacktracking(regex.Graph,(regex.Options& Options.DOT_NL)== Options.DOT_NL);
+    public static bool IsPossiblyCatastrophicBacktracking(Graph graph, bool withNewLine)
     {
+        var nodeChars = CollectNodeChars(graph, withNewLine); 
+        var circles = GetCircles(graph);
+
+
         //TODO:
         return false;
     }
-
-
-    /*
-public static bool IsBacktracingFriendly(Graph graph)
-{
-    //对于支持回溯的RegEx引擎，
-    //  1.如果相继&的两个node之间具有交集，则有可能出现回溯灾难。
-    //  2.如果前一个是{0,n}后一个和前一个无交集，则有可能出现回溯灾难。
-    //本引擎不处理回溯灾难
-    var nodeSets = new Dictionary<Node, HashSet<int>>();
-    var nodes = graph.Nodes.Where(n => n.Inputs.Count == 0).ToHashSet();
-    nodes = nodes.SelectMany(n => n.Outputs).ToHashSet();
-
-    //TODO:
-    var copies = nodes.ToHashSet();
-    do
+    
+    public static List<Path> GetCircles(Graph graph)
     {
-        foreach (var node in nodes)
+        var paths = new List<Path>(graph.Head.Outputs.Select(o => new Path(graph.Head, o)));
+        var circles = new List<Path>();
+        var count = graph.Nodes.Count;
+        var step = 0;
+        while (step++ < count)
         {
-            nodeSets[node] 
-                = new (node.Inputs.SelectMany(i => i.CharSet ?? new()));
+            paths.RemoveAll(path => path.Length < step);
+            foreach (var path in paths.ToArray())
+            {
+                var current = path.End;
+                foreach (var outEdge in graph.Edges.Where(e => e.Head == current))
+                {
+                    var tail = outEdge.Tail;
+                    if (!path.HasVisited(tail))
+                        paths.Add(path.Copy().AddNodes(tail));
+                    else
+                    {
+                        circles.Add(path);
+                        paths.Remove(path);
+                    }
+                }
+            }
         }
-        nodes = nodes.SelectMany(h => h.Outputs).ToHashSet();
-    } while (nodes.Count > 0);
-
-    nodes = copies;
-    do
+        return circles;
+    }
+    public static Dictionary<Node,HashSet<int>> CollectNodeChars(Graph graph, bool withNewLine)
     {
-        foreach (var node in nodes)
-            //a&b: a and b's charset shares elements
-            if (node.Inputs.Count == 1
-                && node.CharSet.Overlaps(node.Inputs.Single().CharSet))
-                return false;
+        var nodeChars = new Dictionary<Node, HashSet<int>>();
+        foreach (var node in graph.Nodes)
+        {
+            if (!node.IsLink && node.CharsArray != null)
+            {
+                var chars = new HashSet<int>(node.CharsArray.Where(c => Unicode.IsValidUTF32(c)));
+                if (!node.Inverted)
+                {
+                    nodeChars[node] = chars;
+                }
+                else
+                {
+                    var set = new HashSet<int>(withNewLine ? Node.AllChars : Node.AllCharsWithoutNewLine);
+                    set.ExceptWith(chars);
+                    nodeChars[node] = set;
 
-        nodes = nodes.SelectMany(h => h.Outputs).ToHashSet();
-    } while (nodes.Count > 0);
-    return true;
-}
-*/
+                }
+
+            }
+        }
+
+        return nodeChars;
+    }
 
 }
