@@ -1,5 +1,4 @@
 ﻿using System.Text;
-using System.Xml.Linq;
 
 namespace NRegEx;
 
@@ -350,7 +349,10 @@ public class RegExDomParser
         //   (?P<name>expr)   the original, introduced by Python
         //   (?<name>expr)    the .NET alteration, adopted by Perl 5.10
         //   (?'name'expr)    another .NET alteration, adopted by Perl 5.10
-        //
+        //   
+        //   (?#'name' expr )  zero width non captive declaration.
+        //   (?_'name')       zero width captive reference/implementation
+        //   
         // Perl 5.10 gave in and implemented the Python version too,
         // but they claim that the last two are the preferred forms.
         // PCRE and languages based on it (specifically, PHP and Ruby)
@@ -360,7 +362,13 @@ public class RegExDomParser
         // Google source tree, (?P<expr>name) is the dominant form,
         // so that's the one we implement.  One is enough.
         var s = Reader.Rest;
-        if (s.StartsWith("(?P<") || (s.StartsWith("(?<")&&!s.StartsWith("(?<="))&&!s.StartsWith("(?<!") || s.StartsWith("(?'"))
+        if (s.StartsWith("(?#'")
+            ||s.StartsWith("(?_'")
+            ||s.StartsWith("(?P<") 
+            || (s.StartsWith("(?<")
+            &&!s.StartsWith("(?<="))
+            &&!s.StartsWith("(?<!") 
+            || s.StartsWith("(?'"))
         {
             var delta = (s.StartsWith("(?<") || s.StartsWith("(?'")) ? -1 : 0;
             // Pull out name.
@@ -368,15 +376,37 @@ public class RegExDomParser
             if (end < 0)
                 throw new PatternSyntaxException(ERR_INVALID_NAMED_CAPTURE, s);
             var name = s[(4 + delta)..end]; // "name"
+
             Reader.SkipString(name);
             Reader.Skip(5+delta); // "(?P<>"
-            if (!IsValidCaptureName(name))
+            RegExNode node = null;
+
+            if (s.StartsWith("(?#'"))
+            {
+                //(?#'name' expr expr )  zero width non captive declaration.
+                node = new (TokenTypes.OpenParenthesis,
+                Value: name, CaptureIndex: ++this.CaptureIndex,
+                GroupType: GroupType.NotCaptiveDefinitionGroup,
+                Position: startPos, PatternName: this.Name);
+            }
+            else if (s.StartsWith("(?_'"))
+            {
+                //(?_'name') zero width captive reference/implementation
+                node = new (TokenTypes.OpenParenthesis,
+                Value: name, CaptureIndex: ++this.CaptureIndex,
+                GroupType: GroupType.DefinitionReferenceGroup,
+                Position: startPos, PatternName: this.Name);
+            }
+            else if (!IsValidCaptureName(name))
             {
                 throw new PatternSyntaxException(
                     ERR_INVALID_NAMED_CAPTURE, s[..end]); // "(?P<name>"
             }
-            var node = new RegExNode(TokenTypes.OpenParenthesis,
-                Value: name, CaptureIndex: ++this.CaptureIndex, GroupType: GroupType.NormalGroup, Position: startPos, PatternName: this.Name);
+            else
+            {
+                node = new (TokenTypes.OpenParenthesis,
+                    Value: name, CaptureIndex: ++this.CaptureIndex, GroupType: GroupType.NormalGroup, Position: startPos, PatternName: this.Name);
+            }
             // Like ordinary capture, but named.
             if (NamedGroups.ContainsKey(name))
             {
@@ -558,7 +588,7 @@ public class RegExDomParser
                     this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupType.AtomicGroup, PatternName: this.Name));
                     return; 
                 //non captive
-                case ':':
+                case ':': //(?:)
                     //NOT CAPTIVE
                     this.Push(new(TokenTypes.OpenParenthesis, Position: startPos, CaptureIndex: ++this.CaptureIndex, GroupType: GroupType.NotCaptiveGroup, PatternName: this.Name));
                     return;
