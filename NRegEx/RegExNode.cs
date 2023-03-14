@@ -14,7 +14,8 @@ public record class RegExNode(
     bool Inverted = false,
     int Position = -1,
     int Length = -1,
-    string? PatternName=null)
+    string? PatternName=null,
+    bool IsRemoved = false)
 {
     public List<RegExNode> Children = new();
 }

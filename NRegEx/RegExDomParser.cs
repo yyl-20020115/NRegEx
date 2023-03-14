@@ -397,23 +397,20 @@ public class RegExDomParser
                 GroupType: GroupType.DefinitionReferenceGroup,
                 Position: startPos, PatternName: this.Name);
             }
-            else if (!IsValidCaptureName(name))
+            else if (IsValidCaptureName(name))
             {
-                throw new PatternSyntaxException(
-                    ERR_INVALID_NAMED_CAPTURE, s[..end]); // "(?P<name>"
+                node = new(TokenTypes.OpenParenthesis,
+                    Value: name, CaptureIndex: ++this.CaptureIndex, GroupType: GroupType.NormalGroup, Position: startPos, PatternName: this.Name);
+                // Like ordinary capture, but named.
             }
             else
             {
-                node = new (TokenTypes.OpenParenthesis,
-                    Value: name, CaptureIndex: ++this.CaptureIndex, GroupType: GroupType.NormalGroup, Position: startPos, PatternName: this.Name);
+                throw new PatternSyntaxException(ERR_INVALID_NAMED_CAPTURE, s[..end]); // "(?P<name>"
             }
-            // Like ordinary capture, but named.
             if (NamedGroups.ContainsKey(name))
-            {
                 throw new PatternSyntaxException(ERR_DUPLICATE_NAMED_CAPTURE, name);
-            }
-            NamedGroups.Add(name, this.CaptureIndex);
 
+            NamedGroups.Add(name, this.CaptureIndex);
             this.Push(node);
 
             return;
