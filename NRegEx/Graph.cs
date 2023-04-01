@@ -1,6 +1,4 @@
-﻿using System.Xml.Linq;
-
-namespace NRegEx;
+﻿namespace NRegEx;
 public class Graph
 {
     protected static int Gid = 0;
@@ -55,9 +53,7 @@ public class Graph
     public Graph TryComplete()
     {
         if (this.Edges.Count == 0)
-        {
             this.Edges.Add(new(this.Head, this.Tail));
-        }
         return this;
     }
     public Graph ComposeLiteral(params Node[] sequence)
@@ -145,10 +141,7 @@ public class Graph
         foreach (var e in ends) e.Ending |= Ending.End;
 
         if (plus)
-        {
-            //back to self
             this.Edges.Add(new(graphs[^1].Tail, graphs[^1].Head));
-        }
 
         return this;
     }

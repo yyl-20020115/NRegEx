@@ -108,10 +108,10 @@ public static class GraphUtils
         var visited = new HashSet<Node>();
         var followings = GetFollowings(graph, graph.Head, visited);
         var list = new List<HashSet<Node>>
-    {
-        new() { graph.Head },
-        followings
-    };
+        {
+            new() { graph.Head },
+            followings
+        };
 
         var collectings = new HashSet<Node>();
         do

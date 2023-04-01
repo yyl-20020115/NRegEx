@@ -79,7 +79,7 @@ public static class RegExGraphVerifier
     {
         //a. 嵌套量词（NQ）模式：具有嵌套量词的正则表达式。例如(\d+)+。
         //b.指数重叠析取（EOD）模式：β = (…(β1 | β2 |…| βk)…){ mβ,nβ} 其中nβ > 1，且满足以下两个条件之一。
-        // 1. Bp.first and Bq.first != EMPTY where 1<=p, q>=k, p!=q
+        // 1. Bp.first and Bq.first != EMPTY  c                                                       ere 1<=p, q>=k, p!=q
         // 2. Bp.first and Bq.followinglast != EMPTY where 1<=p, q>=k, p!=q
         //c. 指数重叠相邻（EOA）模式：β=(…(β1β2)…){mβ,nβ}，其中nβ> 1,满足以下两个条件之一
         // 1

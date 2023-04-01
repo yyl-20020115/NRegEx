@@ -2,12 +2,13 @@
 
 public class Group : Capture
 {
+    public readonly static Capture EmptyCapture = new ();
     public readonly bool Success;
     public readonly List<Capture> Captures = new();
-    public Capture? this[string name] => this.Captures.FirstOrDefault(c => c.Name == name);
-    public Capture this[int index] => this.Captures[index];
+    public virtual Capture this[string name] => this.Captures.FirstOrDefault(c => c.Name == name) ?? EmptyCapture;
+    public virtual Capture this[int index] => this.Captures[index];
 
-    public int Count => this.Captures.Count;
+    public virtual int Count => this.Captures.Count;
     public Group(bool Success, string Name = "", int InclusiveStart = 0, int ExclusiveEnd = int.MaxValue, string? Value = null)
         : base(Name, InclusiveStart, ExclusiveEnd, Value)
     {

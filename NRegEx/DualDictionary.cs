@@ -15,10 +15,7 @@ public class DualDictionary<TKey, TValue> :
     IDictionary
     where TKey : notnull where TValue : notnull
 {
-    public DualDictionary()
-    {
-        
-    }
+    public DualDictionary() { }
     public DualDictionary(IDictionary<TKey,TValue> dictionary)
     {
         foreach(var kvp in dictionary) this.Add(kvp);
@@ -30,7 +27,7 @@ public class DualDictionary<TKey, TValue> :
         get => this.MainData[key];
         set
         {
-            if (!this.MainData.TryGetValue(key, out var value1))
+            if (!this.MainData.TryGetValue(key, out _))
             {
                 this.MainData.Add(key, value);
                 this.AuxData.Add(value, key);
@@ -47,7 +44,7 @@ public class DualDictionary<TKey, TValue> :
         get => this.AuxData[key];
         set
         {
-            if (!this.AuxData.TryGetValue(key, out var value1))
+            if (!this.AuxData.TryGetValue(key, out _))
             {
                 this.AuxData.Add(key, value);
                 this.MainData.Add(value, key);
@@ -68,17 +65,13 @@ public class DualDictionary<TKey, TValue> :
             {
                 ((IDictionary)MainData)[key] = value;
                 if (value != null)
-                {
                     ((IDictionary)AuxData)[value] = key;
-                }
             }
             else if (key is TValue)
             {
                 ((IDictionary)AuxData)[key] = value;
                 if (value != null)
-                {
                     ((IDictionary)MainData)[value] = key;
-                }
             }
 
         }
@@ -136,7 +129,7 @@ public class DualDictionary<TKey, TValue> :
     public void Add(KeyValuePair<TKey, TValue> item)
     {
         this.MainData.Add(item);
-        this.AuxData.Add(new KeyValuePair<TValue, TKey>(item.Value, item.Key));
+        this.AuxData.Add(new (item.Value, item.Key));
     }
     public void Add(object key, object? value)
     {
@@ -156,15 +149,24 @@ public class DualDictionary<TKey, TValue> :
         this.MainData.Clear();
         this.AuxData.Clear();
     }
-    public bool Contains(KeyValuePair<TKey, TValue> item) => MainData.Contains(item);
-    public bool Contains(KeyValuePair<TValue, TKey> item) => AuxData.Contains(item);
-    public bool Contains(object key) => ((IDictionary)MainData).Contains(key) || ((IDictionary)AuxData).Contains(key);
-    public bool ContainsKey(TKey key) => MainData.ContainsKey(key);
-    public bool ContainsKey(TValue key) => AuxData.ContainsKey(key);
-    public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) => MainData.CopyTo(array, arrayIndex);
-    public void CopyTo(KeyValuePair<TValue, TKey>[] array, int arrayIndex) => AuxData.CopyTo(array, arrayIndex);
-    public void CopyTo(Array array, int index) => ((ICollection)MainData).CopyTo(array, index);
-    public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => MainData.GetEnumerator();
+    public bool Contains(KeyValuePair<TKey, TValue> item)
+        => MainData.Contains(item);
+    public bool Contains(KeyValuePair<TValue, TKey> item) 
+        => AuxData.Contains(item);
+    public bool Contains(object key) 
+        => ((IDictionary)MainData).Contains(key) || ((IDictionary)AuxData).Contains(key);
+    public bool ContainsKey(TKey key)
+        => MainData.ContainsKey(key);
+    public bool ContainsKey(TValue key) 
+        => AuxData.ContainsKey(key);
+    public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) 
+        => MainData.CopyTo(array, arrayIndex);
+    public void CopyTo(KeyValuePair<TValue, TKey>[] array, int arrayIndex) 
+        => AuxData.CopyTo(array, arrayIndex);
+    public void CopyTo(Array array, int index)
+        => ((ICollection)MainData).CopyTo(array, index);
+    public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() 
+        => MainData.GetEnumerator();
     public bool Remove(TKey key)
     {
         if (this.MainData.TryGetValue(key, out var value1))
@@ -183,23 +185,28 @@ public class DualDictionary<TKey, TValue> :
         }
         return false;
     }
-    public bool Remove(KeyValuePair<TKey, TValue> item) => MainData.Remove(item)
+    public bool Remove(KeyValuePair<TKey, TValue> item)
+        => MainData.Remove(item)
             && AuxData.Remove(new KeyValuePair<TValue, TKey>(item.Value, item.Key));
     public void Remove(object key)
     {
-        if (key is TKey && MainData.TryGetValue((TKey)key, out var value1))
+        if (key is TKey key1 && MainData.TryGetValue(key1, out var value1))
         {
             ((IDictionary)MainData).Remove(key);
             ((IDictionary)AuxData).Remove(value1);
         }
-        if (key is TValue && AuxData.TryGetValue((TValue)key, out var value2))
+        if (key is TValue value && AuxData.TryGetValue(value, out var value2))
         {
             ((IDictionary)AuxData).Remove(key);
             ((IDictionary)MainData).Remove(value2);
         }
     }
-    public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => MainData.TryGetValue(key, out value);
-    public bool TryGetValue(TValue key, [MaybeNullWhen(false)] out TKey value) => AuxData.TryGetValue(key, out value);
-    IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)MainData).GetEnumerator();
-    IDictionaryEnumerator IDictionary.GetEnumerator() => ((IDictionary)MainData).GetEnumerator();
+    public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
+        => MainData.TryGetValue(key, out value);
+    public bool TryGetValue(TValue key, [MaybeNullWhen(false)] out TKey value)
+        => AuxData.TryGetValue(key, out value);
+    IEnumerator IEnumerable.GetEnumerator() 
+        => ((IEnumerable)MainData).GetEnumerator();
+    IDictionaryEnumerator IDictionary.GetEnumerator() 
+        => ((IDictionary)MainData).GetEnumerator();
 }
