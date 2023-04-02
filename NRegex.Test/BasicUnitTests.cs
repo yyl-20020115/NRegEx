@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2023 Yilin from NOC. All rights reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
+
 using NRegEx;
 using System;
 using System.IO;
@@ -51,7 +58,7 @@ public class BasicUnitTests
     public static int ExportAsDot(Regex regex, string? png = null, string? dot = null)
         => ExportAsDot(regex.Graph, png, dot);
 
-    public static int ExportAsDot(Graph graph, string? png = null, string? dot = null) 
+    public static int ExportAsDot(Graph graph, string? png = null, string? dot = null)
         => ExportAsDot(NRegEx.GraphUtils.ExportAsDot(graph).ToString(), png, dot);
     public static int ExportAsDot(string content, string? png = null, string? dot = null)
     {
@@ -368,7 +375,7 @@ public class BasicUnitTests
         };
 
         var results = new List<string>();
-        foreach(var reg in regs)
+        foreach (var reg in regs)
         {
             string text = "";
             try
@@ -377,7 +384,8 @@ public class BasicUnitTests
                 text = g.Generate();
                 Assert.IsTrue(g.Regex.IsMatch(text));
 
-            }catch(Exception) 
+            }
+            catch (Exception)
             {
                 Debug.WriteLine($"BADBADBAD:REG:{reg}:TEXT:{text}");
             }
@@ -444,7 +452,8 @@ public class BasicUnitTests
         {
             var r1 = regex1.Match(input);
             var r2 = regex2.Match(input);
-        }catch(Exception ex)
+        }
+        catch (Exception ex)
         {
             Debug.WriteLine(ex);
         }
@@ -517,15 +526,15 @@ public class BasicUnitTests
         //conditions
         pattern = @"(?(?=xyz)abc)";
         regex1 = new Regex(pattern);
-        
+
         pattern = @"(?(?!xyz)abc)";
         regex1 = new Regex(pattern);
         pattern = @"(?(?<=xyz)abc)";
         regex1 = new Regex(pattern);
-        
+
         pattern = @"(?(?<!xyz)abc)";
         regex1 = new Regex(pattern);
-        
+
     }
 
 }

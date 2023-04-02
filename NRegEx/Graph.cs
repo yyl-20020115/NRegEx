@@ -1,4 +1,10 @@
-﻿namespace NRegEx;
+﻿/*
+ * Copyright (c) 2023 Yilin from NOC. All rights reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
+namespace NRegEx;
 public class Graph
 {
     protected static int Gid = 0;
@@ -15,34 +21,34 @@ public class Graph
     public RegExNode? SourceNode = null;
     public readonly List<int> BackReferences = new();
     public readonly List<Graph> ReferenceGraphs = new();
-    public Graph(string name = "",params int[] cs )
+    public Graph(string name = "", params int[] cs)
     {
         this.Name = name;
-        if (cs.Length>0)
+        if (cs.Length > 0)
         {
-            this.Nodes.Add(this.Head 
-                = this.Tail 
-                = new (cs) { Parent = this });
+            this.Nodes.Add(this.Head
+                = this.Tail
+                = new(cs) { Parent = this });
         }
         else
         {
-            this.Nodes.Add(this.Head = new(name) { Parent = this});
+            this.Nodes.Add(this.Head = new(name) { Parent = this });
             this.Nodes.Add(this.Tail = new(name) { Parent = this });
         }
     }
     public Graph Copy()
     {
-        var graph = new Graph(this.Name) 
-            { SourceNode = SourceNode };
+        var graph = new Graph(this.Name)
+        { SourceNode = SourceNode };
         foreach (var node in this.Nodes)
         {
             graph.Nodes.Add(node.Copy(graph));
         }
         graph.Head = graph.Nodes.First(n => n.Id == this.Head.Id);
         graph.Tail = graph.Nodes.First(n => n.Id == this.Tail.Id);
-        foreach(var edge in this.Edges)
+        foreach (var edge in this.Edges)
         {
-            graph.Edges.Add(new (
+            graph.Edges.Add(new(
                 graph.Nodes.First(n => n.Id == edge.Head.Id),
                 graph.Nodes.First(n => n.Id == edge.Tail.Id)
                 ));
@@ -73,21 +79,21 @@ public class Graph
             this.Edges.Add(new(current, after));
             this.Nodes.Add(current);
         }
-        this.Head.Ending |= Ending.Start;
-        this.Tail.Ending |= Ending.End;
+        this.Head.Ending |= Endings.Start;
+        this.Tail.Ending |= Endings.End;
         return this;
     }
     public Graph Concate(IEnumerable<Graph> graphs, bool plus = false)
-        => this.Concate(graphs.ToList(),plus);
+        => this.Concate(graphs.ToList(), plus);
     public Graph Concate(params Graph[] graphs)
         => this.Concate(graphs.ToList());
     public Graph Concate(List<Graph> graphs, bool plus = false)
     {
-        if(graphs.Count == 0)
+        if (graphs.Count == 0)
         {
             return this;
         }
-        else if(graphs.Count == 1)
+        else if (graphs.Count == 1)
         {
             this.Edges.Clear();
             this.Nodes.Clear();
@@ -107,7 +113,7 @@ public class Graph
             this.Nodes.UnionWith(graphs[^1].Nodes);
             this.Edges.UnionWith(graphs[0].Edges);
             this.Edges.UnionWith(graphs[^1].Edges);
-            this.Edges.Add(new (graphs[0].Tail, graphs[^1].Head));
+            this.Edges.Add(new(graphs[0].Tail, graphs[^1].Head));
         }
         else
         {
@@ -128,8 +134,8 @@ public class Graph
                 var after = graphs[i + 1];
                 this.Nodes.UnionWith(current.Nodes);
                 this.Edges.UnionWith(current.Edges);
-                this.Edges.Add(new (before.Tail, current.Head));
-                this.Edges.Add(new (current.Tail, after.Head));
+                this.Edges.Add(new(before.Tail, current.Head));
+                this.Edges.Add(new(current.Tail, after.Head));
             }
         }
         var starts = new HashSet<Node>();
@@ -137,8 +143,8 @@ public class Graph
         this.Head.FetchNodes(starts, true, 1);
         this.Tail.FetchNodes(ends, true, -1);
 
-        foreach (var s in starts) s.Ending |= Ending.Start;
-        foreach (var e in ends) e.Ending |= Ending.End;
+        foreach (var s in starts) s.Ending |= Endings.Start;
+        foreach (var e in ends) e.Ending |= Endings.End;
 
         if (plus)
             this.Edges.Add(new(graphs[^1].Tail, graphs[^1].Head));
@@ -150,7 +156,7 @@ public class Graph
         => this.UnionWith(gs as IEnumerable<Graph>);
     public Graph UnionWith(IEnumerable<Graph> gs)
     {
-        foreach(var g in gs) this.UnionWith(g);
+        foreach (var g in gs) this.UnionWith(g);
         return this;
     }
     public Graph UnionWith(params Node[] nodes)
@@ -248,9 +254,9 @@ public class Graph
 
         this.Concate(all, plus);
 
-        for(int i = 0; i < others.Count; i++)
+        for (int i = 0; i < others.Count; i++)
         {
-           this.Edges.Add(new (others[i].Head,this.Tail));
+            this.Edges.Add(new(others[i].Head, this.Tail));
         }
 
         return this;
@@ -265,10 +271,10 @@ public class Graph
         foreach (var pre in this.Tail.Inputs)
         {
             pre.Outputs.Remove(this.Tail);
-            this.Edges.Add(new (pre, node));
+            this.Edges.Add(new(pre, node));
         }
         this.Tail.Inputs.Clear();
-        this.Edges.Add(new (node, this.Tail));
+        this.Edges.Add(new(node, this.Tail));
         this.Nodes.Add(node);
 
         return node;
@@ -278,8 +284,8 @@ public class Graph
     {
         this.Nodes.RemoveWhere(n => n != this.Head && n != this.Tail);
         this.Edges.Clear();
-        this.Edges.Add(new (this.Head, node));
-        this.Edges.Add(new (node, this.Tail));
+        this.Edges.Add(new(this.Head, node));
+        this.Edges.Add(new(node, this.Tail));
         this.Nodes.Add(node);
 
         return this;
@@ -295,7 +301,7 @@ public class Graph
         }
 
         this.Edges.RemoveWhere(
-            e => nodes.Contains( e.Head ) 
+            e => nodes.Contains(e.Head)
                 || nodes.Contains(e.Tail));
         this.Nodes.ExceptWith(set);
         return this;
@@ -308,13 +314,13 @@ public class Graph
 
     public Graph RemoveEdges(IEnumerable<Edge> edges)
     {
-        foreach(var edge in edges)
+        foreach (var edge in edges)
         {
             edge.Head.Outputs.Remove(edge.Tail);
             edge.Tail.Inputs.Remove(edge.Head);
             this.Edges.Remove(edge);
         }
-        
+
         return this;
     }
 }

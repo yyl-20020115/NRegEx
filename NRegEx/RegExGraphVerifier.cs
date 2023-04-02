@@ -1,5 +1,9 @@
-﻿using System.Runtime;
-
+﻿/*
+ * Copyright (c) 2023 Yilin from NOC. All rights reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
 namespace NRegEx;
 public static class RegExGraphVerifier
 {
@@ -12,9 +16,9 @@ public static class RegExGraphVerifier
     /// <param name="graph"></param>
     /// <returns></returns>
     public static bool IsCatastrophicBacktrackingPossibe(Regex regex)
-        => IsCatastrophicBacktrackingPossible(RebuildModel(regex.Model,true), (regex.Options & Options.DOT_NL) == Options.DOT_NL);
+        => IsCatastrophicBacktrackingPossible(RebuildModel(regex.Model, true), (regex.Options & Options.DOT_NL) == Options.DOT_NL);
 
-    public static RegExNode RebuildModel(RegExNode model,bool cleaning = true, HashSet<RegExNode>? visited = null)
+    public static RegExNode RebuildModel(RegExNode model, bool cleaning = true, HashSet<RegExNode>? visited = null)
     {
         //1. clean +?
         //2. remove ^ and $
@@ -23,7 +27,7 @@ public static class RegExGraphVerifier
         //5. remove backreference
         //6. remove noncaptives
         visited ??= new();
-       
+
         if (visited.Add(model))
         {
             var isRemoved = model.IsRemoved;
@@ -73,7 +77,7 @@ public static class RegExGraphVerifier
         return model;
     }
     public static bool IsCatastrophicBacktrackingPossible(RegExNode model, bool withNewLine = true)
-        => IsCatastrophicBacktrackingPossible(new RegExGraphBuilder().Build(model,0),withNewLine);
+        => IsCatastrophicBacktrackingPossible(new RegExGraphBuilder().Build(model, 0), withNewLine);
 
     public static bool IsCatastrophicBacktrackingPossible(Graph graph, bool withNewLine = true)
     {

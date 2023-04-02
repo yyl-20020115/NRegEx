@@ -1,4 +1,10 @@
-﻿using System.Text;
+﻿/*
+ * Copyright (c) 2023 Yilin from NOC. All rights reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
+using System.Text;
 
 namespace NRegEx;
 
@@ -7,15 +13,15 @@ public class RegExPatternReader
     public readonly string Pattern;
     public readonly Stack<int> PositionStack = new();
     protected int position = 0;
-    public int Position 
+    public int Position
         => this.position;
-    public bool HasMore 
+    public bool HasMore
         => this.position < this.Pattern.Length;
-    public string Rest 
+    public string Rest
         => this.Pattern[this.position..];
     public RegExPatternReader(string pattern) =>
         this.Pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
-    public void RewindTo(int pos) 
+    public void RewindTo(int pos)
         => this.position = pos;
     public int Peek() => this.position < this.Pattern.Length
             ? char.ConvertToUtf32((this.position < this.Pattern.Length - 1
@@ -23,9 +29,9 @@ public class RegExPatternReader
                 : this.Pattern[this.position..] + ' '), 0)
             : -1;
 
-    public void Skip(int n = 1) 
+    public void Skip(int n = 1)
         => this.position += n;
-    public void SkipString(string s) 
+    public void SkipString(string s)
         => this.position += s.Length;
     public int Pop()
     {
@@ -33,15 +39,15 @@ public class RegExPatternReader
         this.position += r >= 0 ? new Rune(r).Utf16SequenceLength : 0;
         return r;
     }
-    public string Take() 
+    public string Take()
         => char.ConvertFromUtf32(this.Pop());
-    public bool LookingAt(char c) 
+    public bool LookingAt(char c)
         => Pattern[this.position] == c;
-    public bool LookingAt(string s) 
+    public bool LookingAt(string s)
         => Rest.StartsWith(s);
     public string From(int previous)
         => Pattern[previous..position];
-    public override string ToString() 
+    public override string ToString()
         => Rest;
     public int Enter()
     {

@@ -1,12 +1,10 @@
-﻿using System.Text;
-/*
+﻿/*
  * Copyright (c) 2020 The Go Authors. All rights reserved.
  *
  * Use of this source code is governed by a BSD-style
  * license that can be found in the LICENSE file.
  */
-// Many of these were derived from the corresponding Go functions in
-// http://code.google.com/p/go/source/browse/src/pkg/unicode/letter.go
+using System.Text;
 
 namespace NRegEx;
 

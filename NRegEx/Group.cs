@@ -1,11 +1,18 @@
-﻿namespace NRegEx;
+﻿/*
+ * Copyright (c) 2023 Yilin from NOC. All rights reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
+namespace NRegEx;
 
 public class Group : Capture
 {
-    public readonly static Capture EmptyCapture = new ();
+    public readonly new static Group Empty = new(false);
+
     public readonly bool Success;
     public readonly List<Capture> Captures = new();
-    public virtual Capture this[string name] => this.Captures.FirstOrDefault(c => c.Name == name) ?? EmptyCapture;
+    public virtual Capture this[string name] => this.Captures.FirstOrDefault(c => c.Name == name) ?? Capture.Empty;
     public virtual Capture this[int index] => this.Captures[index];
 
     public virtual int Count => this.Captures.Count;

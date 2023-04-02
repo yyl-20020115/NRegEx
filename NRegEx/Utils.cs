@@ -40,15 +40,15 @@ public static class Utils
     public static string EscapeString(string s, bool doubleSlash = false)
     {
         var builder = new StringBuilder();
-        foreach(var c in StringToRunes(s))
+        foreach (var c in StringToRunes(s))
         {
-            EscapeRune(c, builder,doubleSlash);
+            EscapeRune(c, builder, doubleSlash);
         }
         return builder.ToString();
     }
     // Appends a RE2 literal to |out| for rune |rune|,
     // with regexp metacharacters escaped.
-    public static StringBuilder EscapeRune(int rune, StringBuilder? builder = null, bool doubleSlash=false)
+    public static StringBuilder EscapeRune(int rune, StringBuilder? builder = null, bool doubleSlash = false)
     {
         builder ??= new();
         var slashes = doubleSlash ? "\\\\" : "\\";
@@ -119,7 +119,7 @@ public static class Utils
         }
         return builder.ToString();
     }
-    
+
     public static string RunesToString(IEnumerable<int> runes, string? separator = null)
     {
         var builder = new StringBuilder();
@@ -185,7 +185,7 @@ public static class Utils
     // isWordRune reports whether r is consider a ``word character''
     // during the evaluation of the \b and \B zero-width assertions.
     // These assertions are ASCII-only: the word characters are [A-Za-z0-9_].
-    public static bool IsWordRune(int r) 
+    public static bool IsWordRune(int r)
         => r is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9' or '_';
 
     //// EMPTY_* flags
@@ -277,19 +277,19 @@ public static class Utils
         return -1;
     }
 
-    public static bool IsMetachar(char ch) 
+    public static bool IsMetachar(char ch)
         => Array.IndexOf(MetaChars, ch) >= 0;
 
     public static string Escape(string input)
     {
         var chars = input.ToArray();
-        if((Array.FindIndex(chars, ch => IsMetachar(ch)) is int i) && (-1 == i)) return input;
+        if ((Array.FindIndex(chars, ch => IsMetachar(ch)) is int i) && (-1 == i)) return input;
         var builder = new StringBuilder(input.Length * 3);
         var last = 0;
-        while(true)
+        while (true)
         {
             builder.Append(chars[last..i]);
-            if (i>= chars.Length) break;
+            if (i >= chars.Length) break;
             var ch = chars[i++];
             last = i;
             builder.Append('\\');
@@ -322,7 +322,7 @@ public static class Utils
         if ((Array.IndexOf(chars, '\\') is int i) && (-1 == i)) return input;
         var last = 0;
         var builder = new StringBuilder(input.Length * 3);
-        while(true)
+        while (true)
         {
             builder.Append(chars[last..i]);
             if (i == chars.Length) break;

@@ -1,4 +1,10 @@
-﻿namespace NRegEx;
+﻿/*
+ * Copyright (c) 2023 Yilin from NOC. All rights reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
+namespace NRegEx;
 
 public record class RegExNode(
     TokenTypes Type = TokenTypes.EOF,
@@ -14,7 +20,7 @@ public record class RegExNode(
     bool Inverted = false,
     int Position = -1,
     int Length = -1,
-    string? PatternName=null,
+    string? PatternName = null,
     bool IsRemoved = false)
 {
     public List<RegExNode> Children = new();

@@ -1,10 +1,15 @@
-﻿using System;
+﻿/*
+ * Copyright (c) 2023 Yilin from NOC. All rights reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
 using System.Text;
-using System.Xml.Linq;
 
 namespace NRegEx;
 
 public delegate string CaptureEvaluator(Capture capture);
+
 public class Regex
 {
     public static string[] Split(string input, string pattern, int start = 0, int length = -1, bool reverselySearch = false)
@@ -96,7 +101,7 @@ public class Regex
             {
                 if (this.GroupTypes.TryGetValue(index, out var type))
                 {
-                    this.TryWithGroup(node, input, i, groups, backs,edges, direction, index, type);
+                    this.TryWithGroup(node, input, i, groups, backs, edges, direction, index, type);
                 }
             }
         }
@@ -182,7 +187,7 @@ public class Regex
 
     protected static void EmitPosition(Node node, int i, ICollection<List<int>> captures)
     {
-        if ((node.Ending & Ending.Start) == Ending.Start
+        if ((node.Ending & Endings.Start) == Endings.Start
             || captures.Count == 0)
         {
             captures.Add(new());

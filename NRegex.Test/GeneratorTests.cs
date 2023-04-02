@@ -1,7 +1,13 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿/*
+ * Copyright (c) 2023 Yilin from NOC. All rights reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
 using NRegEx;
 using System;
 using System.Collections.Generic;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace NRegex.Test;
 
@@ -53,7 +59,7 @@ public class GeneratorTests
 
     private List<string> GenerateRegex(RegExGenerator generator, int count, int minLength, int maxLength)
     {
-        List<string> regexList = new ();
+        List<string> regexList = new();
         for (int i = 0; i < count; i++)
         {
             try
@@ -80,7 +86,7 @@ public class GeneratorTests
 
     private static List<string> GenerateRegex(RegExGenerator generator, int count)
     {
-        List<string> regexList = new ();
+        List<string> regexList = new();
         for (int i = 0; i < count; i++)
         {
             regexList.Add(generator.Generate());

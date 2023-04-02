@@ -1,4 +1,10 @@
-﻿namespace NRegEx;
+﻿/*
+ * Copyright (c) 2023 Yilin from NOC. All rights reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
+namespace NRegEx;
 
 public class Path
 {
@@ -12,7 +18,7 @@ public class Path
         InternalNodeSet = internalNodeSet;
     }
     public int Length => this.Nodes.Count;
-    public bool IsEmpty=>this.Nodes.Count==0;
+    public bool IsEmpty => this.Nodes.Count == 0;
 
     public Node? Start => !this.IsEmpty ? this.Nodes[0] : null;
     public Node? End => !this.IsEmpty ? this.Nodes[^1] : null;
@@ -20,7 +26,7 @@ public class Path
     public Path AddNodes(params Node[] nodes) => AddNodes(nodes as IEnumerable<Node>);
     public Path AddNodes(IEnumerable<Node> nodes)
     {
-        foreach(Node node in nodes)
+        foreach (Node node in nodes)
         {
             this.Nodes.Add(node);
             this.InternalNodeSet.Add(node);
@@ -29,22 +35,22 @@ public class Path
     }
     public bool Contains(Node node) => InternalNodeSet.Contains(node);
 
-    public Path Copy() => new (
+    public Path Copy() => new(
             this.Nodes.ToList(),
             this.InternalNodeSet.ToHashSet());
 
     public bool HasPathTo(Path path, bool original = true)
     {
-        foreach(var node in this.Nodes)
+        foreach (var node in this.Nodes)
         {
             var targets = new HashSet<Node>();
             node.FetchNodes(targets, true);
-            if(original)
+            if (original)
                 targets.Add(node); //count self
-    
+
             if (targets.Overlaps(path.InternalNodeSet))
                 return true;
-            
+
         }
         return false;
     }

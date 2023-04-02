@@ -1,4 +1,10 @@
-﻿namespace NRegEx;
+﻿/*
+ * Copyright (c) 2023 Yilin from NOC. All rights reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
+namespace NRegEx;
 public class RegExGraphBuilder
 {
     public readonly Dictionary<int, Graph> GroupGraphs = new();
@@ -6,7 +12,7 @@ public class RegExGraphBuilder
     public readonly Dictionary<int, GroupType> GroupTypes = new();
     public readonly ListLookups<int, Graph> ConditionsGraphs = new();
     public Graph Build(RegExNode node, int id = 0, bool caseInsensitive = false)
-        => GraphUtils.Reform(BuildInternal(node, caseInsensitive),id);
+        => GraphUtils.Reform(BuildInternal(node, caseInsensitive), id);
     protected Graph BuildInternal(RegExNode node, bool caseInsensitive = false)
     {
         var graph = new Graph(node.Name) { SourceNode = node };
@@ -15,7 +21,7 @@ public class RegExGraphBuilder
         {
             case TokenTypes.EOF:
                 {
-                    graph.ComposeLiteral(new Node() { Parent = graph});
+                    graph.ComposeLiteral(new Node() { Parent = graph });
                 }
                 break;
             case TokenTypes.OnePlus:
@@ -38,31 +44,35 @@ public class RegExGraphBuilder
                 break;
             case TokenTypes.Literal:
                 {
-                    graph.ComposeLiteral(node.Value.EnumerateRunes().Select(c => 
-                        caseInsensitive 
+                    graph.ComposeLiteral(node.Value.EnumerateRunes().Select(c =>
+                        caseInsensitive
                         ? new Node(Characters.ToUpperCase(c.Value),
-                                   Characters.ToLowerCase(c.Value)) { Parent = graph } 
+                                   Characters.ToLowerCase(c.Value))
+                        { Parent = graph }
                         : new Node(c.Value) { Parent = graph }));
                 }
                 break;
             case TokenTypes.RuneClass:
                 {
-                    graph.ComposeLiteral(new Node(node.Inverted, 
-                        node.Runes ?? Array.Empty<int>()) { Parent = graph });
+                    graph.ComposeLiteral(new Node(node.Inverted,
+                        node.Runes ?? Array.Empty<int>())
+                    { Parent = graph });
                 }
                 break;
             case TokenTypes.AnyCharIncludingNewLine:
                 {
                     //inverted empty means everything
-                    graph.ComposeLiteral(new Node(true, 
-                        Array.Empty<int>()) { Parent = graph });
+                    graph.ComposeLiteral(new Node(true,
+                        Array.Empty<int>())
+                    { Parent = graph });
                 }
                 break;
             case TokenTypes.AnyCharExcludingNewLine:
                 {
                     //\n excluded
                     graph.UnionWith(new Node(true,
-                        Node.NewLineChar) { Parent = graph });
+                        Node.NewLineChar)
+                    { Parent = graph });
                 }
                 break;
             case TokenTypes.Sequence:
@@ -74,8 +84,8 @@ public class RegExGraphBuilder
             case TokenTypes.Group:
                 {
                     //this is for condition
-                    if ((node.GroupType == GroupType.BackReferenceConditionGroup 
-                        ||node.GroupType == GroupType.LookAroundConditionGroup)
+                    if ((node.GroupType == GroupType.BackReferenceConditionGroup
+                        || node.GroupType == GroupType.LookAroundConditionGroup)
                         && node.Children.Count > 0 && node.Children[0].Type == TokenTypes.Union)
                     {
                         var unode = node.Children[0];
@@ -100,7 +110,7 @@ public class RegExGraphBuilder
                                 condition = snode.Children[0];
                                 actions.AddRange(snode.Children.Skip(1));
                             }
-                            if (tnode.Type == TokenTypes.Sequence && tnode.Children.Count >0)
+                            if (tnode.Type == TokenTypes.Sequence && tnode.Children.Count > 0)
                             {
                                 elseAction.AddRange(tnode.Children);
                             }
@@ -166,7 +176,7 @@ public class RegExGraphBuilder
             case TokenTypes.BackReference:
                 {
                     if (node.Children.Count > 0 && node.CaptureIndex is int index)
-                        this.BackRefPoints[index] 
+                        this.BackRefPoints[index]
                             = graph.BackReferenceWith(BuildInternal(node.Children[0]), index);
                 }
                 break;
@@ -211,7 +221,7 @@ public class RegExGraphBuilder
                 break;
             case TokenTypes.NotWordBoundary:
                 {
-                    graph.UnionWith(new Node(true,RegExTextReader.NOT_WORD_BOUNDARY) { Parent = graph });
+                    graph.UnionWith(new Node(true, RegExTextReader.NOT_WORD_BOUNDARY) { Parent = graph });
                 }
                 break;
         }

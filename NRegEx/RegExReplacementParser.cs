@@ -1,25 +1,31 @@
-﻿using System.Text;
+﻿/*
+ * Copyright (c) 2023 Yilin from NOC. All rights reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
+using System.Text;
 
 namespace NRegEx;
 public class RegExReplacementParser
 {
     public readonly StringReader Reader;
     public readonly string Replacement;
-    public RegExReplacementParser(string replacement) 
-        => this.Reader = new (this.Replacement = replacement);
+    public RegExReplacementParser(string replacement)
+        => this.Reader = new(this.Replacement = replacement);
     public bool HasMore => this.Peek() != -1;
     public int Peek() => this.Reader.Peek();
     public int Read() => this.Reader.Read();
-    public char PeekChar()=>(char)this.Peek();
-    public char ReadChar()=> (char)this.Read();
+    public char PeekChar() => (char)this.Peek();
+    public char ReadChar() => (char)this.Read();
 
     public List<RegExReplacement> Parse()
     {
         var repls = new List<RegExReplacement>();
-        if(!string.IsNullOrEmpty(this.Replacement))
+        if (!string.IsNullOrEmpty(this.Replacement))
         {
             var builder = new StringBuilder();
-            while(this.HasMore)
+            while (this.HasMore)
             {
                 var c = this.ReadChar();
                 if (c == '$')
@@ -37,7 +43,7 @@ public class RegExReplacementParser
                     switch (c = this.ReadChar())
                     {
                         //$number
-                        case >='1' and <='9':
+                        case >= '1' and <= '9':
                             {
                                 var lb = new StringBuilder(c.ToString());
                                 while (this.HasMore)
@@ -51,9 +57,9 @@ public class RegExReplacementParser
                                     else break;
                                 }
                                 var text = lb.ToString();
-                                if(int.TryParse(text,out var index))
+                                if (int.TryParse(text, out var index))
                                 {
-                                    repls.Add(new (ReplacementType.GroupIndex,text, index, text));
+                                    repls.Add(new(ReplacementType.GroupIndex, text, index, text));
                                 }
                                 else
                                 {
@@ -85,29 +91,29 @@ public class RegExReplacementParser
                                 throw new Exception($"invalid group name{lb}");
                             }
                         case '$':
-                            repls.Add(new (ReplacementType.Dollar, "$"));
+                            repls.Add(new(ReplacementType.Dollar, "$"));
                             continue;
                         case '&':
-                            repls.Add(new (ReplacementType.WholeMatch, "$&"));
+                            repls.Add(new(ReplacementType.WholeMatch, "$&"));
                             continue;
                         case '`':
-                            repls.Add(new (ReplacementType.PreMatch, "$`"));
+                            repls.Add(new(ReplacementType.PreMatch, "$`"));
                             continue;
                         case '\'':
-                            repls.Add(new (ReplacementType.PostMatch, "$`"));
+                            repls.Add(new(ReplacementType.PostMatch, "$`"));
                             continue;
                         case '+':
-                            repls.Add(new (ReplacementType.LastGroup, "$`"));
+                            repls.Add(new(ReplacementType.LastGroup, "$`"));
                             continue;
                         case '_':
-                            repls.Add(new (ReplacementType.Input, "$`"));
+                            repls.Add(new(ReplacementType.Input, "$`"));
                             continue;
                     }
                 }
                 builder.Append(c);
             }
             if (builder.Length > 0)
-                repls.Add(new (ReplacementType.PlainText, builder.ToString()));
+                repls.Add(new(ReplacementType.PlainText, builder.ToString()));
         }
 
         return repls;

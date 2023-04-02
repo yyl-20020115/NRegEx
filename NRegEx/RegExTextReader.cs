@@ -1,4 +1,11 @@
-﻿namespace NRegEx;
+﻿/*
+ * Copyright (c) 2023 Yilin from NOC. All rights reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
+namespace NRegEx;
+
 public class RegExTextReader
 {
     public const int EOF = -1;
@@ -27,7 +34,7 @@ public class RegExTextReader
     protected ReaderStates State = ReaderStates.NotStarted;
 
     public readonly bool LineMode;
-    public RegExTextReader(TextReader reader, bool lineMode )
+    public RegExTextReader(TextReader reader, bool lineMode)
     {
         this.Reader = reader;
         this.LineMode = lineMode;
@@ -47,7 +54,7 @@ public class RegExTextReader
                 this.LastEndLine = true;
                 return END_LINE;
             }
-            else if(this.LastEndLine)
+            else if (this.LastEndLine)
             {
                 return BEGIN_LINE;
             }

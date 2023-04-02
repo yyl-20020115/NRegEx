@@ -1,4 +1,10 @@
-﻿namespace NRegEx;
+﻿/*
+ * Copyright (c) 2023 Yilin from NOC. All rights reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
+namespace NRegEx;
 
 using System;
 using System.Collections;
@@ -16,9 +22,9 @@ public class DualDictionary<TKey, TValue> :
     where TKey : notnull where TValue : notnull
 {
     public DualDictionary() { }
-    public DualDictionary(IDictionary<TKey,TValue> dictionary)
+    public DualDictionary(IDictionary<TKey, TValue> dictionary)
     {
-        foreach(var kvp in dictionary) this.Add(kvp);
+        foreach (var kvp in dictionary) this.Add(kvp);
     }
     public IDictionary<TKey, TValue> MainData { get; } = new Dictionary<TKey, TValue>();
     public IDictionary<TValue, TKey> AuxData { get; } = new Dictionary<TValue, TKey>();
@@ -129,7 +135,7 @@ public class DualDictionary<TKey, TValue> :
     public void Add(KeyValuePair<TKey, TValue> item)
     {
         this.MainData.Add(item);
-        this.AuxData.Add(new (item.Value, item.Key));
+        this.AuxData.Add(new(item.Value, item.Key));
     }
     public void Add(object key, object? value)
     {
@@ -151,21 +157,21 @@ public class DualDictionary<TKey, TValue> :
     }
     public bool Contains(KeyValuePair<TKey, TValue> item)
         => MainData.Contains(item);
-    public bool Contains(KeyValuePair<TValue, TKey> item) 
+    public bool Contains(KeyValuePair<TValue, TKey> item)
         => AuxData.Contains(item);
-    public bool Contains(object key) 
+    public bool Contains(object key)
         => ((IDictionary)MainData).Contains(key) || ((IDictionary)AuxData).Contains(key);
     public bool ContainsKey(TKey key)
         => MainData.ContainsKey(key);
-    public bool ContainsKey(TValue key) 
+    public bool ContainsKey(TValue key)
         => AuxData.ContainsKey(key);
-    public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) 
+    public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         => MainData.CopyTo(array, arrayIndex);
-    public void CopyTo(KeyValuePair<TValue, TKey>[] array, int arrayIndex) 
+    public void CopyTo(KeyValuePair<TValue, TKey>[] array, int arrayIndex)
         => AuxData.CopyTo(array, arrayIndex);
     public void CopyTo(Array array, int index)
         => ((ICollection)MainData).CopyTo(array, index);
-    public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() 
+    public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         => MainData.GetEnumerator();
     public bool Remove(TKey key)
     {
@@ -205,8 +211,8 @@ public class DualDictionary<TKey, TValue> :
         => MainData.TryGetValue(key, out value);
     public bool TryGetValue(TValue key, [MaybeNullWhen(false)] out TKey value)
         => AuxData.TryGetValue(key, out value);
-    IEnumerator IEnumerable.GetEnumerator() 
+    IEnumerator IEnumerable.GetEnumerator()
         => ((IEnumerable)MainData).GetEnumerator();
-    IDictionaryEnumerator IDictionary.GetEnumerator() 
+    IDictionaryEnumerator IDictionary.GetEnumerator()
         => ((IDictionary)MainData).GetEnumerator();
 }

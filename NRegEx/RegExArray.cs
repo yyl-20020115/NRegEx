@@ -1,4 +1,10 @@
-﻿namespace NRegEx;
+﻿/*
+ * Copyright (c) 2023 Yilin from NOC. All rights reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
+namespace NRegEx;
 
 /// <summary>
 /// All Regexs will be matched parallelly
@@ -16,7 +22,7 @@ public class RegExArray : Regex
     public RegExArray(params string[] regexs)
         : this(regexs.Select(r => new Regex(r)).ToArray()) { }
     public RegExArray(params Regex[] regexs)
-        : base(string.Join('|',regexs.Select(r=>$"({r.Pattern})").ToArray()))
+        : base(string.Join('|', regexs.Select(r => $"({r.Pattern})").ToArray()))
     {
         if (regexs.Length == 0)
             throw new ArgumentException(nameof(regexs));

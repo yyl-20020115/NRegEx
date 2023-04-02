@@ -1,10 +1,16 @@
-﻿using System.Collections;
+﻿/*
+ * Copyright (c) 2023 Yilin from NOC. All rights reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
+using System.Collections;
 using System.Text;
 
 namespace NRegEx;
 
 [Flags]
-public enum Ending : uint
+public enum Endings : uint
 {
     None = 0,
     Start = 1,
@@ -62,7 +68,7 @@ public class Node
     public int[]? CharsArray => charsArray;
 
     public Graph? Parent { get => parent; set => parent = value; }
-    public Ending Ending = Ending.None;
+    public Endings Ending = Endings.None;
     public Node Copy(Graph? parent = null) => new()
     {
         name = name,

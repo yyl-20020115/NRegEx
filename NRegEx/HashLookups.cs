@@ -1,18 +1,16 @@
-﻿using System.Collections;
+﻿/*
+ * Copyright (c) 2023 Yilin from NOC. All rights reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
+using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 
 namespace NRegEx;
-public interface Lookups<TKey, TValue>
-    : IEnumerable<KeyValuePair<TKey, ICollection<TValue>>>,
-      ICollection<KeyValuePair<TKey, ICollection<TValue>>>,
-      IDictionary<TKey, ICollection<TValue>>,
-      IEnumerable,
-      ICollection
-    where TKey : notnull
-{ }
 
-public class HashLookups<TKey, TValue> :Lookups<TKey,TValue>
-    where TKey : notnull 
+public class HashLookups<TKey, TValue> : Lookups<TKey, TValue>
+    where TKey : notnull
 {
     public bool HasChanged(HashLookups<TKey, TValue> that)
       => that == null
@@ -20,7 +18,7 @@ public class HashLookups<TKey, TValue> :Lookups<TKey,TValue>
       || this.Any(p => !that.ContainsKey(p.Key)
       || !this[p.Key].ToHashSet().SetEquals(that[p.Key]));
     public Dictionary<TKey, ICollection<TValue>> Data { get; protected set; } = new();
-    public int Count 
+    public int Count
         => this.Data.Count;
     public int TotalValuesCount
         => this.Values.Sum(v => v.Count);
@@ -39,23 +37,23 @@ public class HashLookups<TKey, TValue> :Lookups<TKey,TValue>
     }
     public override string ToString()
         => $"KeyType={typeof(TKey).Name}, ValueType={typeof(TValue).Name}, Count={this.Count}";
-    public Dictionary<TKey, ICollection<TValue>>.KeyCollection Keys 
+    public Dictionary<TKey, ICollection<TValue>>.KeyCollection Keys
         => this.Data.Keys;
-    public Dictionary<TKey, ICollection<TValue>>.ValueCollection Values 
+    public Dictionary<TKey, ICollection<TValue>>.ValueCollection Values
         => this.Data.Values;
-    public bool IsReadOnly 
+    public bool IsReadOnly
         => ((ICollection<KeyValuePair<TKey, ICollection<TValue>>>)Data).IsReadOnly;
-    ICollection<TKey> IDictionary<TKey, ICollection<TValue>>.Keys 
+    ICollection<TKey> IDictionary<TKey, ICollection<TValue>>.Keys
         => ((IDictionary<TKey, ICollection<TValue>>)Data).Keys;
-    ICollection<ICollection<TValue>> IDictionary<TKey, ICollection<TValue>>.Values 
+    ICollection<ICollection<TValue>> IDictionary<TKey, ICollection<TValue>>.Values
         => ((IDictionary<TKey, ICollection<TValue>>)Data).Values;
     public bool IsSynchronized => ((ICollection)Data).IsSynchronized;
     public object SyncRoot => ((ICollection)Data).SyncRoot;
     public bool IsFixedSize => ((IDictionary)Data).IsFixedSize;
-    ICollection<TValue> IDictionary<TKey, ICollection<TValue>>.this[TKey key] 
-    { 
-        get => ((IDictionary<TKey, ICollection<TValue>>)Data)[key]; 
-        set => ((IDictionary<TKey, ICollection<TValue>>)Data)[key] = value; 
+    ICollection<TValue> IDictionary<TKey, ICollection<TValue>>.this[TKey key]
+    {
+        get => ((IDictionary<TKey, ICollection<TValue>>)Data)[key];
+        set => ((IDictionary<TKey, ICollection<TValue>>)Data)[key] = value;
     }
     public bool ContainsKey(TKey key) => this.Data.ContainsKey(key);
     public bool ContainsList(ICollection<TValue> list) => this.Data.ContainsValue(list);
@@ -70,7 +68,7 @@ public class HashLookups<TKey, TValue> :Lookups<TKey,TValue>
     public void AddRange(TKey key, IEnumerable<TValue> values)
     {
         var vs = this[key];
-        foreach(var v in values) vs.Add(v);
+        foreach (var v in values) vs.Add(v);
     }
     public ICollection<TValue> this[TKey key]
     {
@@ -83,35 +81,35 @@ public class HashLookups<TKey, TValue> :Lookups<TKey,TValue>
         set
         {
             var list = this[key];
-            foreach(var v in value) list.Add(v);
+            foreach (var v in value) list.Add(v);
         }
     }
-    public bool Remove(TKey key) 
+    public bool Remove(TKey key)
         => this.Data.Remove(key);
-    public void Clear() 
+    public void Clear()
         => this.Data.Clear();
-    IEnumerator IEnumerable.GetEnumerator() 
+    IEnumerator IEnumerable.GetEnumerator()
         => this.Data.GetEnumerator();
-    public IEnumerator<KeyValuePair<TKey, ICollection<TValue>>> GetEnumerator() 
+    public IEnumerator<KeyValuePair<TKey, ICollection<TValue>>> GetEnumerator()
         => ((IEnumerable<KeyValuePair<TKey, ICollection<TValue>>>)Data).GetEnumerator();
-    public void Add(KeyValuePair<TKey, ICollection<TValue>> item) 
+    public void Add(KeyValuePair<TKey, ICollection<TValue>> item)
         => ((ICollection<KeyValuePair<TKey, ICollection<TValue>>>)Data).Add(item);
-    public bool Contains(KeyValuePair<TKey, ICollection<TValue>> item) 
+    public bool Contains(KeyValuePair<TKey, ICollection<TValue>> item)
         => ((ICollection<KeyValuePair<TKey, ICollection<TValue>>>)Data).Contains(item);
-    public void CopyTo(KeyValuePair<TKey, ICollection<TValue>>[] array, int arrayIndex) 
+    public void CopyTo(KeyValuePair<TKey, ICollection<TValue>>[] array, int arrayIndex)
         => ((ICollection<KeyValuePair<TKey, ICollection<TValue>>>)Data).CopyTo(array, arrayIndex);
-    public bool Remove(KeyValuePair<TKey, ICollection<TValue>> item) 
+    public bool Remove(KeyValuePair<TKey, ICollection<TValue>> item)
         => ((ICollection<KeyValuePair<TKey, ICollection<TValue>>>)Data).Remove(item);
-    public void Add(TKey key, ICollection<TValue> value) 
+    public void Add(TKey key, ICollection<TValue> value)
         => ((IDictionary<TKey, ICollection<TValue>>)Data).Add(key, value);
-    public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out ICollection<TValue> value) 
+    public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out ICollection<TValue> value)
         => ((IDictionary<TKey, ICollection<TValue>>)Data).TryGetValue(key, out value);
-    public void CopyTo(Array array, int index) 
+    public void CopyTo(Array array, int index)
         => ((ICollection)Data).CopyTo(array, index);
-    public void Add(object key, object? value) 
+    public void Add(object key, object? value)
         => ((IDictionary)Data).Add(key, value);
-    public bool Contains(object key) 
+    public bool Contains(object key)
         => ((IDictionary)Data).Contains(key);
-    public void Remove(object key) 
+    public void Remove(object key)
         => ((IDictionary)Data).Remove(key);
 }
