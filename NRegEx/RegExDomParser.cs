@@ -379,7 +379,7 @@ public class RegExDomParser
 
             Reader.SkipString(name);
             Reader.Skip(5+delta); // "(?P<>"
-            RegExNode node = null;
+            RegExNode? node = null;
 
             if (s.StartsWith("(?#'"))
             {

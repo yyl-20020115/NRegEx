@@ -377,7 +377,7 @@ public class BasicUnitTests
                 text = g.Generate();
                 Assert.IsTrue(g.Regex.IsMatch(text));
 
-            }catch(Exception ex) 
+            }catch(Exception) 
             {
                 Debug.WriteLine($"BADBADBAD:REG:{reg}:TEXT:{text}");
             }

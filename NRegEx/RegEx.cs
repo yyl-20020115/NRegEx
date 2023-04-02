@@ -400,7 +400,7 @@ public class Regex
         return IsMatchCore(graph, input, first, length, ref i, ref last, false, null, direction, options, null);
     }
 
-    protected static bool IsMatchCore(Graph graph, string input, int first, int length, ref int i, ref Node? last, bool strict, ListLookups<int, List<int>>? groups, int direction, Options options, TryWithGroupsFunction function)
+    protected static bool IsMatchCore(Graph graph, string input, int first, int length, ref int i, ref Node? last, bool strict, ListLookups<int, List<int>>? groups, int direction, Options options, TryWithGroupsFunction? function)
     {
         if (length == 0 && GraphUtils.HasPassThrough(graph)) return true;
         var indicators = new RegExIndicators();

@@ -60,10 +60,10 @@ public class GeneratorTests
             {
                 regexList.Add(generator.Generate());
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // add a placeholder for the failed attempt
-                regexList.Add(null);
+                regexList.Add(string.Empty);
             }
         }
         return regexList;

@@ -4,7 +4,7 @@ using System.Text;
 namespace NRegEx;
 
 [Flags]
-public enum Ending :uint
+public enum Ending : uint
 {
     None = 0,
     Start = 1,
@@ -17,11 +17,11 @@ public class Node
     public const int ReturnChar = '\r';
     public readonly static int[] AllChars = Enumerable.Range(
                     char.MinValue,
-                    char.MaxValue - char.MinValue + 1).Where(i=>Unicode.IsValidUTF32(i)).ToArray();
-    
+                    char.MaxValue - char.MinValue + 1).Where(i => Unicode.IsValidUTF32(i)).ToArray();
+
     public readonly static int[] AllCharsWithoutNewLine = Enumerable.Range(
                     char.MinValue,
-                    char.MaxValue - char.MinValue + 1).Where(i=>Unicode.IsValidUTF32(i) && i!='\n').ToArray();
+                    char.MaxValue - char.MinValue + 1).Where(i => Unicode.IsValidUTF32(i) && i != '\n').ToArray();
 
     public readonly static int[] WordChars = Enumerable.Range(
                     char.MinValue,
@@ -37,9 +37,9 @@ public class Node
     protected string name = "";
     protected Graph? parent = null;
     public bool HasInput => this.Inputs.Count > 0;
-    public bool HasOutput =>this.Outputs.Count > 0;
+    public bool HasOutput => this.Outputs.Count > 0;
     public bool HasSingleInput => this.Inputs.Count == 1;
-    public bool HasSingleOutput=>this.Outputs.Count == 1;
+    public bool HasSingleOutput => this.Outputs.Count == 1;
     public bool IsBridge
         => this.IsLink
         && this.HasSingleInput
@@ -53,7 +53,7 @@ public class Node
         => this.charsArray != null && this.charsArray.Length == 1
         && this.charsArray[0] > Unicode.MAX_RUNE;
     public int Indicator
-        => this.IsIndicator ? this.charsArray[0]: EOFChar; 
+        => this.IsIndicator ? this.charsArray![0] : EOFChar;
     public int Id => id;
     public bool Inverted { get => inverted; protected set => inverted = value; }
     public string Name { get => name; protected set => name = value; }
@@ -95,23 +95,23 @@ public class Node
             foreach (var c in chars) this.charSet[c] = true;
             this.Name = $"'[{(this.Inverted ? '-' : '+')}]" +
                 Utils.EscapeString(
-                    Utils.RunesToString(chars.Where(c=>Unicode.IsValidUTF32(c)), ","), true).PadRight(16)[..16].TrimEnd()
+                    Utils.RunesToString(chars.Where(c => Unicode.IsValidUTF32(c)), ","), true).PadRight(16)[..16].TrimEnd()
                 + "'";
         }
     }
     public void FetchNodes(HashSet<Node> nodes, bool deep = true, int direction = +1, int? group = null)
     {
-        var subs = new HashSet<Node>(direction>=0 ? this.Outputs : this.Inputs);
-        if(group is int g1)
+        var subs = new HashSet<Node>(direction >= 0 ? this.Outputs : this.Inputs);
+        if (group is int g1)
         {
-            subs.RemoveWhere(n=>!n.Groups.Contains(g1));
+            subs.RemoveWhere(n => !n.Groups.Contains(g1));
         }
         if (!deep)
         {
             nodes.UnionWith(subs);
             nodes.Remove(this);
         }
-        else 
+        else
         {
             //always use loop instead of recursion to prevent stack overflow.
             var visited = new HashSet<Node>();
@@ -126,7 +126,7 @@ public class Node
                     {
                         nodes.Add(sub);
                     }
-                    else if(visited.Add(sub))
+                    else if (visited.Add(sub))
                     {
                         subs.UnionWith(
                             direction >= 0 ? sub.Outputs : sub.Inputs);
@@ -136,7 +136,7 @@ public class Node
                         }
                     }
                 }
-            } while (subs.Count>0);
+            } while (subs.Count > 0);
         }
     }
 
