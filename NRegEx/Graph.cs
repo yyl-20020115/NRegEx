@@ -242,21 +242,32 @@ public class Graph
 
         min = min <= 0 ? 0 : min;
         max = max <= 0 ? min : max;
-
-        var all = new List<Graph>();
-        var others = new List<Graph>();
+        Graph? first = null;
+        var full = new List<Graph>();
+        var extra = new List<Graph>();
         for (int i = 0; i < max; i++)
         {
             var g = graph.Copy();
-            all.Add(g);
-            if (i >= min) others.Add(g);
+            first ??= g;
+            full.Add(g);
+            if (i >= min) extra.Add(g);
         }
 
-        this.Concate(all, plus);
-
-        for (int i = 0; i < others.Count; i++)
+        this.Concate(full, plus);
+        if (min > 0 && first!=null)
         {
-            this.Edges.Add(new(others[i].Head, this.Tail));
+            this.Edges.Add(new(first.Tail, first.Head, +min));
+        }
+        full.AddRange(extra);
+        for (int i = 0; i < extra.Count; i++)
+        {
+            this.Edges.Add(new(extra[i].Head, this.Tail));
+        }
+
+        if (max > 0 && max > min)
+        {
+            //use negative edge to indicate the range
+            //this.AuxEdges.Add(new(full.Last().Head, full.First().Tail, +max));
         }
 
         return this;
@@ -321,6 +332,11 @@ public class Graph
             this.Edges.Remove(edge);
         }
 
+        return this;
+    }
+    public Graph CleanEdges(uint Repeats = 1)
+    {
+        this.Edges.RemoveWhere(e => e.Repeats > Repeats);
         return this;
     }
 }

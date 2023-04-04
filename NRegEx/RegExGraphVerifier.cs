@@ -4,9 +4,14 @@
  * Use of this source code is governed by a BSD-style
  * license that can be found in the LICENSE file.
  */
+using System.Collections.Concurrent;
+
 namespace NRegEx;
 public static class RegExGraphVerifier
 {
+    public static bool IsCatastrophicBacktrackingPossible(string regex)
+        => IsCatastrophicBacktrackingPossible(new Regex(regex));
+
     /// <summary>
     /// 判断对于NFA（非PNFA）引擎是否可能出现灾难性回溯
     /// 判别标准：
@@ -15,7 +20,7 @@ public static class RegExGraphVerifier
     /// </summary>
     /// <param name="graph"></param>
     /// <returns></returns>
-    public static bool IsCatastrophicBacktrackingPossibe(Regex regex)
+    public static bool IsCatastrophicBacktrackingPossible(Regex regex)
         => IsCatastrophicBacktrackingPossible(RebuildModel(regex.Model, true), (regex.Options & Options.DOT_NL) == Options.DOT_NL);
 
     public static RegExNode RebuildModel(RegExNode model, bool cleaning = true, HashSet<RegExNode>? visited = null)
@@ -63,12 +68,9 @@ public static class RegExGraphVerifier
 
             var ret = model with { IsRemoved = isRemoved };
 
-            foreach (var child in model.Children)
+            foreach (var child in model.Children.ToArray())
             {
-                if (visited.Add(child))
-                {
-                    ret.Children.Add(RebuildModel(child, cleaning, visited));
-                }
+                ret.Children.Add(RebuildModel(child, cleaning, visited));
             }
             return ret;
         }
@@ -77,96 +79,131 @@ public static class RegExGraphVerifier
         return model;
     }
     public static bool IsCatastrophicBacktrackingPossible(RegExNode model, bool withNewLine = true)
-        => IsCatastrophicBacktrackingPossible(new RegExGraphBuilder().Build(model, 0), withNewLine);
+        => IsCatastrophicBacktrackingPossible(new RegExGraphBuilder().Build(model, 0,false), withNewLine);
 
     public static bool IsCatastrophicBacktrackingPossible(Graph graph, bool withNewLine = true)
     {
-        //a. 嵌套量词（NQ）模式：具有嵌套量词的正则表达式。例如(\d+)+。
-        //b.指数重叠析取（EOD）模式：β = (…(β1 | β2 |…| βk)…){ mβ,nβ} 其中nβ > 1，且满足以下两个条件之一。
-        // 1. Bp.first and Bq.first != EMPTY  c                                                       ere 1<=p, q>=k, p!=q
-        // 2. Bp.first and Bq.followinglast != EMPTY where 1<=p, q>=k, p!=q
+        /*
+         */
+        //a. 嵌套量词（NQ）模式：具有嵌套量词的正则表达式。
+        //      (\d+)+ 
+        //b.指数重叠析取（EOD）模式：β = (…(β1 | β2 |…| βk)…){ mβ,nβ} 其中nβ > 1，且满足以下两个条件之一：
+        // 1. 头部有交集
+        //      (ab|ac|ad){2,}
+        // 2. 一个的头部和另一个的尾部有交集
+        //      (ab|bc|cd){2,}
         //c. 指数重叠相邻（EOA）模式：β=(…(β1β2)…){mβ,nβ}，其中nβ> 1,满足以下两个条件之一
-        // 1
-        // 2
+        // 1 头部和尾部有交集
+        //      (ab(ab)(bc)cd){2,}
+        // 2 尾部和头部有交集
+        //      (ab(ba)(ac)cd){2,}
         //d. 多项式重叠相邻（POA）模式：：β=(…(β1β2)…){mβ,nβ}，其中nβ <= 1，且满足条件β1.followlast ∩ β2.first ≠ \not= ​= ∅.。
-
+        // 尾部和头部有交集
+        //      (ab(ba)(ac)cd){0,1}
         //e. 从大量词开始（SLQ）模式：有四种可能的触发条件，其中 n β > n m i n n_β>n_{min} nβ​>nmin​。
-
-        var nodeChars = new Dictionary<Node, HashSet<int>>();
-        var circles = GetCircles(graph);
-
-        var affects = new HashSet<Node>();
-        foreach (var path in circles)
-        {
-            affects.UnionWith(path.InternalNodeSet.Where(n => !n.IsLink));
-        }
-
-        CollectNodeChars(affects, nodeChars, withNewLine);
-
-        var pairs = new List<(Path pi, Path pj)>();
-
-        var paths = circles.ToArray();
-        for (int i = 0; i < paths.Length; i++)
-        {
-            for (int j = i + 1; j < paths[i].Length; j++)
-            {
-                var cli = paths[i];
-                var clj = paths[j];
-                if (cli.HasPathTo(clj) || clj.HasPathTo(cli))
-                {
-                    pairs.Add((cli, clj));
-                }
-            }
-        }
-        foreach (var (pi, pj) in pairs)
-        {
-            var ri = pi.InternalNodeSet.Where(i => !i.IsLink).ToArray();
-            var rj = pj.InternalNodeSet.Where(j => !j.IsLink).ToList();
-            foreach (var inode in ri)
-            {
-                foreach (var jnode in rj)
-                {
-                    if (nodeChars[inode].Overlaps(nodeChars[jnode]))
-                        return true;
-                }
-            }
-        }
-
-        return false;
+        //
+ 
+        return GetCircles(graph,withNewLine);
     }
 
-    public static List<Path> GetCircles(Graph graph)
+    public static bool GetCircles(Graph graph, bool withNewLine)
     {
+        var done = false;
+        var nodeChars = new Dictionary<Node, HashSet<int>>();
+        var affects = new HashSet<Node>();
+
+        var circles = new ConcurrentBag<Path>();
+
         var paths = new List<Path>(graph.Head.Outputs.Select(o => new Path(graph.Head, o)));
-        var circles = new List<Path>();
         var count = graph.Nodes.Count;
         var step = 0;
+        var heads = new Dictionary<Node, HashSet<Edge>>();
+
+        foreach(var node in graph.Nodes)
+        {
+            heads[node] = graph.Edges.Where(e => e.Head == node).ToHashSet();
+        }
         while (step++ < count)
         {
+            //paths = new ConcurrentBag<Path>(paths.Where(path=>path.Length>=step));
             paths.RemoveAll(path => path.Length < step);
-            foreach (var path in paths.ToArray())
+            //paths.AsParallel().ForAll(path =>
+            foreach(var path in paths.ToArray())
             {
                 var current = path.End;
-                foreach (var outEdge in graph.Edges.Where(e => e.Head == current))
+                if (current != null)
                 {
-                    var tail = outEdge.Tail;
-                    if (!path.Contains(tail))
-                        paths.Add(path.Copy().AddNodes(tail));
-                    else
+                    foreach (var outEdge in heads[current])// graph.Edges.Where(e => e.Head == current)
                     {
-                        circles.Add(path);
-                        paths.Remove(path);
+                        if (outEdge.Repeats > 1)
+                        {
+
+                        }
+                        //else
+                        {
+                            var tail = outEdge.Tail;
+                            if (!path.Contains(tail))
+                                paths.Add(path.CopyWith(tail));
+                            else
+                            {
+                                circles.Add(path);
+                            }
+                        }
                     }
                 }
+            }//);
+
+            if (circles.Count >= 2)
+            {
+                foreach (var circle in circles)
+                {
+                    affects.UnionWith(circle.InternalNodeSet.Where(n => !n.IsLink));
+                }
+
+                CollectNodeChars(affects, nodeChars, withNewLine);
+
+                var pairs = new List<(Path pi, Path pj)>();
+
+                var circle_path = circles.ToArray();
+                for (int i = 0; i < circle_path.Length; i++)
+                {
+                    for (int j = i + 1; j < circle_path.Length; j++)
+                    {
+                        var cli = circle_path[i];
+                        var clj = circle_path[j];
+                        if (cli.HasPathTo(clj) || clj.HasPathTo(cli))
+                        {
+                            pairs.Add((cli, clj));
+                        }
+                    }
+                }
+                foreach (var n in pairs)
+                //Parallel.ForEach(pairs,(n,s) =>
+                {
+                    var ri = n.pi.InternalNodeSet.Where(i => !i.IsLink).ToArray();
+                    var rj = n.pj.InternalNodeSet.Where(j => !j.IsLink).ToList();
+                    foreach (var inode in ri)
+                    {
+                        foreach (var jnode in rj)
+                        {
+                            if (nodeChars[inode].Overlaps(nodeChars[jnode]))
+                            {
+                                done = true;
+                                //s.Break();
+                                return done;
+                            }
+                        }
+                    }
+                }//);
             }
         }
-        return circles;
+        return done;
     }
     public static Dictionary<Node, HashSet<int>> CollectNodeChars(HashSet<Node> nodes, Dictionary<Node, HashSet<int>> nodeChars, bool withNewLine)
     {
         foreach (var node in nodes)
         {
-            if (!node.IsLink && node.CharsArray != null)
+            if (!node.IsLink && node.CharsArray != null && !nodeChars.ContainsKey(node))
             {
                 var chars = new HashSet<int>(node.CharsArray.Where(c => Unicode.IsValidUTF32(c)));
                 if (!node.Inverted)

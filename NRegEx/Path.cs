@@ -12,10 +12,12 @@ public class Path
     public readonly HashSet<Node> InternalNodeSet = new();
     public Path(params Node[] nodes) => this.AddNodes(nodes);
 
-    protected Path(List<Node> nodes, HashSet<Node> internalNodeSet)
+    protected Path(List<Node> nodes, HashSet<Node> internalNodeSet, params Node[] ns)
     {
         Nodes = nodes;
+        Nodes.AddRange(ns);
         InternalNodeSet = internalNodeSet;
+        InternalNodeSet.UnionWith(ns);
     }
     public int Length => this.Nodes.Count;
     public bool IsEmpty => this.Nodes.Count == 0;
@@ -35,10 +37,9 @@ public class Path
     }
     public bool Contains(Node node) => InternalNodeSet.Contains(node);
 
-    public Path Copy() => new(
+    public Path CopyWith(params Node[] ns)=> new(
             this.Nodes.ToList(),
-            this.InternalNodeSet.ToHashSet());
-
+            this.InternalNodeSet.ToHashSet(), ns);
     public bool HasPathTo(Path path, bool original = true)
     {
         foreach (var node in this.Nodes)
@@ -54,4 +55,6 @@ public class Path
         }
         return false;
     }
+    public override string ToString() 
+        => string.Join("->", this.Nodes.Select(n=>n.Id).ToArray());
 }

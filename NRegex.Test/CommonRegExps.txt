@@ -1,7 +1,7 @@
 ﻿//DONE: capture
-//TODO: lookaround (different groups)
 //DONE: word boundary, line start, line end
 //NOTICE: back reference condition and lookaround conditions are not supported
+//TODO: lookaround (different groups)
 ^([a-zA-Z0-9]+\s?)*$
 (x+)+y
 (x+z)+y :breaks the loop (x+) and (x+)+

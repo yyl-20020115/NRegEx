@@ -66,7 +66,9 @@ public class Regex
         this.NamedGroups = new(Parser.NamedGroups);
         var Builder = new RegExGraphBuilder();
         this.Graph = Builder.Build(this.Model, 0,
-            (this.Options & Options.CASE_INSENSITIVE) == Options.CASE_INSENSITIVE);
+            (this.Options & Options.CASE_INSENSITIVE) == Options.CASE_INSENSITIVE)
+            .CleanEdges();
+        
         this.BackRefPoints = Builder.BackRefPoints;
         this.GroupTypes = Builder.GroupTypes;
         this.GroupGraphs = Builder.GroupGraphs;

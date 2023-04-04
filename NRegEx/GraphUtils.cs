@@ -14,6 +14,13 @@ public static class GraphUtils
     {
         var pairs = new List<(List<Node> nodes, List<Edge> edges)>();
         var bridges = new HashSet<Node>();
+        var headsDict = new Dictionary<Node, Edge>();
+        var tailsDict = new Dictionary<Node, Edge>();
+        foreach (var e in graph.Edges)
+        {
+            headsDict[e.Head] = e;
+            tailsDict[e.Tail] = e;
+        }
         foreach (var node in graph.Nodes)
         {
             if (bridges.Contains(node))
@@ -24,12 +31,12 @@ public static class GraphUtils
                 var stream = new List<Edge>();
                 var next = node;
                 var last = node;
-                var edge = graph.Edges.Single(e => e.Tail == next);
+                var edge = tailsDict[next];// graph.Edges.Single(e => e.Tail == next);
                 do
                 {
                     dots.Add(next);
                     stream.Add(edge);
-                    edge = graph.Edges.Single(e => e.Head == next);
+                    edge = headsDict[next];// graph.Edges.Single(e => e.Head == next);
                     last = next;
                     next = edge.Tail;
                 } while (next != null && next.IsBridge);
@@ -65,7 +72,7 @@ public static class GraphUtils
             var label = (!string.IsNullOrEmpty(node.Name) ? $"[label=\"{node.Id}({node.Name})\"]" : "");
             builder.AppendLine($"\t{node.Id} {label};");
         }
-        foreach (var edge in graph.Edges.OrderBy(e => e.Head.Id).OrderBy(e => e.Tail.Id))
+        foreach (var edge in graph.Edges/*.Where(e=>e.Repeats == 1)*/.OrderBy(e => e.Head.Id).OrderBy(e => e.Tail.Id))
         {
             builder.AppendLine($"\t{edge.Head.Id}->{edge.Tail.Id};");
         }

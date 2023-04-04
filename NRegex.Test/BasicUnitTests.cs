@@ -536,5 +536,32 @@ public class BasicUnitTests
         regex1 = new Regex(pattern);
 
     }
+    [TestMethod]
+    public void TestMethod28()
+    {
+        var bad_ones = new string[]
+        {
+            //"^(a|a?)+$", //OK
+            //"^(a+)+$", //OK
+            //"(x+x+)+y", //OK
+            //"foo|(x+x+)+y",//OK
+            //"([a-zA-Z]+)*", //OK
+            //"(a|aa)+", //OK
 
+
+            //"(a+){2}y",//OK
+            //"(a+){10}y",//OK
+            //"(.*a){25}",//OK
+            "(a?){25}(a){25}",//SLOW
+            "(.*){1,1000}[bc]",//SLOW
+        };
+        foreach(var bad_one in bad_ones)
+        {
+            var r = new Regex(bad_one);
+            //ExportAsDot(r);
+
+            var p = RegExGraphVerifier.IsCatastrophicBacktrackingPossible(r);
+            Assert.IsTrue(p);
+        }
+    }
 }

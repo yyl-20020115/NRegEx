@@ -105,7 +105,8 @@ public class RegExGenerator
         }
         return builder;
     }
-    protected virtual StringBuilder? Generate(RegExNode node, StringBuilder? builder = null) => node.Type switch
+    protected virtual StringBuilder? Generate(RegExNode node, StringBuilder? builder = null)
+        => node.Type switch
     {
         TokenTypes.Literal => this.GenerateLiteral(node, builder),
         TokenTypes.Union => this.GenerateUnion(node, builder),
@@ -118,7 +119,7 @@ public class RegExGenerator
         TokenTypes.OnePlus => this.GenerateRepeats(node, builder),
         TokenTypes.ZeroOne => this.GenerateRepeats(node, builder),
         TokenTypes.Repeats => this.GenerateRepeats(node, builder),
-        _ => new StringBuilder(),
+        _ => new (),
     };
 
 
