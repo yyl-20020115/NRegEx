@@ -23,5 +23,6 @@ public record class RegExNode(
     string? PatternName = null,
     bool IsRemoved = false)
 {
+    public bool IsRemoved { get; set; } = IsRemoved;
     public List<RegExNode> Children = new();
 }

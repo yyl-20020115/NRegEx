@@ -105,7 +105,7 @@ public class Node
                 + "'";
         }
     }
-    public void FetchNodes(HashSet<Node> nodes, bool deep = true, int direction = +1, int? group = null)
+    public HashSet<Node> FetchNodes(HashSet<Node> nodes, bool deep = true, int direction = +1, int? group = null)
     {
         var subs = new HashSet<Node>(direction >= 0 ? this.Outputs : this.Inputs);
         if (group is int g1)
@@ -144,6 +144,7 @@ public class Node
                 }
             } while (subs.Count > 0);
         }
+        return nodes;
     }
 
     public Node UnionWith(params int[] runes)

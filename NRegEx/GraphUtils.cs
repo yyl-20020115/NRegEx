@@ -5,6 +5,7 @@
  * license that can be found in the LICENSE file.
  */
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Text;
 
 namespace NRegEx;
@@ -64,7 +65,7 @@ public static class GraphUtils
         }
         return graph.Clean();
     }
-    public static StringBuilder ExportAsDot(Graph graph, StringBuilder? builder = null)
+    public static StringBuilder ExportAsDotText(Graph graph, StringBuilder? builder = null)
     {
         builder ??= new StringBuilder();
         builder.AppendLine("digraph g {");
@@ -80,6 +81,63 @@ public static class GraphUtils
         builder.AppendLine("}");
         return builder;
     }
+    public static string GetApplicationFullPath(string filePath)
+    {
+        var text = Environment.GetEnvironmentVariable("PATH");
+        if (!string.IsNullOrEmpty(text))
+        {
+            var paths = text.Split(";");
+
+            foreach (var path in paths)
+            {
+                var fp = System.IO.Path.Combine(path, filePath);
+                if (File.Exists(fp))
+                {
+                    filePath = fp;
+                    break;
+                }
+            }
+        }
+        return filePath;
+    }
+    public static int RunProcess(string filePath, string argument)
+    {
+        var p = new Process();
+
+        p.StartInfo.FileName = GetApplicationFullPath(filePath);
+        p.StartInfo.Arguments = argument;
+        if (p.Start())
+        {
+            p.WaitForExit();
+            return p.ExitCode;
+        }
+        return -1;
+    }
+
+    public static int ExportAsDot(Regex regex, string? png = null, string? dot = null)
+        => ExportAsDotText(ExportAsDotText(regex.Graph).ToString(), png, dot);
+    public static int ExportAsDot(Graph graph, string? png = null, string? dot = null)
+        => ExportAsDotText(ExportAsDotText(graph).ToString(), png, dot);
+
+    public static int ExportAsDotText(string content, string? png = null, string? dot = null)
+    {
+        var trace = new StackTrace();
+        var fnn = "graph";
+        var depth = 1;
+        do
+        {
+            fnn = trace?.GetFrame(depth++)?.GetMethod()?.Name;
+        } while (fnn == nameof(ExportAsDot));
+
+        fnn ??= "graph";
+        png ??= fnn + ".png";
+        dot ??= fnn + ".dot";
+        dot = System.IO.Path.Combine(Environment.CurrentDirectory, dot);
+        png = System.IO.Path.Combine(Environment.CurrentDirectory, png);
+        File.WriteAllText(dot, content);
+        return RunProcess("dot.exe", $"-Grankdir=LR -T png {dot} -o {png}");
+    }
+
 
     public static bool HasPassThrough(Graph graph, int direction = 1)
         => HasPassThrough(direction >= 0 ? graph.Tail : graph.Head, new Node[] { direction >= 1 ? graph.Head : graph.Tail });
@@ -115,8 +173,7 @@ public static class GraphUtils
     }
     public static Graph Reform(Graph graph, int id = 0) 
         => Reorder(Compact(graph), id);
-    //public static HashSet<Node> GetFollowings(Graph graph, Node current, HashSet<Node> visited)
-    //    => ;
+
     public static Graph Reorder(Graph graph, int id = 0)
     {
         var cdict = new ConcurrentDictionary<Node, HashSet<Node>>();

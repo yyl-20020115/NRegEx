@@ -17,6 +17,7 @@ public class RegExGraphBuilder
     {
         var graph = new Graph(node.Name) { SourceNode = node };
         if (node.IsRemoved) return graph;
+
         switch (node.Type)
         {
             case TokenTypes.EOF:

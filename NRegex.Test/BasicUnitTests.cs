@@ -22,62 +22,9 @@ public class BasicUnitTests
         Environment.CurrentDirectory =
             System.IO.Path.Combine(Environment.CurrentDirectory, "..\\..\\..\\Graphs\\");
     }
-    public static string GetApplicationFullPath(string filePath)
-    {
-        var text = Environment.GetEnvironmentVariable("PATH");
-        if (!string.IsNullOrEmpty(text))
-        {
-            var paths = text.Split(";");
-
-            foreach (var path in paths)
-            {
-                var fp = System.IO.Path.Combine(path, filePath);
-                if (File.Exists(fp))
-                {
-                    filePath = fp;
-                    break;
-                }
-            }
-        }
-        return filePath;
-    }
-    public static int RunProcess(string filePath, string argument)
-    {
-        var p = new Process();
-
-        p.StartInfo.FileName = GetApplicationFullPath(filePath);
-        p.StartInfo.Arguments = argument;
-        if (p.Start())
-        {
-            p.WaitForExit();
-            return p.ExitCode;
-        }
-        return -1;
-    }
 
     public static int ExportAsDot(Regex regex, string? png = null, string? dot = null)
-        => ExportAsDot(regex.Graph, png, dot);
-
-    public static int ExportAsDot(Graph graph, string? png = null, string? dot = null)
-        => ExportAsDot(NRegEx.GraphUtils.ExportAsDot(graph).ToString(), png, dot);
-    public static int ExportAsDot(string content, string? png = null, string? dot = null)
-    {
-        var trace = new StackTrace();
-        var fnn = "graph";
-        var depth = 1;
-        do
-        {
-            fnn = trace?.GetFrame(depth++)?.GetMethod()?.Name;
-        } while (fnn == nameof(ExportAsDot));
-
-        fnn ??= "graph";
-        png ??= fnn + ".png";
-        dot ??= fnn + ".dot";
-        dot = System.IO.Path.Combine(Environment.CurrentDirectory, dot);
-        png = System.IO.Path.Combine(Environment.CurrentDirectory, png);
-        File.WriteAllText(dot, content);
-        return RunProcess("dot.exe", $"-Grankdir=LR -T png {dot} -o {png}");
-    }
+        => GraphUtils.ExportAsDot(regex, png, dot);
 
     [TestMethod]
     public void TestEscapse()
@@ -541,26 +488,24 @@ public class BasicUnitTests
     {
         var bad_ones = new string[]
         {
-            //"^(a|a?)+$", //OK
-            //"^(a+)+$", //OK
-            //"(x+x+)+y", //OK
-            //"foo|(x+x+)+y",//OK
-            //"([a-zA-Z]+)*", //OK
-            //"(a|aa)+", //OK
+            "^(a+)+$", //OK
+            "^(a|a?)+$", //OK
+            "(x+x+)+y", //OK
+            "foo|(x+x+)+y",//OK
+            "([a-zA-Z]+)*", //OK
+            "(a|aa)+", //OK
 
 
-            //"(a+){2}y",//OK
-            //"(a+){10}y",//OK
-            //"(.*a){25}",//OK
+            "(a+){2}y",//OK
+            "(a+){10}y",//OK
+            "(.*a){25}",//OK
             //"(a?){25}(a){25}",//OK,SLOW
-            "(.*){1,1000}[bc]",//OK,SLOW
+            //"(.*){1,1000}[bc]",//OK,SLOW
         };
         foreach(var bad_one in bad_ones)
         {
-            var r = new Regex(bad_one);
             //ExportAsDot(r);
-
-            var p = RegExGraphVerifier.IsCatastrophicBacktrackingPossible(r);
+            var p = RegExGraphVerifier.IsCatastrophicBacktrackingPossible(bad_one);
             Assert.IsTrue(p);
         }
     }
