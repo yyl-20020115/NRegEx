@@ -26,10 +26,10 @@ public static class RegExGraphVerifier
     public static bool IsSubPath(this List<Node> path1, List<Node> path2)
     {
         if (path1 == null || path2 == null) return false;
-        for(int i = 0; i < path1.Count; i++)
+        for (int i = 0; i < path1.Count; i++)
         {
             var eq = true;
-            for(int j = 0; j < path2.Count; j++)
+            for (int j = 0; j < path2.Count; j++)
             {
                 if (path2[j] != path1[j])
                 {
@@ -56,11 +56,11 @@ public static class RegExGraphVerifier
             regex.Model, regex.Options);
     public static bool IsCatastrophicBacktrackingPossible(string regex, Options options = Options.PERL_X)
         => IsCatastrophicBacktrackingPossible(
-            new RegExDomParser(regex,regex,Options.PERL).Parse(), options);
+            new RegExDomParser(regex, regex, options).Parse(), options);
 
     public static bool IsCatastrophicBacktrackingPossible(RegExNode model, Options options = Options.PERL_X)
         => IsCatastrophicBacktrackingPossible(
-            new RegExGraphBuilder().Build(model, 0,false),
+            new RegExGraphBuilder().Build(model, 0, false),
             (options & Options.DOT_NL) == Options.DOT_NL);
 
     public static bool IsCatastrophicBacktrackingPossible(Graph graph, bool withNewLine = true)
@@ -81,7 +81,7 @@ public static class RegExGraphVerifier
 
         while (step++ < count && !paths.IsEmpty)
         {
-            paths = new (paths.Where(path => path.Length >= step));
+            paths = new(paths.Where(path => path.Length >= step));
             paths.AsParallel().ForAll(path =>
             {
                 var current = path.End;
@@ -126,10 +126,10 @@ public static class RegExGraphVerifier
                         {
                             circle_pairs.Add((cli, clj));
                         }
-                        
+
                     }
                 }
-                if(circle_pairs.Count > 0)
+                if (circle_pairs.Count > 0)
                 {
                     foreach (var n in circle_pairs)
                     //Parallel.ForEach(pairs,(n,s) =>
