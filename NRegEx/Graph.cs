@@ -254,22 +254,18 @@ public class Graph
         }
 
         this.Concate(full, plus);
-        if (min > 0 && first!=null)
+
+        //let first graph's edge remember the min and max repeats
+        if (min > 0 && first != null)
         {
-            this.Edges.Add(new(first.Tail, first.Head, +min));
+            if (max < min) max = min;
+            this.Edges.Add(new(first.Tail, first.Head, min, max));
         }
-        full.AddRange(extra);
+
         for (int i = 0; i < extra.Count; i++)
         {
             this.Edges.Add(new(extra[i].Head, this.Tail));
         }
-
-        if (max > 0 && max > min)
-        {
-            //use negative edge to indicate the range
-            //this.AuxEdges.Add(new(full.Last().Head, full.First().Tail, +max));
-        }
-
         return this;
     }
 
@@ -336,7 +332,7 @@ public class Graph
     }
     public Graph CleanEdges(uint Repeats = 1)
     {
-        this.Edges.RemoveWhere(e => e.Repeats > Repeats);
+        this.Edges.RemoveWhere(e => e.MinRepeats > Repeats);
         return this;
     }
 }

@@ -10,12 +10,14 @@ public class Edge
 {
     public readonly Node Head;
     public readonly Node Tail;
-    public readonly int Repeats;
-    public Edge(Node Head, Node Tail,int Repeats = 1)
+    public readonly int MinRepeats;
+    public readonly int MaxRepeats;
+    public Edge(Node Head, Node Tail,int MinRepeats = 1, int MaxRepeats = 1)
     {
         this.Head = Head;
         this.Tail = Tail;
-        this.Repeats = Repeats;
+        this.MinRepeats = MinRepeats;
+        this.MaxRepeats = MaxRepeats;
         this.Head.Outputs.Add(Tail);
         this.Tail.Inputs.Add(Head);
     }
