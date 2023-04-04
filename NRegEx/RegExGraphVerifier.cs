@@ -66,11 +66,12 @@ public static class RegExGraphVerifier
     public static bool IsCatastrophicBacktrackingPossible(Graph graph, bool withNewLine = true)
     {
         var step = 0;
-        var nodeChars = new Dictionary<Node, HashSet<int>>();
-        var circles = new ConcurrentBag<Path>();
+        var nodeChars = new ConcurrentDictionary<Node, HashSet<int>>();
         var paths = new ConcurrentBag<Path>(graph.Head.Outputs.Select(o => new Path(graph.Head, o)));
-        var count = graph.Nodes.Count;
         var heads = new ConcurrentDictionary<Node, HashSet<Edge>>();
+        var circles = new ConcurrentBag<Path>();
+        var count = graph.Nodes.Count;
+
         CollectNodeChars(graph.Nodes, nodeChars, withNewLine);
 
         //foreach (var node in graph.Nodes)
@@ -152,9 +153,9 @@ public static class RegExGraphVerifier
         }
         return false;
     }
-    public static Dictionary<Node, HashSet<int>> CollectNodeChars(HashSet<Node> nodes, Dictionary<Node, HashSet<int>> nodeChars, bool withNewLine)
+    public static ConcurrentDictionary<Node, HashSet<int>> CollectNodeChars(HashSet<Node> nodes, ConcurrentDictionary<Node, HashSet<int>> nodeChars, bool withNewLine)
     {
-        foreach (var node in nodes)
+        Parallel.ForEach(nodes, node =>
         {
             if (!node.IsLink && node.CharsArray != null)
             {
@@ -165,10 +166,10 @@ public static class RegExGraphVerifier
                     set.ExceptWith(chars);
                     chars = set;
                 }
-                nodeChars.Add(node, chars);
+                nodeChars.GetOrAdd(node, chars);
             }
-        }
-
+        });
+        
         return nodeChars;
     }
 
