@@ -11,7 +11,7 @@ public class Graph
 
     protected int id = Gid++;
     public int Id => id;
-    public int SetId(int id) => this.id = id;
+    //public int SetId(int id) => this.id = id;
     public readonly string Name;
 
     public readonly HashSet<Node> Nodes = new();
