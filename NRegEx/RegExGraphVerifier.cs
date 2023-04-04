@@ -171,6 +171,7 @@ public static class RegExGraphVerifier
 
                         if (cli.Nodes.IsSubPath(clj.Nodes))
                         {
+                            //GraphUtils.ExportAsDot(graph);
                             return true;
                         }
                         else if (clj.Nodes.IsSubPath(cli.Nodes))
