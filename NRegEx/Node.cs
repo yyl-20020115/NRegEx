@@ -24,11 +24,9 @@ public class Node
     public readonly static int[] AllChars = Enumerable.Range(
                     char.MinValue,
                     char.MaxValue - char.MinValue + 1).Where(i => Unicode.IsValidUTF32(i)).ToArray();
-
     public readonly static int[] AllCharsWithoutNewLine = Enumerable.Range(
                     char.MinValue,
                     char.MaxValue - char.MinValue + 1).Where(i => Unicode.IsValidUTF32(i) && i != '\n').ToArray();
-
     public readonly static int[] WordChars = Enumerable.Range(
                     char.MinValue,
                     char.MaxValue - char.MinValue + 1).Where(i => Unicode.IsValidUTF32(i) && Unicode.IsRuneLetter(i)).ToArray();
@@ -97,11 +95,12 @@ public class Node
         {
             this.Inverted = inverted;
             this.charsArray = chars;
-            this.charSet = new BitArray(chars.Max(m => m) + 1);
+            this.charSet = new (chars.Max(m => m) + 1);
             foreach (var c in chars) this.charSet[c] = true;
             this.Name = $"'[{(this.Inverted ? '-' : '+')}]" +
                 Utils.EscapeString(
-                    Utils.RunesToString(chars.Where(c => Unicode.IsValidUTF32(c)), ","), true).PadRight(16)[..16].TrimEnd()
+                    Utils.RunesToString(
+                        chars.Where(c => Unicode.IsValidUTF32(c)), ","), true).PadRight(16)[..16].TrimEnd()
                 + "'";
         }
     }

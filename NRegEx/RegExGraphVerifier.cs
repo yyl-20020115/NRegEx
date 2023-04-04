@@ -5,15 +5,11 @@
  * license that can be found in the LICENSE file.
  */
 using System.Collections.Concurrent;
-using System.Net.Http.Headers;
-using System.Text.RegularExpressions;
-using static NRegEx.Path;
 
 namespace NRegEx;
 public static class RegExGraphVerifier
 {
-
-    public static List<Node> Shuffle(this List<Node> nodes)
+    public static List<Node> LeftShift(this List<Node> nodes)
     {
         if (nodes.Count > 0)
         {
@@ -23,6 +19,17 @@ public static class RegExGraphVerifier
         }
         return nodes;
     }
+    public static List<Node> RightShift(this List<Node> nodes)
+    {
+        if (nodes.Count > 0)
+        {
+            var last = nodes[^1];
+            nodes.RemoveAt(nodes.Count-1);
+            nodes.Insert(0,last);
+        }
+        return nodes;
+    }
+
     public static bool IsSubPath(this List<Node> path1, List<Node> path2)
     {
         if (path1 == null || path2 == null) return false;
@@ -38,7 +45,7 @@ public static class RegExGraphVerifier
                 }
             }
             if (eq) return true;
-            path1.Shuffle();
+            path1.LeftShift();
         }
 
         return false;
@@ -47,7 +54,7 @@ public static class RegExGraphVerifier
     /// 判断对于NFA（非PNFA）引擎是否可能出现灾难性回溯
     /// 判别标准：
     ///     1. 一个非链接有效输入同时属于两个或者两个以上的环
-    ///     2. 一个非链接有效输入和另一个非链接有效输入各自在不同的环中，两者具有通路，且输入具有非空交集。
+    ///     2. 一个非链接有效输入和另一个非链接有效输入各自在不同的环中，两者具有通路（或者部分重叠），且输入具有非空交集。
     /// </summary>
     /// <param name="graph"></param>
     /// <returns></returns>
@@ -57,12 +64,10 @@ public static class RegExGraphVerifier
     public static bool IsCatastrophicBacktrackingPossible(string regex, Options options = Options.PERL_X)
         => IsCatastrophicBacktrackingPossible(
             new RegExDomParser(regex, regex, options).Parse(), options);
-
     public static bool IsCatastrophicBacktrackingPossible(RegExNode model, Options options = Options.PERL_X)
         => IsCatastrophicBacktrackingPossible(
             new RegExGraphBuilder().Build(model, 0, false),
             (options & Options.DOT_NL) == Options.DOT_NL);
-
     public static bool IsCatastrophicBacktrackingPossible(Graph graph, bool withNewLine = true)
     {
         var step = 0;
@@ -71,7 +76,6 @@ public static class RegExGraphVerifier
         var heads = new ConcurrentDictionary<Node, HashSet<Edge>>();
         var circles = new ConcurrentBag<Path>();
         var count = graph.Nodes.Count;
-
         CollectNodeChars(graph.Nodes, nodeChars, withNewLine);
 
         //foreach (var node in graph.Nodes)
@@ -91,11 +95,11 @@ public static class RegExGraphVerifier
                     foreach (var outEdge in heads[current])// graph.Edges.Where(e => e.Head == current)
                     {
                         var tail = outEdge.Tail;
-                        var index = path.IndexOf(tail);
-                        if (index <= 0)
+                        var target = path.Find(tail);
+                        if (target is null)
                             paths.Add(path.Copy(tail));
                         else
-                            circles.Add(path.Copy().CutFrom(index));
+                            circles.Add(path.CopyAndCut(target, true));
                     }
                 }
             });
@@ -113,13 +117,13 @@ public static class RegExGraphVerifier
                     {
                         var cli = circle_paths[i];
                         var clj = circle_paths[j];
-
-                        if (cli.Nodes.IsSubPath(clj.Nodes))
+                        var nli = cli.NodesReversed.ToList();
+                        var nlj = clj.NodesReversed.ToList();
+                        if (nli.IsSubPath(nlj))
                         {
-                            //GraphUtils.ExportAsDot(graph);
                             return true;
                         }
-                        else if (clj.Nodes.IsSubPath(cli.Nodes))
+                        else if (nlj.IsSubPath(nli))
                         {
                             return true;
                         }

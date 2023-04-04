@@ -12,6 +12,8 @@ public class Edge
     public readonly Node Tail;
     public readonly int MinRepeats;
     public readonly int MaxRepeats;
+    public bool HasSpecifiedRepeats 
+        => this.MinRepeats != 1 || this.MaxRepeats != 1;
     public Edge(Node Head, Node Tail,int MinRepeats = 1, int MaxRepeats = 1)
     {
         this.Head = Head;
@@ -21,8 +23,13 @@ public class Edge
         this.Head.Outputs.Add(Tail);
         this.Tail.Inputs.Add(Head);
     }
-    public override int GetHashCode() => Head.GetHashCode() ^ Tail.GetHashCode();
-    public override bool Equals(object? obj)
-        => obj is Edge e ? this.Head == e.Head && this.Tail == e.Tail : base.Equals(obj);
-    public override string ToString() => $"[{this.Head}->{this.Tail}]";
+    public override int GetHashCode() 
+        => Head.GetHashCode() ^ Tail.GetHashCode();
+    public override bool Equals(object? o)
+        => o is Edge e 
+        ? this.Head == e.Head && this.Tail == e.Tail 
+        : base.Equals(o);
+
+    public override string ToString() 
+        => $"[{this.Head}->{this.Tail}]";
 }
