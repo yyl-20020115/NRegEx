@@ -146,15 +146,12 @@ public static class RegExGraphVerifier
                         var tail = outEdge.Tail;
                         var index = path.IndexOf(tail);
                         if (index <= 0)
-                            paths.Add(path.CopyWith(tail));
+                            paths.Add(path.Copy(tail));
                         else
-                        {
-                            circles.Add(path.CopyWith().CutTo(index));
-                        }
+                            circles.Add(path.Copy().CutFrom(index));
                     }
                 }
             });
-
 
             if (circles.Count >= 2)
             {

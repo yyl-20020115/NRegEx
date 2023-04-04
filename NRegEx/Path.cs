@@ -58,13 +58,14 @@ public class Path
         }
         return this;
     }
-    public Path CutTo(int index)
+    public Path CutFrom(int index)
     {
         this.Nodes.RemoveRange(0, index);
         return this;
     }
-    public int IndexOf(Node node) => Nodes.IndexOf(node);
-    public Path CopyWith(params Node[] ns)=> new(
+    public int IndexOf(Node node) 
+        => Nodes.IndexOf(node);
+    public Path Copy(params Node[] ns)=> new(
             this.Nodes.ToList(),
             this.NodeSet.ToHashSet(), ns);
     public bool HasPathTo(Path path, bool original = true)
