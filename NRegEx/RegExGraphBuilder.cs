@@ -11,6 +11,7 @@ public class RegExGraphBuilder
     public readonly Dictionary<int, Graph> BackRefPoints = new();
     public readonly Dictionary<int, GroupType> GroupTypes = new();
     public readonly ListLookups<int, Graph> ConditionsGraphs = new();
+    public bool UseMinMaxEdge = false;
     public Graph Build(RegExNode node, int id = 0, bool caseInsensitive = false)
         => GraphUtils.Reform(BuildInternal(node, caseInsensitive), id);
     protected Graph BuildInternal(RegExNode node, bool caseInsensitive = false)
@@ -192,7 +193,7 @@ public class RegExGraphBuilder
                     if (node.Children.Count > 0)
                         graph.ComposeRepeats(BuildInternal(node.Children[0]),
                             node.Min.GetValueOrDefault(),
-                            node.Max.GetValueOrDefault());
+                            node.Max.GetValueOrDefault(),this.UseMinMaxEdge);
                 }
                 break;
             case TokenTypes.BeginLine:

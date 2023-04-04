@@ -5,6 +5,7 @@
  * license that can be found in the LICENSE file.
  */
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 
 namespace NRegEx;
 public static class RegExGraphVerifier
@@ -14,18 +15,8 @@ public static class RegExGraphVerifier
         if (nodes.Count > 0)
         {
             var first = nodes[0];
-            nodes.RemoveAt(0);
             nodes.Add(first);
-        }
-        return nodes;
-    }
-    public static List<Node> RightShift(this List<Node> nodes)
-    {
-        if (nodes.Count > 0)
-        {
-            var last = nodes[^1];
-            nodes.RemoveAt(nodes.Count-1);
-            nodes.Insert(0,last);
+            nodes.RemoveAt(0);
         }
         return nodes;
     }
@@ -38,7 +29,7 @@ public static class RegExGraphVerifier
             var eq = true;
             for (int j = 0; j < path2.Count; j++)
             {
-                if (path2[j] != path1[j])
+                if (path2[j].Id != path1[j].Id)
                 {
                     eq = false;
                     break;
@@ -48,6 +39,28 @@ public static class RegExGraphVerifier
             path1.LeftShift();
         }
 
+        return false;
+    }
+
+    public static bool HasPassage(this Node from, Node to)
+    {
+        //TODO:
+        return false;
+    }
+    public static bool HasPassage(this List<Node> nodesMain, List<Node> nodesLocal)
+    {
+        if(nodesMain is not null && nodesLocal is not null 
+            && nodesMain.Count>0 && nodesLocal.Count>0
+            && nodesMain.Count>nodesLocal.Count){
+            var nid1 = nodesMain.Min(n => n.Id);
+            var nid2 = nodesLocal.Min(n => n.Id);
+            for(int i = 0; i < nodesMain.Count; i++)
+                if (nodesMain[0].Id != nid1) nodesMain.LeftShift();
+            for (int i = 0; i < nodesLocal.Count; i++)
+                if (nodesLocal[0].Id != nid2 || nodesLocal[0].IsLink) nodesLocal.LeftShift();
+
+            return nodesMain[0].HasPassage(nodesLocal[0]);
+        }
         return false;
     }
     /// <summary>
@@ -70,6 +83,7 @@ public static class RegExGraphVerifier
             (options & Options.DOT_NL) == Options.DOT_NL);
     public static bool IsCatastrophicBacktrackingPossible(Graph graph, bool withNewLine = true)
     {
+        GraphUtils.ExportAsDot(graph);
         var step = 0;
         var nodeChars = new ConcurrentDictionary<Node, HashSet<int>>();
         var paths = new ConcurrentBag<Path>(graph.Head.Outputs.Select(o => new Path(graph.Head, o)));
@@ -117,14 +131,16 @@ public static class RegExGraphVerifier
                     {
                         var cli = circle_paths[i];
                         var clj = circle_paths[j];
-                        var nli = cli.NodesReversed.ToList();
-                        var nlj = clj.NodesReversed.ToList();
-                        if (nli.IsSubPath(nlj))
+                        var nli = cli.NodesList;
+                        var nlj = clj.NodesList;
+                        if (nli.IsSubPath(nlj) && nlj.HasPassage(nli))
                         {
+                            //看ID最小节点是否互通
                             return true;
                         }
-                        else if (nlj.IsSubPath(nli))
+                        else if (nlj.IsSubPath(nli) && nli.HasPassage(nlj))
                         {
+                            //看ID最小节点是否互通
                             return true;
                         }
                         else if (cli.HasPathTo(clj) || clj.HasPathTo(cli))
@@ -136,11 +152,11 @@ public static class RegExGraphVerifier
                 }
                 if (circle_pairs.Count > 0)
                 {
-                    foreach (var n in circle_pairs)
+                    foreach (var (pi, pj) in circle_pairs)
                     //Parallel.ForEach(pairs,(n,s) =>
                     {
-                        var ri = n.pi.NodeSet.Where(i => !i.IsLink).ToArray();
-                        var rj = n.pj.NodeSet.Where(j => !j.IsLink).ToArray();
+                        var ri = pi.NodeSet.Where(i => !i.IsLink).ToArray();
+                        var rj = pj.NodeSet.Where(j => !j.IsLink).ToArray();
                         foreach (var inode in ri)
                         {
                             foreach (var jnode in rj)

@@ -93,14 +93,11 @@ public class Path
             var list = this.ListTail;
             while (list != null)
             {
+                nodes.Add(new(list.Node));
                 if (list == target)
                 {
                     path = new(nodes, isCircle);
                     break;
-                }
-                else
-                {
-                    nodes.Add(new(list.Node));
                 }
                 list = list.Previous;
             }
@@ -124,6 +121,8 @@ public class Path
             }
         }
     }
+    protected List<Node>? nodes = null;
+    public List<Node> NodesList => this.nodes ??= this.NodesReversed.Reverse().ToList();
     public IEnumerable<LinkedNode> LinkedNodesReversed
     {
         get

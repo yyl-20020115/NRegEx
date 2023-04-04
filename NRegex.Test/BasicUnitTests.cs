@@ -488,6 +488,9 @@ public class BasicUnitTests
     {
         var bad_ones = new string[]
         {
+            "(ax+)+y",//NOT
+            
+            "foo|(x+ax+)+y",//OK
             "^(a+)+$", //OK
             "^(a|a?)+$", //OK
             "(x+x+)+y", //OK

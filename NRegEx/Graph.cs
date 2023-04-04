@@ -236,7 +236,7 @@ public class Graph
         return this;
     }
 
-    public Graph ComposeRepeats(Graph graph, int min, int max)
+    public Graph ComposeRepeats(Graph graph, int min, int max, bool useMinMaxEdge)
     {
         var plus = max < 0;
 
@@ -250,21 +250,24 @@ public class Graph
             var g = graph.Copy();
             first ??= g;
             full.Add(g);
+            if (useMinMaxEdge) break;
             if (i >= min) extra.Add(g);
         }
 
         this.Concate(full, plus);
 
         //let first graph's edge remember the min and max repeats
-        if (min > 0 && first != null)
+        if (useMinMaxEdge && min > 0 && first != null)
         {
             if (max < min) max = min;
             this.Edges.Add(new(first.Tail, first.Head, min, max));
         }
-
-        for (int i = 0; i < extra.Count; i++)
+        if (!useMinMaxEdge)
         {
-            this.Edges.Add(new(extra[i].Head, this.Tail));
+            for (int i = 0; i < extra.Count; i++)
+            {
+                this.Edges.Add(new(extra[i].Head, this.Tail));
+            }
         }
         return this;
     }
