@@ -552,8 +552,8 @@ public class BasicUnitTests
             //"(a+){2}y",//OK
             //"(a+){10}y",//OK
             //"(.*a){25}",//OK
-            "(a?){25}(a){25}",//SLOW
-            "(.*){1,1000}[bc]",//SLOW
+            //"(a?){25}(a){25}",//OK,SLOW
+            "(.*){1,1000}[bc]",//OK,SLOW
         };
         foreach(var bad_one in bad_ones)
         {

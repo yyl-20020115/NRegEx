@@ -114,21 +114,22 @@ public static class RegExGraphVerifier
 
         var circles = new ConcurrentBag<Path>();
 
-        var paths = new List<Path>(graph.Head.Outputs.Select(o => new Path(graph.Head, o)));
+        var paths = new ConcurrentBag<Path>(graph.Head.Outputs.Select(o => new Path(graph.Head, o)));
         var count = graph.Nodes.Count;
         var step = 0;
-        var heads = new Dictionary<Node, HashSet<Edge>>();
+        var heads = new ConcurrentDictionary<Node, HashSet<Edge>>();
 
-        foreach(var node in graph.Nodes)
+        //foreach (var node in graph.Nodes)
+        Parallel.ForEach(graph.Nodes, node =>
         {
             heads[node] = graph.Edges.Where(e => e.Head == node).ToHashSet();
-        }
+        });
         while (step++ < count)
         {
-            //paths = new ConcurrentBag<Path>(paths.Where(path=>path.Length>=step));
-            paths.RemoveAll(path => path.Length < step);
-            //paths.AsParallel().ForAll(path =>
-            foreach(var path in paths.ToArray())
+            paths = new ConcurrentBag<Path>(paths.Where(path=>path.Length>=step));
+            //paths.RemoveAll(path => path.Length < step);
+            paths.AsParallel().ForAll(path =>
+            //foreach(var path in paths.ToArray())
             {
                 var current = path.End;
                 if (current != null)
@@ -151,7 +152,7 @@ public static class RegExGraphVerifier
                         }
                     }
                 }
-            }//);
+            });
 
             if (circles.Count >= 2)
             {

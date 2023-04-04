@@ -4,6 +4,7 @@
  * Use of this source code is governed by a BSD-style
  * license that can be found in the LICENSE file.
  */
+using System.Collections.Concurrent;
 using System.Text;
 
 namespace NRegEx;
@@ -31,12 +32,12 @@ public static class GraphUtils
                 var stream = new List<Edge>();
                 var next = node;
                 var last = node;
-                var edge = tailsDict[next];// graph.Edges.Single(e => e.Tail == next);
+                var edge = tailsDict[next];
                 do
                 {
                     dots.Add(next);
                     stream.Add(edge);
-                    edge = headsDict[next];// graph.Edges.Single(e => e.Head == next);
+                    edge = headsDict[next];
                     last = next;
                     next = edge.Tail;
                 } while (next != null && next.IsBridge);
@@ -80,8 +81,6 @@ public static class GraphUtils
         return builder;
     }
 
-    public static HashSet<Node> GetFollowings(Graph graph, Node current, HashSet<Node> visited)
-        => graph.Edges.Where(e => e.Head == current && visited.Add(e.Tail)).Select(e => e.Tail).ToHashSet();
     public static bool HasPassThrough(Graph graph, int direction = 1)
         => HasPassThrough(direction >= 0 ? graph.Tail : graph.Head, new Node[] { direction >= 1 ? graph.Head : graph.Tail });
     public static bool HasPassThrough(Graph graph, IEnumerable<Node> nodes, int direction = 1)
@@ -114,12 +113,25 @@ public static class GraphUtils
 
         return false;
     }
-    public static Graph Reform(Graph graph, int id = 0) => Reorder(Compact(graph), id);
+    public static Graph Reform(Graph graph, int id = 0) 
+        => Reorder(Compact(graph), id);
+    //public static HashSet<Node> GetFollowings(Graph graph, Node current, HashSet<Node> visited)
+    //    => ;
     public static Graph Reorder(Graph graph, int id = 0)
     {
+        var cdict = new ConcurrentDictionary<Node, HashSet<Node>>();
+        //foreach (var node in graph.Nodes)
+        Parallel.ForEach(graph.Nodes, node =>
+        {
+            cdict[node] = graph.Edges.Where(
+                e => e.Head == node).Select(e => e.Tail).ToHashSet();
+        });
+        
+        var dict = new Dictionary<Node, HashSet<Node>>(cdict);
 
         var visited = new HashSet<Node>();
-        var followings = GetFollowings(graph, graph.Head, visited);
+        var followings = dict[graph.Head].Where(n => visited.Add(n)).ToHashSet();
+        // GetFollowings(graph, graph.Head, visited);
         var list = new List<HashSet<Node>>
         {
             new() { graph.Head },
@@ -131,7 +143,8 @@ public static class GraphUtils
         {
             foreach (var node in followings)
             {
-                collectings.UnionWith(GetFollowings(graph, node, visited));
+                collectings.UnionWith(
+                    dict[graph.Head].Where(n => visited.Add(n)));
             }
             followings = collectings.ToHashSet();
             if (collectings.Count > 0)
