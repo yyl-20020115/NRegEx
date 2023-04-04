@@ -6,6 +6,7 @@
  */
 using System.Collections.Concurrent;
 using System.Net.Http.Headers;
+using System.Text.RegularExpressions;
 using static NRegEx.Path;
 
 namespace NRegEx;
@@ -52,72 +53,15 @@ public static class RegExGraphVerifier
     /// <returns></returns>
     public static bool IsCatastrophicBacktrackingPossible(Regex regex)
         => IsCatastrophicBacktrackingPossible(
-            (regex.Model), (regex.Options & Options.DOT_NL) == Options.DOT_NL);
-    public static bool IsCatastrophicBacktrackingPossible(string regex, bool withNewLine = true)
+            regex.Model, regex.Options);
+    public static bool IsCatastrophicBacktrackingPossible(string regex, Options options = Options.PERL_X)
         => IsCatastrophicBacktrackingPossible(
-            (new RegExDomParser(regex,regex,Options.PERL).Parse()), withNewLine);
+            new RegExDomParser(regex,regex,Options.PERL).Parse(), options);
 
-    public static RegExNode MaskModel(RegExNode model, HashSet<RegExNode>? visited = null)
-    {
-        //1. clean +?
-        //2. remove ^ and $
-        //3. remove \b \B 
-        //4. remove lookarounds
-        //5. remove backreference
-        //6. remove noncaptives
-        if ((visited ??= new()).Add(model))
-        {
-            var isRemoved = false;
-
-            switch (model.Type)
-            {
-                case TokenTypes.BeginLine:
-                case TokenTypes.EndLine:
-                case TokenTypes.BeginText:
-                case TokenTypes.EndText:
-                case TokenTypes.WordBoundary:
-                case TokenTypes.NotWordBoundary:
-                    isRemoved = true;
-                    break;
-                case TokenTypes.Group:
-                    switch (model.GroupType)
-                    {
-                        case GroupType.NotCaptiveGroup:
-                        case GroupType.ForwardPositiveGroup:
-                        case GroupType.ForwardNegativeGroup:
-                        case GroupType.BackwardPositiveGroup:
-                        case GroupType.BackwardNegativeGroup:
-                        case GroupType.LookAroundConditionGroup:
-                        case GroupType.BackReferenceCondition:
-                        case GroupType.BackReferenceConditionGroup:
-                            isRemoved = true;
-                            break;
-                    }
-
-                    break;
-            }
-            if (!isRemoved)
-            {
-                var children = model.Children.ToArray();
-
-                foreach (var child in children)
-                {
-                    MaskModel(child, visited);
-                }
-            }
-            else
-            {
-                model.IsRemoved = true;
-            }
-        }
-        return model;
-    }
-
-
-    public static bool IsCatastrophicBacktrackingPossible(RegExNode model, bool withNewLine = true)
+    public static bool IsCatastrophicBacktrackingPossible(RegExNode model, Options options = Options.PERL_X)
         => IsCatastrophicBacktrackingPossible(
             new RegExGraphBuilder().Build(model, 0,false),
-            withNewLine);
+            (options & Options.DOT_NL) == Options.DOT_NL);
 
     public static bool IsCatastrophicBacktrackingPossible(Graph graph, bool withNewLine = true)
     {

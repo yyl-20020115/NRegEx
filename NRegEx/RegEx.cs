@@ -56,7 +56,7 @@ public class Regex
     public RegExNode Model { get; protected set; }
     public Graph Graph { get; protected set; }
 
-    public Regex(string pattern, string? name = null, Options options = Options.PERL)
+    public Regex(string pattern, string? name = null, Options options = Options.PERL_X)
     {
         this.Pattern = pattern;
         this.Name = name ?? this.Pattern;
