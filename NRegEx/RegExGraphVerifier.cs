@@ -52,12 +52,12 @@ public static class RegExGraphVerifier
     /// <returns></returns>
     public static bool IsCatastrophicBacktrackingPossible(Regex regex)
         => IsCatastrophicBacktrackingPossible(
-            RebuildModel(regex.Model), (regex.Options & Options.DOT_NL) == Options.DOT_NL);
+            (regex.Model), (regex.Options & Options.DOT_NL) == Options.DOT_NL);
     public static bool IsCatastrophicBacktrackingPossible(string regex, bool withNewLine = true)
         => IsCatastrophicBacktrackingPossible(
-            RebuildModel(new RegExDomParser(regex,regex,Options.PERL).Parse()), withNewLine);
+            (new RegExDomParser(regex,regex,Options.PERL).Parse()), withNewLine);
 
-    public static RegExNode RebuildModel(RegExNode model, HashSet<RegExNode>? visited = null)
+    public static RegExNode MaskModel(RegExNode model, HashSet<RegExNode>? visited = null)
     {
         //1. clean +?
         //2. remove ^ and $
@@ -65,9 +65,7 @@ public static class RegExGraphVerifier
         //4. remove lookarounds
         //5. remove backreference
         //6. remove noncaptives
-        visited ??= new();
-
-        if (visited.Add(model))
+        if ((visited ??= new()).Add(model))
         {
             var isRemoved = false;
 
@@ -104,8 +102,12 @@ public static class RegExGraphVerifier
 
                 foreach (var child in children)
                 {
-                    RebuildModel(child, visited);
+                    MaskModel(child, visited);
                 }
+            }
+            else
+            {
+                model.IsRemoved = true;
             }
         }
         return model;
@@ -156,6 +158,8 @@ public static class RegExGraphVerifier
             if (circles.Count >= 2)
             {
                 circles = new(circles.Distinct(new PathEqualityComparer()));
+                if (circles.Count < 2) continue;
+
                 var circle_pairs = new List<(Path pi, Path pj)>();
                 var circle_paths = circles.ToArray();
                 for (int i = 0; i < circle_paths.Length; i++)
@@ -164,11 +168,8 @@ public static class RegExGraphVerifier
                     {
                         var cli = circle_paths[i];
                         var clj = circle_paths[j];
-                        if (cli.HasPathTo(clj) || clj.HasPathTo(cli))
-                        {
-                            circle_pairs.Add((cli, clj));
-                        }
-                        else if (cli.Nodes.IsSubPath(clj.Nodes))
+
+                        if (cli.Nodes.IsSubPath(clj.Nodes))
                         {
                             return true;
                         }
@@ -176,6 +177,11 @@ public static class RegExGraphVerifier
                         {
                             return true;
                         }
+                        else if (cli.HasPathTo(clj) || clj.HasPathTo(cli))
+                        {
+                            circle_pairs.Add((cli, clj));
+                        }
+                        
                     }
                 }
                 if(circle_pairs.Count > 0)
@@ -191,7 +197,6 @@ public static class RegExGraphVerifier
                             {
                                 if (nodeChars[inode].Overlaps(nodeChars[jnode]))
                                 {
-                                    //GraphUtils.ExportAsDot(graph);
                                     return true;
                                 }
                             }
