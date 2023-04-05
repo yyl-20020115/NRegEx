@@ -122,7 +122,9 @@ public class Path
         }
     }
     protected List<Node>? nodes = null;
-    public List<Node> NodesList => this.nodes ??= this.NodesReversed.Reverse().ToList();
+
+    public List<Node> ComposeNodesList() => nodes ??= this.NodesReversed.Reverse().ToList();
+
     public IEnumerable<LinkedNode> LinkedNodesReversed
     {
         get

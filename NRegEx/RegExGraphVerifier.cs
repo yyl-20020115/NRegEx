@@ -5,7 +5,6 @@
  * license that can be found in the LICENSE file.
  */
 using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
 
 namespace NRegEx;
 public static class RegExGraphVerifier
@@ -24,6 +23,7 @@ public static class RegExGraphVerifier
     public static bool IsSubPath(this List<Node> path1, List<Node> path2)
     {
         if (path1 == null || path2 == null) return false;
+        if (path1.Count < path2.Count) return false;
         for (int i = 0; i < path1.Count; i++)
         {
             var eq = true;
@@ -79,11 +79,11 @@ public static class RegExGraphVerifier
             new RegExDomParser(regex, regex, options).Parse(), options);
     public static bool IsCatastrophicBacktrackingPossible(RegExNode model, Options options = Options.PERL_X)
         => IsCatastrophicBacktrackingPossible(
-            new RegExGraphBuilder().Build(model, 0, false),
+            new RegExGraphBuilder() { UseMinMaxEdge = true }.Build(model, 0, false),
             (options & Options.DOT_NL) == Options.DOT_NL);
     public static bool IsCatastrophicBacktrackingPossible(Graph graph, bool withNewLine = true)
     {
-        GraphUtils.ExportAsDot(graph);
+        //GraphUtils.ExportAsDot(graph);
         var step = 0;
         var nodeChars = new ConcurrentDictionary<Node, HashSet<int>>();
         var paths = new ConcurrentBag<Path>(graph.Head.Outputs.Select(o => new Path(graph.Head, o)));
@@ -131,14 +131,15 @@ public static class RegExGraphVerifier
                     {
                         var cli = circle_paths[i];
                         var clj = circle_paths[j];
-                        var nli = cli.NodesList;
-                        var nlj = clj.NodesList;
-                        if (nli.IsSubPath(nlj) && nlj.HasPassage(nli))
+                        var nli = cli.ComposeNodesList();
+                        var nlj = clj.ComposeNodesList();
+
+                        if (nli.IsSubPath(nlj) && nli.HasPassage(nlj))
                         {
                             //看ID最小节点是否互通
                             return true;
                         }
-                        else if (nlj.IsSubPath(nli) && nli.HasPassage(nlj))
+                        else if (nlj.IsSubPath(nli) && nlj.HasPassage(nli))
                         {
                             //看ID最小节点是否互通
                             return true;
@@ -192,22 +193,35 @@ public static class RegExGraphVerifier
         
         return nodeChars;
     }
-
 }
+
 //a. 嵌套量词（NQ）模式：具有嵌套量词的正则表达式。
-//      (\d+)+ 
+//   包围模式，外部完全包含内部
+//      (\d+)+ 但是(a\d+)+不是：考虑前缀情况
 //b.指数重叠析取（EOD）模式：β = (…(β1 | β2 |…| βk)…){ mβ,nβ} 其中nβ > 1，且满足以下两个条件之一：
+//   同步开头模式，开始位置相同，长度不一定相同
+//
 // 1. 头部有交集
 //      (ab|ac|ad){2,}
 // 2. 一个的头部和另一个的尾部有交集
 //      (ab|bc|cd){2,}
+//!!!! c 和 d 可以合并
 //c. 指数重叠相邻（EOA）模式：β=(…(β1β2)…){mβ,nβ}，其中nβ> 1,满足以下两个条件之一
+//    相邻两个部分有交集
+//
 // 1 头部和尾部有交集
 //      (ab(ab)(bc)cd){2,}
 // 2 尾部和头部有交集
 //      (ab(ba)(ac)cd){2,}
-//d. 多项式重叠相邻（POA）模式：：β=(…(β1β2)…){mβ,nβ}，其中nβ <= 1，且满足条件β1.followlast ∩ β2.first ≠ \not= ​= ∅.。
+//d. 多项式重叠相邻（POA）模式：：β=(…(β1β2)…){mβ,nβ}，其中nβ <= 1，
+//   且满足条件β1.followlast ∩ β2.first ≠ \not= ​= ∅.。
 // 尾部和头部有交集
 //      (ab(ba)(ac)cd){0,1}
 //e. 从大量词开始（SLQ）模式：有四种可能的触发条件，其中 n β > n m i n n_β>n_{min} nβ​>nmin​。
 //
+
+/*
+ *  1.	嵌套量词或者巨大量词（指数）：里外两圈，且从外圈到里圈存在通路
+ *  2.	多头交叠（指数）：平行多圈（开头相同）
+ *  3.	（多项式：0~1）/（指数：1~n）直接或者间接邻接有交集
+ */
