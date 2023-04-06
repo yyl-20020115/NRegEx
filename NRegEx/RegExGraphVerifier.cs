@@ -55,6 +55,7 @@ public static class RegExGraphVerifier
 
             if(first_local is not null && chars.TryGetValue(first_local,out var chs))
             {
+                var visited = new HashSet<Node>();
                 HashSet<Node> nodes;
                 do
                 {
@@ -64,12 +65,15 @@ public static class RegExGraphVerifier
 
                     foreach(var node in nodesCopy)
                     {
-                        if (node == head_main) 
-                            return true;
-                        else if(node.Id<head_main.Id 
-                            && chars.TryGetValue(node,out var nhs) 
-                            && nhs.Overlaps(chs))
-                            nodes.Add(node);
+                        if (visited.Add(node))
+                        {
+                            if (node == head_main)
+                                return true;
+                            else if (node.Id < head_main.Id
+                                && chars.TryGetValue(node, out var nhs)
+                                && nhs.Overlaps(chs))
+                                nodes.Add(node);
+                        }
                     }
                 } while (nodes.Count > 0);
             }
