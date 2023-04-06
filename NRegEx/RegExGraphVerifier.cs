@@ -5,6 +5,7 @@
  * license that can be found in the LICENSE file.
  */
 using System.Collections.Concurrent;
+using System.Xml.Linq;
 
 namespace NRegEx;
 public static class RegExGraphVerifier
@@ -42,19 +43,34 @@ public static class RegExGraphVerifier
         return false;
     }
 
-    public static bool HasPassage(this Node from, Node to)
+    public static bool HasPassage(this Node node1, Node node2)
     {
         //TODO:
         return false;
     }
+    public static bool HasSameSourceWith(this Node node1, Node node2)
+    {
+        if (node1 == null || node2 == null) return true;
+
+        HashSet<Node> n1set = new();
+        HashSet<Node> n2set = new();
+        while (true)
+        {
+
+        }
+
+
+        return false;
+    }
     public static bool HasPassage(this List<Node> nodesMain, List<Node> nodesLocal)
     {
-        if(nodesMain is not null && nodesLocal is not null 
-            && nodesMain.Count>0 && nodesLocal.Count>0
-            && nodesMain.Count>nodesLocal.Count){
+        if (nodesMain is not null && nodesLocal is not null
+            && nodesMain.Count > 0 && nodesLocal.Count > 0
+            && nodesMain.Count > nodesLocal.Count)
+        {
             var nid1 = nodesMain.Min(n => n.Id);
             var nid2 = nodesLocal.Min(n => n.Id);
-            for(int i = 0; i < nodesMain.Count; i++)
+            for (int i = 0; i < nodesMain.Count; i++)
                 if (nodesMain[0].Id != nid1) nodesMain.LeftShift();
             for (int i = 0; i < nodesLocal.Count; i++)
                 if (nodesLocal[0].Id != nid2 || nodesLocal[0].IsLink) nodesLocal.LeftShift();
@@ -81,18 +97,23 @@ public static class RegExGraphVerifier
         => IsCatastrophicBacktrackingPossible(
             new RegExGraphBuilder() { UseMinMaxEdge = true }.Build(model, 0, false),
             (options & Options.DOT_NL) == Options.DOT_NL);
+    /*
+     *  1.	嵌套量词或者巨大量词（指数）：里外两圈，且从外圈到里圈存在通路
+     *  2.	多头交叠（指数）：平行多圈（开头相同或者有交集）
+     *  3.	（多项式：0~1）/（指数：1~n）直接或者间接邻接有交集或者有通路（平行选项中一个的结尾是另一个的开始）
+     */
+
     public static bool IsCatastrophicBacktrackingPossible(Graph graph, bool withNewLine = true)
     {
-        //GraphUtils.ExportAsDot(graph);
+        GraphUtils.ExportAsDot(graph);
         var step = 0;
-        var nodeChars = new ConcurrentDictionary<Node, HashSet<int>>();
+        var chars = new ConcurrentDictionary<Node, HashSet<int>>();
         var paths = new ConcurrentBag<Path>(graph.Head.Outputs.Select(o => new Path(graph.Head, o)));
         var heads = new ConcurrentDictionary<Node, HashSet<Edge>>();
         var circles = new ConcurrentBag<Path>();
         var count = graph.Nodes.Count;
-        CollectNodeChars(graph.Nodes, nodeChars, withNewLine);
+        CollectNodeChars(graph.Nodes, chars, withNewLine);
 
-        //foreach (var node in graph.Nodes)
         Parallel.ForEach(graph.Nodes, node =>
         {
             heads.GetOrAdd(node, graph.Edges.Where(e => e.Head == node).ToHashSet());
@@ -101,12 +122,12 @@ public static class RegExGraphVerifier
         while (step++ < count && !paths.IsEmpty)
         {
             paths = new(paths.Where(path => path.Length >= step));
-            paths.AsParallel().ForAll(path =>
+            Parallel.ForEach(paths, (path, ls) =>
             {
                 var current = path.End;
                 if (current != null)
                 {
-                    foreach (var outEdge in heads[current])// graph.Edges.Where(e => e.Head == current)
+                    foreach (var outEdge in heads[current])
                     {
                         var tail = outEdge.Tail;
                         var target = path.Find(tail);
@@ -127,48 +148,55 @@ public static class RegExGraphVerifier
                 var circle_paths = circles.ToArray();
                 for (int i = 0; i < circle_paths.Length; i++)
                 {
+                    var i_circle = circle_paths[i];
+                    var i_nodes = i_circle.ComposeNodesList();
+                    if (i_nodes.Count == 0) continue;
+                    var first_i_node = i_nodes.FirstOrDefault(n => !n.IsLink);
+
                     for (int j = i + 1; j < circle_paths.Length; j++)
                     {
-                        var cli = circle_paths[i];
-                        var clj = circle_paths[j];
-                        var nli = cli.ComposeNodesList();
-                        var nlj = clj.ComposeNodesList();
+                        var j_circle = circle_paths[j];
+                        var j_nodes = j_circle.ComposeNodesList();
+                        if (j_nodes.Count == 0) continue;
 
-                        if (nli.IsSubPath(nlj) && nli.HasPassage(nlj))
+                        var first_j_node = j_nodes.FirstOrDefault(n => !n.IsLink);
+
+                        if (i_nodes[0].HasSameSourceWith(j_nodes[0])
+                            || first_i_node != null && first_j_node != null
+                            && (first_i_node.Id == first_j_node.Id
+                            || chars[first_i_node].Overlaps(chars[first_j_node])))
+                        {
+                            //两个环具有完全相同的开始(同源)
+                            //或者两个环的开始具有交集
+                            return true;
+                        }
+                        else if (i_nodes.IsSubPath(j_nodes) && i_nodes.HasPassage(j_nodes))
                         {
                             //看ID最小节点是否互通
                             return true;
                         }
-                        else if (nlj.IsSubPath(nli) && nlj.HasPassage(nli))
+                        else if (j_nodes.IsSubPath(i_nodes) && j_nodes.HasPassage(i_nodes))
                         {
                             //看ID最小节点是否互通
                             return true;
                         }
-                        else if (cli.HasPathTo(clj) || clj.HasPathTo(cli))
+                        else if (i_circle.HasPathTo(j_circle) || j_circle.HasPathTo(i_circle))
                         {
-                            circle_pairs.Add((cli, clj));
+                            circle_pairs.Add((i_circle, j_circle));
                         }
-
                     }
                 }
                 if (circle_pairs.Count > 0)
                 {
-                    foreach (var (pi, pj) in circle_pairs)
-                    //Parallel.ForEach(pairs,(n,s) =>
+                    foreach (var (i_circle, j_circle) in circle_pairs)
                     {
-                        var ri = pi.NodeSet.Where(i => !i.IsLink).ToArray();
-                        var rj = pj.NodeSet.Where(j => !j.IsLink).ToArray();
-                        foreach (var inode in ri)
-                        {
-                            foreach (var jnode in rj)
-                            {
-                                if (nodeChars[inode].Overlaps(nodeChars[jnode]))
-                                {
+                        var i_nodes = i_circle.NodeSet.Where(i => !i.IsLink).ToArray();
+                        var j_nodes = j_circle.NodeSet.Where(j => !j.IsLink).ToArray();
+                        foreach (var i_node in i_nodes)
+                            foreach (var j_node in j_nodes)
+                                if (chars[i_node].Overlaps(chars[j_node]))
                                     return true;
-                                }
-                            }
-                        }
-                    }//);
+                    }
                 }
             }
         }
@@ -176,7 +204,7 @@ public static class RegExGraphVerifier
     }
     public static ConcurrentDictionary<Node, HashSet<int>> CollectNodeChars(HashSet<Node> nodes, ConcurrentDictionary<Node, HashSet<int>> nodeChars, bool withNewLine)
     {
-        Parallel.ForEach(nodes, node =>
+        Parallel.ForEach(nodes, (node, ls) =>
         {
             if (!node.IsLink && node.CharsArray != null)
             {
@@ -190,7 +218,7 @@ public static class RegExGraphVerifier
                 nodeChars.GetOrAdd(node, chars);
             }
         });
-        
+
         return nodeChars;
     }
 }
@@ -220,8 +248,3 @@ public static class RegExGraphVerifier
 //e. 从大量词开始（SLQ）模式：有四种可能的触发条件，其中 n β > n m i n n_β>n_{min} nβ​>nmin​。
 //
 
-/*
- *  1.	嵌套量词或者巨大量词（指数）：里外两圈，且从外圈到里圈存在通路
- *  2.	多头交叠（指数）：平行多圈（开头相同）
- *  3.	（多项式：0~1）/（指数：1~n）直接或者间接邻接有交集
- */
