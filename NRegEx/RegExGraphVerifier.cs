@@ -173,7 +173,7 @@ public static class RegExGraphVerifier
                         }
                         var longer_nodes = (i_nodes.Count >= j_nodes.Count ? i_nodes : j_nodes);
                         var shorter_nodes = (i_nodes.Count < j_nodes.Count ? i_nodes : j_nodes);
-
+                        //大环套小环模式
                         if (longer_nodes.HasSubpath(shorter_nodes))
                         {
                             return longer_nodes.HasPassage(shorter_nodes, chars);
