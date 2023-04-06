@@ -56,23 +56,24 @@ public static class RegExGraphVerifier
             if(first_local is not null && chars.TryGetValue(first_local,out var chs))
             {
                 var visited = new HashSet<Node>();
-                HashSet<Node> nodes;
+                var nodes = first_local.FetchNodes(new(), direction: -1);
                 do
                 {
-                    nodes = first_local.FetchNodes(new(), direction: -1);
                     var nodesCopy = nodes.ToArray();
                     nodes.Clear();
 
-                    foreach(var node in nodesCopy)
+                    foreach (var node in nodesCopy)
                     {
-                        if (visited.Add(node))
+                        if (node == head_main)
                         {
-                            if (node == head_main)
-                                return true;
-                            else if (node.Id < head_main.Id
-                                && chars.TryGetValue(node, out var nhs)
-                                && nhs.Overlaps(chs))
-                                nodes.Add(node);
+                            return true;
+                        }
+                        else if (visited.Add(node)
+                            && node.Id < head_main.Id
+                            && chars.TryGetValue(node, out var nhs)
+                            && nhs.Overlaps(chs))
+                        {
+                            node.FetchNodes(nodes, direction: -1);
                         }
                     }
                 } while (nodes.Count > 0);
