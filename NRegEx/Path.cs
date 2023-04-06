@@ -42,8 +42,7 @@ public class Path
             for (int i = 0; i < reversed_list.Count; i++)
             {
                 var node = reversed_list[i].Node;
-                if(node is not null)
-                    this.NodeSet.Add(node);
+                if(node is not null) this.NodeSet.Add(node);
                 reversed_list[i].Previous = i == 0 ? null : reversed_list[i - 1];
             }
             this.ListTail = reversed_list[^1];
@@ -51,6 +50,26 @@ public class Path
         }
         this.isCircle = isCircle;
     }
+    public Path(List<Node> reversed_list, bool isCircle = false)
+    {
+        if (reversed_list.Count > 0)
+        {
+            List<LinkedNode> inner_reversed_list = new List<LinkedNode>();
+
+            for (int i = 0; i < reversed_list.Count; i++)
+            {
+                var node = reversed_list[i];
+                if (node is not null) this.NodeSet.Add(node);
+                var ln = new LinkedNode(node);
+                ln.Previous = i == 0 ? null : inner_reversed_list[i - 1];
+                inner_reversed_list.Add(ln);
+            }
+            this.ListTail = inner_reversed_list[^1];
+            this.length = inner_reversed_list.Count;
+        }
+        this.isCircle = isCircle;
+    }
+
     public Path(Path path, Node node):
         this(node)
     {
@@ -60,19 +79,25 @@ public class Path
             this.length += path.Length;
         }
     }
-    public bool IsEmpty => this.Length == 0;
+    public bool IsEmpty 
+        => this.Length == 0
+        ;
 
-    public Node? End => !this.IsEmpty ? this.ListTail?.Node : null;
+    public Node? End 
+        => !this.IsEmpty 
+        ? this.ListTail?.Node 
+        : null
+        ;
 
 
     public LinkedNode? Find(Node node)
     {
-        LinkedNode? ln = this.ListTail;
-        while (ln is not null)
+        var list = this.ListTail;
+        while (list is not null)
         {
-            if (ln.Node == node)
-                return ln;
-            ln = ln.Previous;
+            if (list.Node == node)
+                return list;
+            list = list.Previous;
         }
         return null;
     }
@@ -106,6 +131,9 @@ public class Path
             return path;
         }
     }
+    public List<Node> ComposeNodesList()
+        => this.NodesReversed.Reverse().ToList();
+
     public IEnumerable<Node> NodesReversed
     {
         get
@@ -120,9 +148,6 @@ public class Path
             }
         }
     }
-    protected List<Node>? nodes = null;
-
-    public List<Node> ComposeNodesList() => nodes ??= this.NodesReversed.Reverse().ToList();
 
     public IEnumerable<LinkedNode> LinkedNodesReversed
     {
@@ -159,8 +184,8 @@ public class Path
     public override string ToString()
     {
         var builder = new StringBuilder();
-        var list = this.ListTail;
         var first = true;
+        var list = this.ListTail;
         while (list != null)
         {
             var node = list.Node;

@@ -11,6 +11,7 @@ using System.IO;
 using System.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace NRegex.Test;
 
@@ -486,13 +487,15 @@ public class BasicUnitTests
     [TestMethod]
     public void TestMethod28()
     {
+        var good_ones = new string[]
+        {
+            "(ax+)+y",//NOT CBT
+        };
+
         var bad_ones = new string[]
         {
-            //"(abc|adx|azz)*",
-            //"(abc|cat)*",
-
-            //"(ax+)+y",//NOT
-            
+            "(abc|adx|azz)*", //OK
+            "(abc|cat)*", //OK
             "foo|(x+ax+)+y",//OK
             "^(a+)+$", //OK
             "^(a|a?)+$", //OK
@@ -501,16 +504,19 @@ public class BasicUnitTests
             "([a-zA-Z]+)*", //OK
             "(a|aa)+", //OK
 
-
             "(a+){2}y",//OK
             "(a+){10}y",//OK
             "(.*a){25}",//OK
             //"(a?){25}(a){25}",//OK,SLOW
             //"(.*){1,1000}[bc]",//OK,SLOW
         };
-        foreach(var bad_one in bad_ones)
+        foreach (var good_one in good_ones)
         {
-            //ExportAsDot(r);
+            var p = RegExGraphVerifier.IsCatastrophicBacktrackingPossible(good_one);
+            Assert.IsFalse(p);
+        }
+        foreach (var bad_one in bad_ones)
+        {
             var p = RegExGraphVerifier.IsCatastrophicBacktrackingPossible(bad_one);
             Assert.IsTrue(p);
         }
