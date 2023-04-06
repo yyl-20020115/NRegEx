@@ -23,8 +23,6 @@ public class LinkedNode
 }
 public class Path
 {
-    //public readonly List<Node> Nodes = new();
-
     public LinkedNode? ListTail = null;
 
     public readonly HashSet<Node> NodeSet = new();
@@ -84,7 +82,7 @@ public class Path
     {
         if (target is null)
         {
-            return new (this.LinkedNodesReversed.ToList(), isCircle);
+            return this;
         }
         else
         {
@@ -96,6 +94,7 @@ public class Path
                 nodes.Add(new(list.Node));
                 if (list == target)
                 {
+                    nodes.Reverse();
                     path = new(nodes, isCircle);
                     break;
                 }

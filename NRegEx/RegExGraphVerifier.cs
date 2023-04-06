@@ -5,7 +5,6 @@
  * license that can be found in the LICENSE file.
  */
 using System.Collections.Concurrent;
-using System.Xml.Linq;
 
 namespace NRegEx;
 public static class RegExGraphVerifier
@@ -21,61 +20,59 @@ public static class RegExGraphVerifier
         return nodes;
     }
 
-    public static bool IsSubPath(this List<Node> path1, List<Node> path2)
+    public static bool HasSubpath(this List<Node> longerPath, List<Node> shorterPath)
     {
-        if (path1 == null || path2 == null) return false;
-        if (path1.Count < path2.Count) return false;
-        for (int i = 0; i < path1.Count; i++)
+        if (longerPath == null || shorterPath == null) return false;
+        if (longerPath.Count < shorterPath.Count) return false;
+
+        var copyLongerPath = longerPath.ToList();
+        for (int i = 0; i < copyLongerPath.Count; i++)
         {
             var eq = true;
-            for (int j = 0; j < path2.Count; j++)
+            for (int j = 0; j < shorterPath.Count; j++)
             {
-                if (path2[j].Id != path1[j].Id)
+                if (shorterPath[j].Id != copyLongerPath[j].Id)
                 {
                     eq = false;
                     break;
                 }
             }
             if (eq) return true;
-            path1.LeftShift();
+            copyLongerPath.LeftShift();
         }
 
         return false;
     }
 
-    public static bool HasPassage(this Node node1, Node node2)
-    {
-        //TODO:
-        return false;
-    }
-    public static bool HasSameSourceWith(this Node node1, Node node2)
-    {
-        if (node1 == null || node2 == null) return true;
-
-        HashSet<Node> n1set = new();
-        HashSet<Node> n2set = new();
-        while (true)
-        {
-
-        }
-
-
-        return false;
-    }
-    public static bool HasPassage(this List<Node> nodesMain, List<Node> nodesLocal)
+    public static bool HasPassage(this List<Node> nodesMain, List<Node> nodesLocal, ConcurrentDictionary<Node, HashSet<int>> chars)
     {
         if (nodesMain is not null && nodesLocal is not null
             && nodesMain.Count > 0 && nodesLocal.Count > 0
             && nodesMain.Count > nodesLocal.Count)
         {
-            var nid1 = nodesMain.Min(n => n.Id);
-            var nid2 = nodesLocal.Min(n => n.Id);
-            for (int i = 0; i < nodesMain.Count; i++)
-                if (nodesMain[0].Id != nid1) nodesMain.LeftShift();
-            for (int i = 0; i < nodesLocal.Count; i++)
-                if (nodesLocal[0].Id != nid2 || nodesLocal[0].IsLink) nodesLocal.LeftShift();
+            var head_main = nodesMain[0];
+            var first_local = nodesLocal.FirstOrDefault(n => !n.IsLink) ?? nodesLocal[0];
 
-            return nodesMain[0].HasPassage(nodesLocal[0]);
+            if(first_local is not null && chars.TryGetValue(first_local,out var chs))
+            {
+                HashSet<Node> nodes;
+                do
+                {
+                    nodes = first_local.FetchNodes(new(), direction: -1);
+                    var nodesCopy = nodes.ToArray();
+                    nodes.Clear();
+
+                    foreach(var node in nodesCopy)
+                    {
+                        if (node == head_main) 
+                            return true;
+                        else if(node.Id<head_main.Id 
+                            && chars.TryGetValue(node,out var nhs) 
+                            && nhs.Overlaps(chs))
+                            nodes.Add(node);
+                    }
+                } while (nodes.Count > 0);
+            }
         }
         return false;
     }
@@ -105,8 +102,7 @@ public static class RegExGraphVerifier
 
     public static bool IsCatastrophicBacktrackingPossible(Graph graph, bool withNewLine = true)
     {
-        GraphUtils.ExportAsDot(graph);
-        var step = 0;
+        var steps = 0;
         var chars = new ConcurrentDictionary<Node, HashSet<int>>();
         var paths = new ConcurrentBag<Path>(graph.Head.Outputs.Select(o => new Path(graph.Head, o)));
         var heads = new ConcurrentDictionary<Node, HashSet<Edge>>();
@@ -119,9 +115,9 @@ public static class RegExGraphVerifier
             heads.GetOrAdd(node, graph.Edges.Where(e => e.Head == node).ToHashSet());
         });
 
-        while (step++ < count && !paths.IsEmpty)
+        while (steps++ < count && !paths.IsEmpty)
         {
-            paths = new(paths.Where(path => path.Length >= step));
+            paths = new(paths.Where(path => path.Length >= steps));
             Parallel.ForEach(paths, (path, ls) =>
             {
                 var current = path.End;
@@ -143,7 +139,6 @@ public static class RegExGraphVerifier
             {
                 circles = new(circles.Distinct(new PathEqualityComparer()));
                 if (circles.Count < 2) continue;
-
                 var circle_pairs = new List<(Path pi, Path pj)>();
                 var circle_paths = circles.ToArray();
                 for (int i = 0; i < circle_paths.Length; i++)
@@ -151,34 +146,37 @@ public static class RegExGraphVerifier
                     var i_circle = circle_paths[i];
                     var i_nodes = i_circle.ComposeNodesList();
                     if (i_nodes.Count == 0) continue;
+                    i_circle.NodeSet.RemoveWhere(n => n.IsLink);
                     var first_i_node = i_nodes.FirstOrDefault(n => !n.IsLink);
+                    var last_i_node = i_nodes.LastOrDefault(n => !n.IsLink);
 
                     for (int j = i + 1; j < circle_paths.Length; j++)
                     {
                         var j_circle = circle_paths[j];
                         var j_nodes = j_circle.ComposeNodesList();
                         if (j_nodes.Count == 0) continue;
-
+                        j_circle.NodeSet.RemoveWhere(n => n.IsLink);
                         var first_j_node = j_nodes.FirstOrDefault(n => !n.IsLink);
+                        var last_j_node = j_nodes.LastOrDefault(n => !n.IsLink);
 
-                        if (i_nodes[0].HasSameSourceWith(j_nodes[0])
-                            || first_i_node != null && first_j_node != null
-                            && (first_i_node.Id == first_j_node.Id
-                            || chars[first_i_node].Overlaps(chars[first_j_node])))
+                        if (i_nodes[0]==j_nodes[0]
+                            && (first_i_node == first_j_node
+                            || first_i_node == last_j_node
+                            || last_i_node == first_j_node
+                            || first_i_node != null && first_j_node != null && chars[first_i_node].Overlaps(chars[first_j_node])
+                            || first_i_node != null && last_j_node != null && chars[first_i_node].Overlaps(chars[last_j_node])
+                            || last_i_node != null && first_j_node != null && chars[last_i_node].Overlaps(chars[first_j_node])))
                         {
                             //两个环具有完全相同的开始(同源)
-                            //或者两个环的开始具有交集
+                            //或者两个环的开始/结尾具有交集
                             return true;
                         }
-                        else if (i_nodes.IsSubPath(j_nodes) && i_nodes.HasPassage(j_nodes))
+                        var longer_nodes = (i_nodes.Count >= j_nodes.Count ? i_nodes : j_nodes);
+                        var shorter_nodes = (i_nodes.Count < j_nodes.Count ? i_nodes : j_nodes);
+
+                        if (longer_nodes.HasSubpath(shorter_nodes))
                         {
-                            //看ID最小节点是否互通
-                            return true;
-                        }
-                        else if (j_nodes.IsSubPath(i_nodes) && j_nodes.HasPassage(i_nodes))
-                        {
-                            //看ID最小节点是否互通
-                            return true;
+                            return longer_nodes.HasPassage(shorter_nodes, chars);
                         }
                         else if (i_circle.HasPathTo(j_circle) || j_circle.HasPathTo(i_circle))
                         {

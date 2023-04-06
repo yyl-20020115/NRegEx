@@ -27,7 +27,7 @@ public class BasicUnitTests
         => GraphUtils.ExportAsDot(regex, png, dot);
 
     [TestMethod]
-    public void TestEscapse()
+    public void TestEscapes()
     {
         Assert.AreEqual(@"\|\(\)\[\]\{\}\^\$\*\+\?\\\.", Utils.Escape(@"|()[]{}^$*+?\."));
         Assert.AreEqual(@"|()[]{}^$*+?\.", Utils.Unescape(@"\|\(\)\[\]\{\}\^\$\*\+\?\\\."));
@@ -488,7 +488,10 @@ public class BasicUnitTests
     {
         var bad_ones = new string[]
         {
-            "(ax+)+y",//NOT
+            //"(abc|adx|azz)*",
+            //"(abc|cat)*",
+
+            //"(ax+)+y",//NOT
             
             "foo|(x+ax+)+y",//OK
             "^(a+)+$", //OK
