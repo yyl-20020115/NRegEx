@@ -43,6 +43,26 @@ public static class RegExGraphVerifier
 
         return false;
     }
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="nodesLocal"></param>
+    /// <param name="chars"></param>
+    /// <param name="chs"></param>
+    /// <returns></returns>
+    public static bool HasRun(this List<Node> nodesLocal, ConcurrentDictionary<Node, HashSet<int>> chars, HashSet<int> chs)
+    {
+        foreach(var node in nodesLocal)
+        {
+            if (!node.IsLink && chars.TryGetValue(node,out var ch))
+            {
+                if (!ch.Overlaps(chs))
+                    return false;
+
+            }
+        }
+        return true;
+    }
 
     public static bool HasPassage(this List<Node> nodesMain, List<Node> nodesLocal, ConcurrentDictionary<Node, HashSet<int>> chars)
     {
@@ -51,9 +71,11 @@ public static class RegExGraphVerifier
             && nodesMain.Count > nodesLocal.Count)
         {
             var head_main = nodesMain[0];
+            var tail_main = nodesMain[^1];
             var first_local = nodesLocal.FirstOrDefault(n => !n.IsLink) ?? nodesLocal[0];
+            var last_local = nodesLocal.LastOrDefault(n => !n.IsLink) ?? nodesLocal[^1];
 
-            if(first_local is not null && chars.TryGetValue(first_local,out var chs))
+            if (first_local is not null && chars.TryGetValue(first_local,out var chs))
             {
                 var visited = new HashSet<Node>();
                 var nodes = first_local.FetchNodes(new(), direction: -1);
@@ -66,10 +88,11 @@ public static class RegExGraphVerifier
                     {
                         if (node == head_main)
                         {
-                            return true;
+                            //需要确认nodesLocal整个都与chs有交集，若有断开
+                            //则不符合CBT
+                            return nodesLocal.HasRun(chars,chs);
                         }
                         else if (visited.Add(node)
-                            && node.Id < head_main.Id
                             && chars.TryGetValue(node, out var nhs)
                             && nhs.Overlaps(chs))
                         {
@@ -78,6 +101,8 @@ public static class RegExGraphVerifier
                     }
                 } while (nodes.Count > 0);
             }
+
+
         }
         return false;
     }
@@ -133,9 +158,9 @@ public static class RegExGraphVerifier
                         var tail = outEdge.Tail;
                         var target = path.Find(tail);
                         if (target is null)
-                            paths.Add(path.Copy(tail));
+                            paths.Add(path.CopyWith(tail));
                         else
-                            circles.Add(path.CopyAndCut(target, true));
+                            circles.Add(path.CopyUntil(target, true));
                     }
                 }
             });
@@ -245,7 +270,7 @@ public static class RegExGraphVerifier
 // 2 尾部和头部有交集
 //      (ab(ba)(ac)cd){2,}
 //d. 多项式重叠相邻（POA）模式：：β=(…(β1β2)…){mβ,nβ}，其中nβ <= 1，
-//   且满足条件β1.followlast ∩ β2.first ≠ \not= ​= ∅.。
+//   且满足条件β1.follow last ∩ β2.first ≠ \not= ​= ∅.。
 // 尾部和头部有交集
 //      (ab(ba)(ac)cd){0,1}
 //e. 从大量词开始（SLQ）模式：有四种可能的触发条件，其中 n β > n m i n n_β>n_{min} nβ​>nmin​。

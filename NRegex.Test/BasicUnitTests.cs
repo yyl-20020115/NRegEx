@@ -490,6 +490,7 @@ public class BasicUnitTests
         var good_ones = new string[]
         {
             "(ax+)+y",//NOT CBT
+            "(x+b)+y",//NOT CBT
         };
 
         var bad_ones = new string[]

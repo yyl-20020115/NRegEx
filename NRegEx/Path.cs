@@ -101,9 +101,9 @@ public class Path
         }
         return null;
     }
-    public Path Copy(Node node) 
+    public Path CopyWith(Node node) 
         => new(this, node);
-    public Path CopyAndCut(LinkedNode target, bool isCircle = true)
+    public Path CopyUntil(LinkedNode target, bool isCircle = true)
     {
         if (target is null)
         {
