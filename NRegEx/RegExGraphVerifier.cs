@@ -205,9 +205,12 @@ public static class RegExGraphVerifier
                         if (longer_nodes.HasSubpath(shorter_nodes))
                         {
                             //如果不能贯通需要查看后面的部分，贯通的话直接认定CBT
-                            return longer_nodes.HasPassage(shorter_nodes, chars);
+                            if (longer_nodes.HasPassage(shorter_nodes, chars))
+                                return true;
+                            else 
+                                continue;
                         }
-                        if (i_circle.HasPathTo(j_circle) || j_circle.HasPathTo(i_circle))
+                        else if (i_circle.HasPathTo(j_circle) || j_circle.HasPathTo(i_circle))
                         {
                             circle_pairs.Add((
                                 i_circle.NodeSet.Where(i => !i.IsLink).ToHashSet(),
