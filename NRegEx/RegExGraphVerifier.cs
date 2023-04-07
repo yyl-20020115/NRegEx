@@ -54,12 +54,10 @@ public static class RegExGraphVerifier
     {
         foreach(var node in nodesLocal)
         {
-            if (!node.IsLink && chars.TryGetValue(node,out var ch))
-            {
-                if (!ch.Overlaps(chs))
-                    return false;
-
-            }
+            if (!node.IsLink 
+                && chars.TryGetValue(node, out var ch) 
+                && !ch.Overlaps(chs))
+                return false;
         }
         return true;
     }
@@ -207,8 +205,7 @@ public static class RegExGraphVerifier
                         if (longer_nodes.HasSubpath(shorter_nodes))
                         {
                             //如果不能贯通需要查看后面的部分，贯通的话直接认定CBT
-                            if (longer_nodes.HasPassage(shorter_nodes, chars))
-                                return true;
+                            return longer_nodes.HasPassage(shorter_nodes, chars);
                         }
                         if (i_circle.HasPathTo(j_circle) || j_circle.HasPathTo(i_circle))
                         {
