@@ -69,15 +69,14 @@ public static class RegExGraphVerifier
             && nodesMain.Count > nodesLocal.Count)
         {
             var head_main = nodesMain[0];
-            var tail_main = nodesMain[^1];
             var first_local = nodesLocal.FirstOrDefault(n => !n.IsLink) ?? nodesLocal[0];
-            var last_local = nodesLocal.LastOrDefault(n => !n.IsLink) ?? nodesLocal[^1];
 
             if (first_local is not null && chars.TryGetValue(first_local,out var chs))
             {
                 var visited = new HashSet<Node>();
-                var nodes = first_local.FetchNodes(new(), direction: -1);
-                do
+                var nodes = first_local.Inputs.ToHashSet();
+
+                while (nodes.Count > 0)
                 {
                     var nodesCopy = nodes.ToArray();
                     nodes.Clear();
@@ -91,16 +90,14 @@ public static class RegExGraphVerifier
                             return nodesMain.HasRun(chars,chs);
                         }
                         else if (visited.Add(node)
-                            && chars.TryGetValue(node, out var nhs)
-                            && nhs.Overlaps(chs))
+                            &&(node.IsLink || chars.TryGetValue(node, out var nhs)
+                            && nhs.Overlaps(chs)))
                         {
-                            node.FetchNodes(nodes, direction: -1);
+                            nodes.UnionWith(node.Inputs);
                         }
                     }
-                } while (nodes.Count > 0);
+                }
             }
-
-
         }
         return false;
     }
@@ -130,6 +127,7 @@ public static class RegExGraphVerifier
 
     public static bool IsCatastrophicBacktrackingPossible(Graph graph, bool withNewLine = true)
     {
+        //GraphUtils.ExportAsDot(graph);
         var steps = 0;
         var chars = new ConcurrentDictionary<Node, HashSet<int>>();
         var paths = new ConcurrentBag<Path>(graph.Head.Outputs.Select(o => new Path(graph.Head, o)));

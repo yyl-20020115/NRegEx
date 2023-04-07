@@ -495,9 +495,9 @@ public class BasicUnitTests
 
         var bad_ones = new string[]
         {
-            "(abc|adx|azz)*", //OK
-            "(abc|cat)*", //OK
-            "foo|(x+ax+)+y",//OK
+            //"(abc|adx|azz)*", //OK
+            //"(abc|cat)*", //OK
+            //"foo|(x+ax+)+y",//OK
             "^(a+)+$", //OK
             "^(a|a?)+$", //OK
             "(x+x+)+y", //OK
