@@ -206,9 +206,11 @@ public static class RegExGraphVerifier
                         //大环套小环模式
                         if (longer_nodes.HasSubpath(shorter_nodes))
                         {
-                            return longer_nodes.HasPassage(shorter_nodes, chars);
+                            //如果不能贯通需要查看后面的部分，贯通的话直接认定CBT
+                            if (longer_nodes.HasPassage(shorter_nodes, chars))
+                                return true;
                         }
-                        else if (i_circle.HasPathTo(j_circle) || j_circle.HasPathTo(i_circle))
+                        if (i_circle.HasPathTo(j_circle) || j_circle.HasPathTo(i_circle))
                         {
                             circle_pairs.Add((
                                 i_circle.NodeSet.Where(i => !i.IsLink).ToHashSet(),
