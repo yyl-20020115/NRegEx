@@ -88,9 +88,9 @@ public static class RegExGraphVerifier
                     {
                         if (node == head_main)
                         {
-                            //需要确认nodesLocal整个都与chs有交集，若有断开
+                            //需要确认nodesMain整个都与chs有交集，若有断开
                             //则不符合CBT
-                            return nodesLocal.HasRun(chars,chs);
+                            return nodesMain.HasRun(chars,chs);
                         }
                         else if (visited.Add(node)
                             && chars.TryGetValue(node, out var nhs)
