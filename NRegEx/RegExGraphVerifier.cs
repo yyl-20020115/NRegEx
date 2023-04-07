@@ -169,7 +169,7 @@ public static class RegExGraphVerifier
             {
                 circles = new(circles.Distinct(new PathEqualityComparer()));
                 if (circles.Count < 2) continue;
-                var circle_pairs = new List<(Path pi, Path pj)>();
+                var circle_pairs = new List<(HashSet<Node> pi, HashSet<Node> pj)>();
                 var circle_paths = circles.ToArray();
                 for (int i = 0; i < circle_paths.Length; i++)
                 {
@@ -210,7 +210,9 @@ public static class RegExGraphVerifier
                         }
                         else if (i_circle.HasPathTo(j_circle) || j_circle.HasPathTo(i_circle))
                         {
-                            circle_pairs.Add((i_circle, j_circle));
+                            circle_pairs.Add((
+                                i_circle.NodeSet.Where(i => !i.IsLink).ToHashSet(),
+                                j_circle.NodeSet.Where(j => !j.IsLink).ToHashSet()));
                         }
                     }
                 }
@@ -218,10 +220,8 @@ public static class RegExGraphVerifier
                 {
                     foreach (var (i_circle, j_circle) in circle_pairs)
                     {
-                        var i_nodes = i_circle.NodeSet.Where(i => !i.IsLink).ToArray();
-                        var j_nodes = j_circle.NodeSet.Where(j => !j.IsLink).ToArray();
-                        foreach (var i_node in i_nodes)
-                            foreach (var j_node in j_nodes)
+                        foreach (var i_node in i_circle)
+                            foreach (var j_node in j_circle)
                                 if (chars[i_node].Overlaps(chars[j_node]))
                                     return true;
                     }
