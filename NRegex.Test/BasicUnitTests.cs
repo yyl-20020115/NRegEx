@@ -489,15 +489,16 @@ public class BasicUnitTests
     {
         var good_ones = new string[]
         {
-            "(ax+)+y",//NOT CBT
-            "(x+b)+y",//NOT CBT
+            //"(ax+)+y",//NOT CBT
+            //"(x+b)+y",//NOT CBT
+            //"(abc|cat)*", //NOT CBT
+            "foo|(x+bx+)+y",//NOT CBT
         };
 
         var bad_ones = new string[]
         {
-            //"(abc|adx|azz)*", //OK
-            //"(abc|cat)*", //OK
-            //"foo|(x+ax+)+y",//OK
+            "(abc|adx|azz)*", //OK
+            "foo|(x+x+)+y",//OK
             "^(a+)+$", //OK
             "^(a|a?)+$", //OK
             "(x+x+)+y", //OK

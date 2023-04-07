@@ -161,26 +161,7 @@ public class Path
             }
         }
     }
-    public bool HasPathTo(Path path, bool original = true)
-    {
-        var list = this.ListTail;
-        while(list!=null)
-        {
-            var node = list.Node;
-            if (node != null)
-            {
-                var targets = new HashSet<Node>();
-                node.FetchNodes(targets, true);
-                if (original)
-                    targets.Add(node); //count self
-
-                if (targets.Overlaps(path.NodeSet))
-                    return true;
-            }
-            list = list.Previous;
-        }
-        return false;
-    }
+ 
     public override string ToString()
     {
         var builder = new StringBuilder();

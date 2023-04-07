@@ -9,6 +9,35 @@ using System.Collections.Concurrent;
 namespace NRegEx;
 public static class RegExGraphVerifier
 {
+    public static bool HasPathTo(this Node main, Node other, bool dual = true)
+    {
+        var visited = new HashSet<Node>();
+        var nodes = main.Outputs.ToHashSet();
+        while (nodes.Count > 0)
+        {
+            var nodeCopy = nodes.ToArray();
+            nodes.Clear();
+            foreach (var node in nodes)
+            {
+                if (node == other)
+                    return true;
+                else if(visited.Add(node))
+                {
+                    nodes.UnionWith(node.Outputs);
+                }
+            }
+        }
+
+        return dual && other.HasPathTo(main,false);
+    }
+    public static bool HasPathTo(this List<Node> mainNodes,List<Node> otherNodes)
+    {
+        foreach(var main in mainNodes)
+            foreach (var other in otherNodes)
+                if(HasPathTo(main,other))
+                    return true;
+        return false;
+    }
     public static List<Node> LeftShift(this List<Node> nodes)
     {
         if (nodes.Count > 0)
@@ -165,7 +194,7 @@ public static class RegExGraphVerifier
             {
                 circles = new(circles.Distinct(new PathEqualityComparer()));
                 if (circles.Count < 2) continue;
-                var circle_pairs = new List<(HashSet<Node> pi, HashSet<Node> pj)>();
+                var circle_pairs = new List<(List<Node> pi, List<Node> pj)>();
                 var circle_paths = circles.ToArray();
                 for (int i = 0; i < circle_paths.Length; i++)
                 {
@@ -190,8 +219,9 @@ public static class RegExGraphVerifier
                             || first_i_node == last_j_node
                             || last_i_node == first_j_node
                             || first_i_node != null && first_j_node != null && chars[first_i_node].Overlaps(chars[first_j_node])
-                            || first_i_node != null && last_j_node != null && chars[first_i_node].Overlaps(chars[last_j_node])
-                            || last_i_node != null && first_j_node != null && chars[last_i_node].Overlaps(chars[first_j_node])))
+                            //|| first_i_node != null && last_j_node != null && chars[first_i_node].Overlaps(chars[last_j_node])
+                            //|| last_i_node != null && first_j_node != null && chars[last_i_node].Overlaps(chars[first_j_node])
+                            ))
                         {
                             //两个环具有完全相同的开始(同源)
                             //或者两个环的开始/结尾具有交集
@@ -208,11 +238,22 @@ public static class RegExGraphVerifier
                             else 
                                 continue;
                         }
-                        else if (i_circle.HasPathTo(j_circle) || j_circle.HasPathTo(i_circle))
+                        else
                         {
-                            circle_pairs.Add((
-                                i_circle.NodeSet.Where(i => !i.IsLink).ToHashSet(),
-                                j_circle.NodeSet.Where(j => !j.IsLink).ToHashSet()));
+                            var i_circle_nodes = i_circle.ComposeNodesList();
+                            var j_circle_nodes = j_circle.ComposeNodesList();
+                            if (i_circle_nodes[0] == j_circle_nodes[0]
+                             && i_circle_nodes[^1] == j_circle_nodes[^1])
+                            {
+                                //平行序列。不应被认为具有实现CBT的可能性。
+                            }
+                            else if (i_circle_nodes.HasPathTo(j_circle_nodes))
+                            {
+                                circle_pairs.Add((
+                                    i_circle_nodes,
+                                    j_circle_nodes));
+                            }
+
                         }
                     }
                 }
@@ -222,7 +263,9 @@ public static class RegExGraphVerifier
                     {
                         foreach (var i_node in i_circle)
                             foreach (var j_node in j_circle)
-                                if (chars[i_node].Overlaps(chars[j_node]))
+                                if (!i_node.IsLink 
+                                    && !j_node.IsLink 
+                                    && chars[i_node].Overlaps(chars[j_node]))
                                     return true;
                     }
                 }
