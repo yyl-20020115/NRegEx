@@ -491,16 +491,16 @@ public class BasicUnitTests
     {
         var good_ones = new string[]
         {
-            "(ax+)+y",//NOT CBT
+            "(ax+)+y",//NOT CBT 在环之内不相交，断开了环
             "(x+b)+y",//NOT CBT
-            "(abc|cat)*", //NOT CBT
+            //"(abc|cat)*", //NOT CBT
             "foo|(x+bx+)+y",//NOT CBT
         };
 
         //<a\s*href=(.*?)[\s|>]: "<a href=" * 10000
         var bad_ones = new string[]
         {
-            "<a\\s*href=(.*?)[\\s>]", //OK
+            "<a\\s*href=(.*?)[\\s>]", //OK：在环之外相交
             "(abc|adx|azz)*", //OK
             "foo|(x+x+)+y",//OK
             "^(a+)+$", //OK

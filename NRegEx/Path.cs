@@ -25,7 +25,6 @@ public class Path
 {
     public LinkedNode? ListTail = null;
 
-    public readonly HashSet<Node> NodeSet = new();
     protected int length = 0;
     protected bool isCircle = false;
 
@@ -42,7 +41,6 @@ public class Path
             for (int i = 0; i < reversed_list.Count; i++)
             {
                 var node = reversed_list[i].Node;
-                if(node is not null) this.NodeSet.Add(node);
                 reversed_list[i].Previous = i == 0 ? null : reversed_list[i - 1];
             }
             this.ListTail = reversed_list[^1];
@@ -59,9 +57,10 @@ public class Path
             for (int i = 0; i < reversed_list.Count; i++)
             {
                 var node = reversed_list[i];
-                if (node is not null) this.NodeSet.Add(node);
-                var ln = new LinkedNode(node);
-                ln.Previous = i == 0 ? null : inner_reversed_list[i - 1];
+                var ln = new LinkedNode(node)
+                {
+                    Previous = i == 0 ? null : inner_reversed_list[i - 1]
+                };
                 inner_reversed_list.Add(ln);
             }
             this.ListTail = inner_reversed_list[^1];
@@ -126,8 +125,6 @@ public class Path
                 list = list.Previous;
             }
 
-            this.NodeSet.Clear();
-            this.NodeSet.UnionWith(this.NodesReversed);
             return path;
         }
     }

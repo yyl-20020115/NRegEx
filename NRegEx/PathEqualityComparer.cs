@@ -27,7 +27,8 @@ public class PathEqualityComparer : IEqualityComparer<Path>
         return b1 == b2;
     }
     public bool Equals(Path? x, Path? y)
-        => (x == null && y == null) || (x != null && y != null
+        => (x == null && y == null) || (x != null && y != null 
+        && x.Length == y.Length
         && SequenceEquals(x.NodesReversed, y.NodesReversed));
 
     public int GetHashCode([DisallowNull] Path _) => 0;
