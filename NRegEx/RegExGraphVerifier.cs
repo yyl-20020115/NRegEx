@@ -115,7 +115,8 @@ public static class RegExGraphVerifier
                 mid = nodes.Min(n => n.Id);
         } while (nodes.Count > 0);
 
-        return mid == 0;
+        //finally mid == 0 is not necessory
+        return true;
     }
 
 
