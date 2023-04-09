@@ -90,6 +90,38 @@ public static class RegExGraphVerifier
         }
         return true;
     }
+    public static bool HasRun(this Node node, ConcurrentDictionary<Node, HashSet<int>> chars)
+    {
+        if (!chars.TryGetValue(node, out var chs)) return false;
+        var nid = node.Id;
+        var visited = new HashSet<Node>() { node };
+        var nodes = node.Inputs.ToHashSet();
+        var mid = -1;
+        do
+        {
+            var nodeCopy = nodes.ToArray();
+            nodes.Clear();
+            foreach (var n in nodeCopy)
+            {
+                if (!visited.Add(n)) continue; 
+                if (!n.IsLink
+                    && chars.TryGetValue(n, out var ch)
+                    && !ch.Overlaps(chs))
+                    return false;
+                else
+                {
+                    nodes.UnionWith(n.Inputs.Where(i=>i.Id<=nid));
+                }
+            }
+            if (nodes.Count > 0)
+            {
+                mid = nodes.Min(n=>n.Id);
+            }
+        } while (nodes.Count>0);
+ 
+        return true;
+    }
+
 
     public static bool HasPassage(this List<Node> nodesMain, List<Node> nodesLocal, ConcurrentDictionary<Node, HashSet<int>> chars)
     {
@@ -152,11 +184,12 @@ public static class RegExGraphVerifier
      *  1.	嵌套量词或者巨大量词（指数）：里外两圈，且从外圈到里圈存在通路
      *  2.	多头交叠（指数）：平行多圈（开头相同或者有交集）
      *  3.	（多项式：0~1）/（指数：1~n）直接或者间接邻接有交集或者有通路（平行选项中一个的结尾是另一个的开始）
+     *      比如说：任意字符一次或多次重复的循环之前的所有字符显然都已经可以包含在其中了，所以都应当能够引发CBT
      */
 
     public static bool IsCatastrophicBacktrackingPossible(Graph graph, bool withNewLine = true)
     {
-        //GraphUtils.ExportAsDot(graph);
+        GraphUtils.ExportAsDot(graph);
         var steps = 0;
         var chars = new ConcurrentDictionary<Node, HashSet<int>>();
         var paths = new ConcurrentBag<Path>(graph.Head.Outputs.Select(o => new Path(graph.Head, o)));
@@ -190,10 +223,8 @@ public static class RegExGraphVerifier
                 }
             });
 
-            if (circles.Count >= 2)
+            if ((circles = new(circles.Distinct(new PathEqualityComparer()))).Count >0)
             {
-                circles = new(circles.Distinct(new PathEqualityComparer()));
-                if (circles.Count < 2) continue;
                 var circle_pairs = new List<(List<Node> pi, List<Node> pj)>();
                 var circle_paths = circles.ToArray();
                 for (int i = 0; i < circle_paths.Length; i++)
@@ -205,6 +236,14 @@ public static class RegExGraphVerifier
                     var first_i_node = i_nodes.FirstOrDefault(n => !n.IsLink);
                     var last_i_node = i_nodes.LastOrDefault(n => !n.IsLink);
 
+                    if(first_i_node!=null)
+                    {
+                        if (first_i_node.HasRun(chars))
+                        {
+                            return true;
+                        }
+                    }
+
                     for (int j = i + 1; j < circle_paths.Length; j++)
                     {
                         var j_circle = circle_paths[j];
@@ -214,7 +253,7 @@ public static class RegExGraphVerifier
                         var first_j_node = j_nodes.FirstOrDefault(n => !n.IsLink);
                         var last_j_node = j_nodes.LastOrDefault(n => !n.IsLink);
 
-                        if (i_nodes[0]==j_nodes[0]
+                        if (i_nodes[0] == j_nodes[0]
                             && (first_i_node == first_j_node
                             || first_i_node == last_j_node
                             || last_i_node == first_j_node
@@ -235,7 +274,7 @@ public static class RegExGraphVerifier
                             //如果不能贯通需要查看后面的部分，贯通的话直接认定CBT
                             if (longer_nodes.HasPassage(shorter_nodes, chars))
                                 return true;
-                            else 
+                            else
                                 continue;
                         }
                         else
@@ -258,17 +297,12 @@ public static class RegExGraphVerifier
                     }
                 }
                 if (circle_pairs.Count > 0)
-                {
                     foreach (var (i_circle, j_circle) in circle_pairs)
-                    {
                         foreach (var i_node in i_circle)
                             foreach (var j_node in j_circle)
-                                if (!i_node.IsLink 
-                                    && !j_node.IsLink 
+                                if (!i_node.IsLink && !j_node.IsLink
                                     && chars[i_node].Overlaps(chars[j_node]))
-                                    return true;
-                    }
-                }
+                                        return true;
             }
         }
         return false;

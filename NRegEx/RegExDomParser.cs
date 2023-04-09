@@ -59,7 +59,7 @@ public class RegExDomParser
         int c;
         while (-1 != (c = this.Reader.Peek()))
         {
-            //char d = ((char)c);
+            char d = ((char)c);
             int Position = this.Reader.Position;
             switch (c)
             {
