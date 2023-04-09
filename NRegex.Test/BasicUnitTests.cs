@@ -646,9 +646,12 @@ public class BasicUnitTests
         using var output = new StreamWriter("Output.txt");
         foreach (var record in records.Where(r => r.Parse == "OK"))
         {
-            output.WriteLine($"Record: {record.Id}-({count}/{rc}):{record.Input}");
             var possible = RegExGraphVerifier.IsCatastrophicBacktrackingPossible(record.Input);
-            output.WriteLine($"  Possible CBT:{possible}");
+            if (!possible)
+            {
+                output.WriteLine($"Record: {record.Id}-({count}/{rc}):{record.Input}");
+                output.WriteLine($"  Possible CBT:{possible}");
+            }
             count++;
         }
 

@@ -90,8 +90,9 @@ public static class RegExGraphVerifier
         }
         return true;
     }
-    public static bool HasBackRun(this Node node, ConcurrentDictionary<Node, HashSet<int>> chars)
+    public static bool HasBackRun(this Node node,HashSet<Node> circle_nodes, ConcurrentDictionary<Node, HashSet<int>> chars)
     {
+        if (circle_nodes == null || !circle_nodes.Contains(node)) return false;
         if (!chars.TryGetValue(node, out var chs)) return false;
         var nid = node.Id;
         var visited = new HashSet<Node>() { node };
@@ -103,10 +104,14 @@ public static class RegExGraphVerifier
             nodes.Clear();
             foreach (var n in nodeCopy)
             {
+                //测试当前节点是否从当前环逃逸
+                //if () return true;
                 if (!visited.Add(n)) continue;
                 if (!n.IsLink
                     && chars.TryGetValue(n, out var ch)
-                    && !ch.Overlaps(chs))
+                    && !ch.Overlaps(chs)
+                    //&& !circle_nodes.Contains(n)
+                    )
                     return false;
                 else
                     nodes.UnionWith(n.Inputs.Where(i => i.Id <= nid));
@@ -220,7 +225,7 @@ public static class RegExGraphVerifier
                 }
             });
 
-            if ((circles = new(circles.Distinct(new PathEqualityComparer()))).Count > 0)
+            if (!(circles = new(circles.Distinct(new PathEqualityComparer()))).IsEmpty)
             {
                 var circle_pairs = new List<(List<Node> pi, List<Node> pj)>();
                 var circle_paths = circles.ToArray();
@@ -232,14 +237,6 @@ public static class RegExGraphVerifier
                     i_circle.NodeSet.RemoveWhere(n => n.IsLink);
                     var first_i_node = i_nodes.FirstOrDefault(n => !n.IsLink);
                     var last_i_node = i_nodes.LastOrDefault(n => !n.IsLink);
-
-                    if (first_i_node != null)
-                    {
-                        if (first_i_node.HasBackRun(chars))
-                        {
-                            return true;
-                        }
-                    }
 
                     for (int j = i + 1; j < circle_paths.Length; j++)
                     {
@@ -293,13 +290,28 @@ public static class RegExGraphVerifier
                         }
                     }
                 }
+
                 if (circle_pairs.Count > 0)
+                {
                     foreach (var (i_circle, j_circle) in circle_pairs)
                         foreach (var i_node in i_circle)
                             foreach (var j_node in j_circle)
                                 if (!i_node.IsLink && !j_node.IsLink
                                     && chars[i_node].Overlaps(chars[j_node]))
                                     return true;
+                }
+            }
+        }
+        //至此两个环相关的情况已经完全排除，仅需要测试单环的逃逸情况
+        if (!circles.IsEmpty)
+        {
+            foreach(var i_circle in circles)
+            {
+                var i_nodes = i_circle.ComposeNodesList();
+                var first_i_node = i_nodes.FirstOrDefault(n => !n.IsLink);
+                if (first_i_node != null
+                           && first_i_node.HasBackRun(i_nodes.ToHashSet(), chars))
+                    return true;
             }
         }
         return false;
