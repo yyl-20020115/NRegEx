@@ -516,11 +516,11 @@ public class BasicUnitTests
             //"(a?){25}(a){25}",//OK,SLOW
             //"(.*){1,1000}[bc]",//OK,SLOW
         };
-        //foreach (var good_one in good_ones)
-        //{
-        //    var p = RegExGraphVerifier.IsCatastrophicBacktrackingPossible(good_one);
-        //    Assert.IsFalse(p);
-        //}
+        foreach (var good_one in good_ones)
+        {
+            var p = RegExGraphVerifier.IsCatastrophicBacktrackingPossible(good_one);
+            Assert.IsFalse(p);
+        }
         foreach (var bad_one in bad_ones)
         {
             var p = RegExGraphVerifier.IsCatastrophicBacktrackingPossible(bad_one);

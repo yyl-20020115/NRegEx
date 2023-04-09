@@ -21,20 +21,20 @@ public static class RegExGraphVerifier
             {
                 if (node == other)
                     return true;
-                else if(visited.Add(node))
+                else if (visited.Add(node))
                 {
                     nodes.UnionWith(node.Outputs);
                 }
             }
         }
 
-        return dual && other.HasPathTo(main,false);
+        return dual && other.HasPathTo(main, false);
     }
-    public static bool HasPathTo(this List<Node> mainNodes,List<Node> otherNodes)
+    public static bool HasPathTo(this List<Node> mainNodes, List<Node> otherNodes)
     {
-        foreach(var main in mainNodes)
+        foreach (var main in mainNodes)
             foreach (var other in otherNodes)
-                if(HasPathTo(main,other))
+                if (HasPathTo(main, other))
                     return true;
         return false;
     }
@@ -81,16 +81,16 @@ public static class RegExGraphVerifier
     /// <returns></returns>
     public static bool HasRun(this List<Node> nodesLocal, ConcurrentDictionary<Node, HashSet<int>> chars, HashSet<int> chs)
     {
-        foreach(var node in nodesLocal)
+        foreach (var node in nodesLocal)
         {
-            if (!node.IsLink 
-                && chars.TryGetValue(node, out var ch) 
+            if (!node.IsLink
+                && chars.TryGetValue(node, out var ch)
                 && !ch.Overlaps(chs))
                 return false;
         }
         return true;
     }
-    public static bool HasRun(this Node node, ConcurrentDictionary<Node, HashSet<int>> chars)
+    public static bool HasBackRun(this Node node, ConcurrentDictionary<Node, HashSet<int>> chars)
     {
         if (!chars.TryGetValue(node, out var chs)) return false;
         var nid = node.Id;
@@ -103,23 +103,19 @@ public static class RegExGraphVerifier
             nodes.Clear();
             foreach (var n in nodeCopy)
             {
-                if (!visited.Add(n)) continue; 
+                if (!visited.Add(n)) continue;
                 if (!n.IsLink
                     && chars.TryGetValue(n, out var ch)
                     && !ch.Overlaps(chs))
                     return false;
                 else
-                {
-                    nodes.UnionWith(n.Inputs.Where(i=>i.Id<=nid));
-                }
+                    nodes.UnionWith(n.Inputs.Where(i => i.Id <= nid));
             }
             if (nodes.Count > 0)
-            {
-                mid = nodes.Min(n=>n.Id);
-            }
-        } while (nodes.Count>0);
- 
-        return true;
+                mid = nodes.Min(n => n.Id);
+        } while (nodes.Count > 0);
+
+        return mid == 0;
     }
 
 
@@ -132,7 +128,7 @@ public static class RegExGraphVerifier
             var head_main = nodesMain[0];
             var first_local = nodesLocal.FirstOrDefault(n => !n.IsLink) ?? nodesLocal[0];
 
-            if (first_local is not null && chars.TryGetValue(first_local,out var chs))
+            if (first_local is not null && chars.TryGetValue(first_local, out var chs))
             {
                 var visited = new HashSet<Node>();
                 var nodes = first_local.Inputs.ToHashSet();
@@ -148,10 +144,10 @@ public static class RegExGraphVerifier
                         {
                             //需要确认nodesMain整个都与chs有交集，若有断开
                             //则不符合CBT
-                            return nodesMain.HasRun(chars,chs);
+                            return nodesMain.HasRun(chars, chs);
                         }
                         else if (visited.Add(node)
-                            &&(node.IsLink || chars.TryGetValue(node, out var nhs)
+                            && (node.IsLink || chars.TryGetValue(node, out var nhs)
                             && nhs.Overlaps(chs)))
                         {
                             nodes.UnionWith(node.Inputs);
@@ -223,7 +219,7 @@ public static class RegExGraphVerifier
                 }
             });
 
-            if ((circles = new(circles.Distinct(new PathEqualityComparer()))).Count >0)
+            if ((circles = new(circles.Distinct(new PathEqualityComparer()))).Count > 0)
             {
                 var circle_pairs = new List<(List<Node> pi, List<Node> pj)>();
                 var circle_paths = circles.ToArray();
@@ -236,9 +232,9 @@ public static class RegExGraphVerifier
                     var first_i_node = i_nodes.FirstOrDefault(n => !n.IsLink);
                     var last_i_node = i_nodes.LastOrDefault(n => !n.IsLink);
 
-                    if(first_i_node!=null)
+                    if (first_i_node != null)
                     {
-                        if (first_i_node.HasRun(chars))
+                        if (first_i_node.HasBackRun(chars))
                         {
                             return true;
                         }
@@ -302,7 +298,7 @@ public static class RegExGraphVerifier
                             foreach (var j_node in j_circle)
                                 if (!i_node.IsLink && !j_node.IsLink
                                     && chars[i_node].Overlaps(chars[j_node]))
-                                        return true;
+                                    return true;
             }
         }
         return false;
