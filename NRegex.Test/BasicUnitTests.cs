@@ -5,13 +5,13 @@
  * license that can be found in the LICENSE file.
  */
 
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NRegEx;
 using System;
-using System.IO;
-using System.Diagnostics;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
 
 namespace NRegex.Test;
 
@@ -489,9 +489,9 @@ public class BasicUnitTests
     {
         var good_ones = new string[]
         {
-            //"(ax+)+y",//NOT CBT
-            //"(x+b)+y",//NOT CBT
-            //"(abc|cat)*", //NOT CBT
+            "(ax+)+y",//NOT CBT
+            "(x+b)+y",//NOT CBT
+            "(abc|cat)*", //NOT CBT
             "foo|(x+bx+)+y",//NOT CBT
         };
 
@@ -522,5 +522,128 @@ public class BasicUnitTests
             var p = RegExGraphVerifier.IsCatastrophicBacktrackingPossible(bad_one);
             Assert.IsTrue(p);
         }
+    }
+    public class Record
+    {
+        public readonly int Id;
+        public readonly string Input;
+        public readonly string Parse;
+        public readonly int Size;
+        public readonly bool Pumpable;
+        public readonly double Time;
+        public Record(int Id = 0, string Input = "", string Parse = "", int Size = 0, bool Pumpable = false, double Time = 0.0)
+        {
+            this.Id = Id;
+            this.Input = Input;
+            this.Parse = Parse;
+            this.Size = Size;
+            this.Pumpable = Pumpable;
+            this.Time = Time;
+        }
+    }
+    [TestMethod]
+    public void TestMethod29()
+    {
+        var ecd = Environment.CurrentDirectory;
+
+        Environment.CurrentDirectory =
+           System.IO.Path.Combine(Environment.CurrentDirectory, "..\\data\\validate");
+
+        var files = new string[]
+        {
+            "rxxr-regexlib-vulns.txt",
+            "rxxr-snort-vulns.txt",
+        };
+
+        var records = new List<Record>();
+        foreach (var file in files)
+        {
+            var lines = File.ReadAllLines(System.IO.Path.Combine(Environment.CurrentDirectory, file));
+            for (int i = 0; i < lines.Length; i++)
+            {
+                var line = lines[i];
+                if (line.StartsWith("= [") && line.EndsWith("] ="))
+                {
+                    if (!int.TryParse(line[3..^3], out var Id)) continue;
+
+                    string input = "";
+                    string parse = "";
+                    int size = 0;
+                    bool pumpable = false;
+                    double time = 0.0;
+                    if (++i >= lines.Length||!(line = lines[i]).StartsWith("INPUT:"))
+                    {
+                        --i;
+                        records.Add(new (Id));
+                        continue;
+                    }
+                    else
+                    {
+                        input = line[6..].Trim();
+                        if (++i >= lines.Length||!(line = lines[i]).StartsWith("PARSE:"))
+                        {
+                            --i;
+                            records.Add(new (Id, input));
+                            continue;
+                        }
+                        else
+                        {
+                            parse = line[6..].Trim();
+                            if (++i >= lines.Length||!(line = lines[i]).StartsWith("SIZE:"))
+                            {
+                                --i;
+                                records.Add(new (Id, input, parse));
+                                continue;
+                            }
+                            else
+                            {
+                                if (!int.TryParse(line[5..].Trim(), out size)) continue;
+                                if (++i >= lines.Length||!(line = lines[i]).StartsWith("PUMPABLE:"))
+                                {
+                                    --i;
+                                    records.Add(new(Id, input, parse, size));
+                                    continue;
+                                }
+                                else
+                                {
+                                    pumpable = line[8..].Trim() == "YES";
+                                    if (++i >= lines.Length||!(line = lines[i]).StartsWith("TIME:") && line.EndsWith(" (s)"))
+                                    {
+                                        --i;
+                                        records.Add(new(Id, input, parse, size, pumpable));
+                                        continue;
+                                    }
+                                    else
+                                    {
+                                        if (!double.TryParse(line[5..^5], out time))
+                                        {
+                                            --i;
+                                            records.Add(new(Id, input, parse, size, pumpable));
+                                            continue;
+                                        }
+                                        records.Add(new (Id, input, parse, size, pumpable, time));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        int rc = records.Count;
+        int count = 0;
+        Debug.WriteLine($"Total:{records.Count}");  
+
+        foreach (var record in records)
+        {
+            if (record.Parse == "OK")
+            {
+                var p = RegExGraphVerifier.IsCatastrophicBacktrackingPossible(record.Input);
+                //Assert.IsTrue(p);
+                Debug.WriteLine($"{record.Id}-({count}/{rc})-{p}:{record.Input}");
+            }
+            count++;
+        }
+        Environment.CurrentDirectory = ecd;
     }
 }
