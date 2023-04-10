@@ -198,8 +198,8 @@ public static class RegExGraphValidator
         //GraphUtils.ExportAsDot(graph);
         var steps = 0;
         var chars = new ConcurrentDictionary<Node, HashSet<int>>();
-        var paths = new ConcurrentBag<Path>(graph.Head.Outputs.Select(o => new Path(graph.Head, o)));
         var heads = new ConcurrentDictionary<Node, HashSet<Edge>>();
+        var paths = new ConcurrentBag<Path>(graph.Head.Outputs.Select(o => new Path(graph.Head, o)));
         var circles = new ConcurrentBag<Path>();
         var count = graph.Nodes.Count;
         CollectNodeChars(graph.Nodes, chars, withNewLine);
@@ -285,6 +285,7 @@ public static class RegExGraphValidator
                              && i_circle_nodes[^1] == j_circle_nodes[^1])
                             {
                                 //平行序列。不应被认为具有实现CBT的可能性。
+                                continue;
                             }
                             else if (i_circle_nodes.HasPathTo(j_circle_nodes))
                             {

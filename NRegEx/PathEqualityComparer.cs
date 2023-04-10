@@ -31,5 +31,6 @@ public class PathEqualityComparer : IEqualityComparer<Path>
         && x.Length == y.Length
         && SequenceEquals(x.NodesReversed, y.NodesReversed));
 
-    public int GetHashCode([DisallowNull] Path _) => 0;
+    public int GetHashCode([DisallowNull] Path path) 
+        => path.GetHashCode();
 }

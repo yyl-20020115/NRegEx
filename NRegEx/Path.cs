@@ -26,6 +26,7 @@ public class Path
     public LinkedNode? ListTail = null;
 
     protected int length = 0;
+    protected int hash = 0;
     protected bool isCircle = false;
 
     public int Length => this.length;
@@ -41,6 +42,8 @@ public class Path
             for (int i = 0; i < reversed_list.Count; i++)
             {
                 var node = reversed_list[i].Node;
+                this.hash ^= node.GetHashCode();
+                this.hash *= 31;
                 reversed_list[i].Previous = i == 0 ? null : reversed_list[i - 1];
             }
             this.ListTail = reversed_list[^1];
@@ -57,6 +60,8 @@ public class Path
             for (int i = 0; i < reversed_list.Count; i++)
             {
                 var node = reversed_list[i];
+                this.hash ^= node.GetHashCode();
+                this.hash *= 31;
                 var ln = new LinkedNode(node)
                 {
                     Previous = i == 0 ? null : inner_reversed_list[i - 1]
@@ -72,7 +77,7 @@ public class Path
     public Path(Path path, Node node):
         this(node)
     {
-        if(node is not null && this.ListTail is not null)
+        if(node != null && this.ListTail != null)
         {
             this.ListTail.Previous = path.ListTail;
             this.length += path.Length;
@@ -104,7 +109,7 @@ public class Path
         => new(this, node);
     public Path CopyUntil(LinkedNode target, bool isCircle = true)
     {
-        if (target is null)
+        if (target == null)
         {
             return this;
         }
@@ -158,7 +163,8 @@ public class Path
             }
         }
     }
- 
+    public override int GetHashCode() 
+        => this.hash;
     public override string ToString()
     {
         var builder = new StringBuilder();
