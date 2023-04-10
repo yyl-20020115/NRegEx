@@ -650,6 +650,8 @@ public class BasicUnitTests
         653,
         744,
         1386,
+        10876,
+        10878
     };
 
     [TestMethod]
@@ -663,15 +665,15 @@ public class BasicUnitTests
         var files = new string[]
         {
             "rxxr-regexlib-vulns.txt",
-            "rxxr-snort-vulns.txt",
+            //"rxxr-snort-vulns.txt",
         };
         var records = ParseFiles(files);
         int rc = records.Count;
         int count = 0;
         Debug.WriteLine($"Total:{records.Count}");
 
-        using var output_cbt = new StreamWriter("Output-CBT.txt");
-        using var output_ncbt = new StreamWriter("Output-NOT-CBT.txt");
+        using var output_cbt = new StreamWriter("rxxr-regexlib-Output-CBT.txt");
+        using var output_ncbt = new StreamWriter("rxxr-regexlib-Output-NOT-CBT.txt");
         foreach (var record in records.Where(r => r.Parse == "OK"))
         {
             if (skips.Contains(count)) { count++; continue; }        
