@@ -7,7 +7,7 @@
 using System.Collections.Concurrent;
 
 namespace NRegEx;
-public static class RegExGraphVerifier
+public static class RegExGraphValidator
 {
     public static bool HasPathTo(this Node main, Node other, bool dual = true)
     {
@@ -112,10 +112,12 @@ public static class RegExGraphVerifier
                     {
                         return false;
                     }
-                    else //环外相交，CBT，true
-                    if (!circle_nodes.Contains(n))
-                    {
-                        return true;
+                    else
+                    { //环外相交，CBT，true
+                        if (!circle_nodes.Contains(n))
+                        {
+                            return true;
+                        }
                     }
                 }
                 nodes.UnionWith(n.Inputs.Where(i => i.Id <= nid));
@@ -193,7 +195,7 @@ public static class RegExGraphVerifier
 
     public static bool IsCatastrophicBacktrackingPossible(Graph graph, bool withNewLine = true)
     {
-        GraphUtils.ExportAsDot(graph);
+        //GraphUtils.ExportAsDot(graph);
         var steps = 0;
         var chars = new ConcurrentDictionary<Node, HashSet<int>>();
         var paths = new ConcurrentBag<Path>(graph.Head.Outputs.Select(o => new Path(graph.Head, o)));
@@ -219,11 +221,15 @@ public static class RegExGraphVerifier
                     {
                         var tail = outEdge.Tail;
                         var target = path.Find(tail);
-                        if (target is null)
+                        if (target == null)
                             paths.Add(path.CopyWith(tail));
                         else
                             circles.Add(path.CopyUntil(target, true));
                     }
+                }
+                else
+                {
+                    ls.Break();
                 }
             });
 

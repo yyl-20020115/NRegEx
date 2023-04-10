@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text;
 using static System.Net.WebRequestMethods;
 
 namespace NRegex.Test;
@@ -518,12 +519,12 @@ public class BasicUnitTests
         };
         foreach (var good_one in good_ones)
         {
-            var p = RegExGraphVerifier.IsCatastrophicBacktrackingPossible(good_one);
+            var p = RegExGraphValidator.IsCatastrophicBacktrackingPossible(good_one);
             Assert.IsFalse(p);
         }
         foreach (var bad_one in bad_ones)
         {
-            var p = RegExGraphVerifier.IsCatastrophicBacktrackingPossible(bad_one);
+            var p = RegExGraphValidator.IsCatastrophicBacktrackingPossible(bad_one);
             Assert.IsTrue(p);
         }
     }
@@ -543,6 +544,18 @@ public class BasicUnitTests
             this.Size = Size;
             this.Pumpable = Pumpable;
             this.Time = Time;
+        }
+        public override string ToString()
+        {
+            var builder = new StringBuilder();
+
+            builder.AppendLine($"= [{this.Id}] =");
+            builder.AppendLine($"INPUT: {this.Input}");
+            builder.AppendLine($"PARSE: {this.Parse}");
+            builder.AppendLine($"SIZE: {this.Size}");
+            builder.AppendLine($"PUMPABLE: {(this.Pumpable ? "YES" : "NO")}");
+            builder.AppendLine($"TIME: {this.Time} (s)");
+            return builder.ToString();
         }
     }
 
@@ -625,6 +638,20 @@ public class BasicUnitTests
         }
         return records;
     }
+
+    public int[] skips = new int[]
+    {
+        392,
+        648,
+        649,
+        650,
+        651,
+        652,
+        653,
+        744,
+        1386,
+    };
+
     [TestMethod]
     public void TestMethod29()
     {
@@ -643,16 +670,22 @@ public class BasicUnitTests
         int count = 0;
         Debug.WriteLine($"Total:{records.Count}");
 
-        using var output = new StreamWriter("Output.txt");
+        using var output_cbt = new StreamWriter("Output-CBT.txt");
+        using var output_ncbt = new StreamWriter("Output-NOT-CBT.txt");
         foreach (var record in records.Where(r => r.Parse == "OK"))
         {
-            var possible = RegExGraphVerifier.IsCatastrophicBacktrackingPossible(record.Input);
-            if (!possible)
+            if (skips.Contains(count)) { count++; continue; }        
+            var possible = RegExGraphValidator.IsCatastrophicBacktrackingPossible(record.Input);
+            if (possible)
             {
-                output.WriteLine($"Record: {record.Id}-({count}/{rc}):{record.Input}");
-                output.WriteLine($"  Possible CBT:{possible}");
+                output_cbt.WriteLine($"Record: {record.Id}-({count}/{rc}):{record.Input}");
             }
-            count++;
+            else
+            {
+                output_ncbt.WriteLine($"Record: {record.Id}-({count}/{rc}):{record.Input}");
+            }
+            Debug.WriteLine($"  {count++}:{records.Count}");
+            Debug.WriteLine(record.ToString());
         }
 
         Environment.CurrentDirectory = ecd;

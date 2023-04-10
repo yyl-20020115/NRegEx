@@ -321,7 +321,7 @@ public class RegExDomParser
             goto failed;
         exit:
         Reader.Skip(1); // '}'
-        if (min < 0 || min > 1000 || max == -2 /*|| max > 1000*/ || (max >= 0 && min > max))
+        if (min < 0 /*|| min > 1024*/ || max == -2 /*|| max > 1000*/ || (max >= 0 && min > max))
             throw new RegExSyntaxException(ERR_INVALID_REPEAT_SIZE, Reader.From(start));
         return (true, min, max, s[p..Reader.Position]); // success
     failed:

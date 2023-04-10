@@ -5431,11 +5431,11 @@ PARSE: OK
 SIZE: 51
 PUMPABLE: YES
 VULNERABLE: YES {}
+PUMPABLE: \0\0
+TIME: 0.001009 (s)
 KLEENE: (\\(\w[\w ]*.*))+
 PREFIX: a:\0
-PUMPABLE: \0\0
 SUFFIX: 
-TIME: 0.001009 (s)
 = [984] =
 INPUT: (?<=<\w+ )(\w+-*\w*=[^>]+\s?)(?=>)
 PARSE: ERROR {Nfa.UnsupportedGroupingConstruct(0)}

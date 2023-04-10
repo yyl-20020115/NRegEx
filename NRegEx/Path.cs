@@ -92,7 +92,7 @@ public class Path
     public LinkedNode? Find(Node node)
     {
         var list = this.ListTail;
-        while (list is not null)
+        while (list != null)
         {
             if (list.Node == node)
                 return list;
