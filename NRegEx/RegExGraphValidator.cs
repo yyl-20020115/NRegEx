@@ -284,7 +284,7 @@ public static class RegExGraphValidator
                             if (i_circle_nodes[0] == j_circle_nodes[0]
                              && i_circle_nodes[^1] == j_circle_nodes[^1])
                             {
-                                //平行序列。不应被认为具有实现CBT的可能性。
+                                //平行序列。不应被认为具有实现CBT的可能性。 
                                 continue;
                             }
                             else if (i_circle_nodes.HasPathTo(j_circle_nodes))
