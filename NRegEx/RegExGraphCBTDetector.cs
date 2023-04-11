@@ -5,6 +5,7 @@
  * license that can be found in the LICENSE file.
  */
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 
 namespace NRegEx;
 public enum CBTResultTypes
@@ -32,24 +33,46 @@ public record CBTResult(CBTResultTypes Type, string Regex, int Position = -1, in
 
 public static class RegExGraphCBTDetector
 {
-    private static ConcurrentDictionary<Node, HashSet<int>> CollectNodeChars(HashSet<Node> nodes, ConcurrentDictionary<Node, HashSet<int>> nodeChars, bool withNewLine)
+    public class BvIntArrayEqualityComparer : IEqualityComparer<(bool bv,int[] ints)>
     {
+        public bool Equals((bool bv, int[] ints) x, (bool bv, int[] ints) y)
+            => x.bv == y.bv && Enumerable.SequenceEqual(x.ints, y.ints);
+
+        public int GetHashCode([DisallowNull] (bool bv, int[] ints) o)
+        {
+            var hash = o.bv ? 1 : 0;
+            for (var i = 0; i < o.ints.Length; i++)
+            {
+                hash ^= o.ints[i];
+                hash *= 31;
+            }
+
+            return hash;
+        }
+
+
+    }
+    private static void CollectNodeChars(HashSet<Node> nodes, ConcurrentDictionary<Node, HashSet<int>> nodeChars, bool withNewLine)
+    {
+        var parts = new ConcurrentDictionary<(bool bv, int[] ints), HashSet<int>>();
         Parallel.ForEach(nodes, (node, ls) =>
         {
             if (!node.IsLink && node.CharsArray != null)
             {
-                var chars = node.CharsArray.Where(c => Unicode.IsValidUTF32(c)).ToHashSet();
-                if (node.Inverted)
+                if(!parts.TryGetValue((node.Inverted,node.CharsArray),out var chars))
                 {
-                    var set = (withNewLine ? Node.AllChars : Node.AllCharsWithoutNewLine).ToHashSet();
-                    set.ExceptWith(chars);
-                    chars = set;
+                    chars = node.CharsArray.Where(c => Unicode.IsValidUTF32(c)).ToHashSet();
+                    if (node.Inverted)
+                    {
+                        var set = (withNewLine ? Node.AllChars : Node.AllCharsWithoutNewLine).ToHashSet();
+                        set.ExceptWith(chars);
+                        chars = set;
+                    }
+                    parts.GetOrAdd((node.Inverted, node.CharsArray), chars);
                 }
                 nodeChars.GetOrAdd(node, chars);
             }
         });
-
-        return nodeChars;
     }
 
     private static bool HasPathTo(this Node main, Node other, bool dual = true)
@@ -243,8 +266,8 @@ public static class RegExGraphCBTDetector
         var paths = new ConcurrentBag<Path>(graph.Head.Outputs.Select(o => new Path(graph.Head, o)));
         var circles = new ConcurrentBag<Path>();
         var count = graph.Nodes.Count;
-        CollectNodeChars(graph.Nodes, chars, withNewLine);
 
+        CollectNodeChars(graph.Nodes, chars, withNewLine);
         Parallel.ForEach(graph.Nodes, node =>
         {
             heads.GetOrAdd(node, graph.Edges.Where(e => e.Head == node).ToHashSet());
