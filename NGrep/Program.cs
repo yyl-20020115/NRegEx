@@ -68,36 +68,16 @@ public static class Program
 {
     private static int Count = 0;
     private static Parser Parser = Parser.Default;
-    public static void PrintLeadingContext(Options options, string[] lines, int line_number, int num_context, Match m, string filename)
-    {
-        var start = line_number - num_context;
-        start = start <= 0 ? 0 : start;
-        Console.WriteLine();
-        for (var i = start; i < line_number; i++)
-            PrintMatch(options, lines, i, m, filename);
-    }
-
-    public static void PrintTrailingContext(Options options, string[] lines, int line_number, int num_context, Match m, string filename)
-    {
-        var end = line_number + num_context + 1;
-        if (end > lines.Length)
-            end = lines.Length;
-
-        for (var i = line_number + 1; i < end; i++)
-            PrintMatch(options, lines, i, m, filename);
-        Console.WriteLine();
-    }
-
-    public static void PrintMatch(Options options, string[] lines, int linenumber, Match match, string filename)
+    public static void PrintMatch(Options options, string line, int linenumber, Match match, string filename)
     {
         if (options.PrintLineNumber)
             Console.Write($"[{linenumber + 1}] ");
         if (options.WithFileName)
             Console.Write($"[{filename}] ");
         if (options.PrintOnlyMatchingPart)
-            Console.Write(lines[linenumber][match.InclusiveStart..match.ExclusiveEnd]);
+            Console.Write(line[match.InclusiveStart..match.ExclusiveEnd]);
         else
-            Console.Write(lines[linenumber]);
+            Console.Write(line);
         Console.WriteLine();
     }
 
@@ -190,7 +170,6 @@ public static class Program
             return;
         }
 
-        var input = File.ReadAllText(options.InputFile);
         var regex = new Regex(options.RegExpr);
 
         if (options.Context > 0)
@@ -199,29 +178,22 @@ public static class Program
             options.BeforeContext = options.Context;
         }
 
-        var lines = input.Split(new[] { '\n' }, StringSplitOptions.None);
-
-        if (options.Verbose)
-            Console.WriteLine($"Lines read: {lines.Length}");
-
-        for (int i = 0; i < lines.Length; i++)
+        using var reader = new StreamReader(options.InputFile);
+        string? line;
+        int i = 0;
+        while((line = reader.ReadLine()) != null)
         {
+            i++;
             if (!options.DoNotStripCR)
             {
-                lines[i] = lines[i].Replace("\r", "");
+                line = line.Replace("\r", "");
             }
 
-            foreach (var match in regex.Matches(lines[i]).Cast<Match>())
+            foreach (var match in regex.Matches(line))
             {
                 if (!options.CountOnly)
                 {
-                    if (options.BeforeContext > 0)
-                        PrintLeadingContext(options, lines, i, options.BeforeContext, match, options.InputFile);
-
-                    PrintMatch(options, lines, i, match, options.InputFile);
-
-                    if (options.AfterContext > 0)
-                        PrintTrailingContext(options, lines, i, options.AfterContext, match, options.InputFile);
+                    PrintMatch(options, line, i, match, options.InputFile);
                 }
                 if (++Count >= options.MaxMatches)
                 {
