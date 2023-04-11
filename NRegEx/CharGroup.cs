@@ -11,10 +11,10 @@ public class CharGroup
     public readonly int Sign;
     public readonly int[] Class;
 
-    private CharGroup(int sign, int[] cls)
+    private CharGroup(int Sign, int[] Class)
     {
-        this.Sign = sign;
-        this.Class = cls;
+        this.Sign = Sign;
+        this.Class = Class;
     }
 
     private static readonly int[] Code1 = {

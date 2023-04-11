@@ -20,5 +20,6 @@ public class Capture
         this.ExclusiveEnd = ExclusiveEnd;
         this.Value = Value;
     }
-    public override string ToString() => Value ?? string.Empty;
+    public override string ToString() 
+        => Value ?? string.Empty;
 }

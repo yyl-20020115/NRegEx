@@ -5,7 +5,6 @@
  * license that can be found in the LICENSE file.
  */
 using System.Collections;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace NRegEx;
@@ -40,35 +39,49 @@ public class Node
     }
     protected static int Nid = 0;
     protected int id = Nid++;
-    public bool IsLink => this.CharSet == null || this.CharSet.Count == 0;
-    protected bool inverted;
+    public bool IsLink 
+        => this.CharSet == null 
+        || this.CharSet.Count == 0
+        ;
+    protected bool inverted = false;
     protected string name = "";
     protected Graph? parent = null;
-    public bool HasInput => this.Inputs.Count > 0;
-    public bool HasOutput => this.Outputs.Count > 0;
-    public bool HasSingleInput => this.Inputs.Count == 1;
-    public bool HasSingleOutput => this.Outputs.Count == 1;
+    public bool HasInput
+        => this.Inputs.Count > 0
+        ;
+    public bool HasOutput 
+        => this.Outputs.Count > 0
+        ;
+    public bool HasSingleInput 
+        => this.Inputs.Count == 1
+        ;
+    public bool HasSingleOutput 
+        => this.Outputs.Count == 1
+        ;
     public bool IsBridge
         => this.IsLink
         && this.HasSingleInput
-        && this.HasSingleOutput;
-
+        && this.HasSingleOutput
+        ;
     public bool IsBroken
         => this.IsLink
         && !this.HasInput
-        && !this.HasOutput;
+        && !this.HasOutput
+        ;
     public bool IsIndicator
         => this.charsArray != null && this.charsArray.Length == 1
-        && this.charsArray[0] > Unicode.MAX_RUNE;
+        && this.charsArray[0] > Unicode.MAX_RUNE
+        ;
     public int Indicator
-        => this.IsIndicator ? this.charsArray![0] : EOFChar;
+        => this.IsIndicator 
+        ? this.charsArray![0] 
+        : EOFChar
+        ;
     public int Id => id;
     public bool Inverted { get => inverted; protected set => inverted = value; }
     public string Name { get => name; protected set => name = value; }
-
     public BitArray? CharSet => charSet;
     public int[]? CharsArray => charsArray;
-
     public Graph? Parent { get => parent; set => parent = value; }
     public Endings Ending = Endings.None;
     public Node Copy(Graph? parent = null) => new()
@@ -87,12 +100,12 @@ public class Node
     public readonly HashSet<Node> Inputs = new();
     public readonly HashSet<Node> Outputs = new();
     public readonly List<int> Groups = new();
-    public Node(string name = "") => Name = name;
+    public Node(string Name = "") 
+        => this.Name = Name;
     public Node(params int[] chars)
         : this(false, chars) { }
     public Node(bool inverted, params char[] chars)
         : this(inverted, chars.Select(c => (int)c).ToArray()) { }
-
     public Node(bool inverted, params int[] chars)
     {
         if (chars != null && chars.Length > 0)
@@ -128,7 +141,7 @@ public class Node
             {
                 var copy = subs.ToArray();
                 subs.Clear();
-                foreach (var sub in copy)
+                foreach(var sub in copy)
                 {
                     if (sub == this) continue;
                     else if (!sub.IsLink)
@@ -161,7 +174,11 @@ public class Node
         return this;
     }
     protected bool TryHitCore(int c)
-        => this.charSet != null && c >= 0 && c < this.charSet.Count && this.charSet.Get(c);
+        => this.charSet != null 
+        && c >= 0 
+        && c < this.charSet.Count 
+        && this.charSet.Get(c)
+        ;
 
     protected bool TryHitCoreWithInverted(int c)
     {

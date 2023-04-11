@@ -32,9 +32,7 @@ public class Path
     public int Length => this.length;
     public bool IsCircle => this.isCircle;
     public Path(params Node[] nodes)
-        :this(nodes.Select(n=>new LinkedNode(n)).ToList())
-    {
-    }
+        :this(nodes.Select(n=>new LinkedNode(n)).ToList()) { }
     public Path(List<LinkedNode> reversed_list, bool isCircle = false)
     {
         if (reversed_list.Count > 0)
@@ -55,7 +53,7 @@ public class Path
     {
         if (reversed_list.Count > 0)
         {
-            List<LinkedNode> inner_reversed_list = new List<LinkedNode>();
+            var inner_reversed_list = new List<LinkedNode>();
 
             for (int i = 0; i < reversed_list.Count; i++)
             {
@@ -92,7 +90,6 @@ public class Path
         ? this.ListTail?.Node 
         : null
         ;
-
 
     public LinkedNode? Find(Node node)
     {

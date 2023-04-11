@@ -71,13 +71,14 @@ public static class GraphUtils
         builder.AppendLine("digraph g {");
         foreach (var node in graph.Nodes.OrderBy(n => n.Id))
         {
-            var label = (!string.IsNullOrEmpty(node.Name) ? $"[label=\"{node.Id}({node.Name})\"]" : "");
+            var label = !string.IsNullOrEmpty(node.Name) 
+                ? $"[label=\"{node.Id}({node.Name})\"]" 
+                : string.Empty;
+
             builder.AppendLine($"\t{node.Id} {label};");
         }
-        foreach (var edge in graph.Edges/*.Where(e=>e.Repeats == 1)*/.OrderBy(e => e.Head.Id).OrderBy(e => e.Tail.Id))
-        {
+        foreach (var edge in graph.Edges.OrderBy(e => e.Head.Id).OrderBy(e => e.Tail.Id))
             builder.AppendLine($"\t{edge.Head.Id}->{edge.Tail.Id};");
-        }
         builder.AppendLine("}");
         return builder;
     }
@@ -86,14 +87,12 @@ public static class GraphUtils
         var text = Environment.GetEnvironmentVariable("PATH");
         if (!string.IsNullOrEmpty(text))
         {
-            var paths = text.Split(";");
-
-            foreach (var path in paths)
+            foreach (var path in text.Split(";"))
             {
-                var fp = System.IO.Path.Combine(path, filePath);
-                if (File.Exists(fp))
+                var fullPath = System.IO.Path.Combine(path, filePath);
+                if (File.Exists(fullPath))
                 {
-                    filePath = fp;
+                    filePath = fullPath;
                     break;
                 }
             }
@@ -102,14 +101,14 @@ public static class GraphUtils
     }
     public static int RunProcess(string filePath, string argument)
     {
-        var p = new Process();
+        var process = new Process();
 
-        p.StartInfo.FileName = GetApplicationFullPath(filePath);
-        p.StartInfo.Arguments = argument;
-        if (p.Start())
+        process.StartInfo.FileName = GetApplicationFullPath(filePath);
+        process.StartInfo.Arguments = argument;
+        if (process.Start())
         {
-            p.WaitForExit();
-            return p.ExitCode;
+            process.WaitForExit();
+            return process.ExitCode;
         }
         return -1;
     }
@@ -187,36 +186,30 @@ public static class GraphUtils
         var dict = new Dictionary<Node, HashSet<Node>>(cdict);
 
         var visited = new HashSet<Node>();
-        var followings = dict[graph.Head].Where(n => visited.Add(n)).ToHashSet();
+        var follows = dict[graph.Head].Where(n => visited.Add(n)).ToHashSet();
         // GetFollowings(graph, graph.Head, visited);
         var list = new List<HashSet<Node>>
         {
             new() { graph.Head },
-            followings
+            follows
         };
 
-        var collectings = new HashSet<Node>();
+        var collects = new HashSet<Node>();
         do
         {
-            foreach (var node in followings)
-            {
-                collectings.UnionWith(
+            foreach (var node in follows)
+                collects.UnionWith(
                     dict[graph.Head].Where(n => visited.Add(n)));
-            }
-            followings = collectings.ToHashSet();
-            if (collectings.Count > 0)
+
+            if ((follows = collects.ToHashSet()).Count > 0)
             {
-                list.Add(collectings);
-                collectings = new();
+                list.Add(collects);
+                collects = new();
             }
-        } while (followings.Count > 0);
+        } while (follows.Count > 0);
         foreach (var line in list)
-        {
             foreach (var node in line)
-            {
                 node.SetId(id++);
-            }
-        }
         return graph;
     }
 }

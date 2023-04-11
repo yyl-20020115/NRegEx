@@ -28,7 +28,8 @@ public class HashLookups<TKey, TValue> : Lookups<TKey, TValue>
         foreach (var c in collection)
             this.AddRange(c.Key, c.Value);
     }
-    public HashLookups<TKey, TValue> Clone() => new(this.Data);
+    public HashLookups<TKey, TValue> Clone()
+        => new(this.Data);
     public HashLookups<TKey, TValue> Transfer()
     {
         var t = new HashLookups<TKey, TValue>(this.Data);

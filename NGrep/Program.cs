@@ -23,35 +23,35 @@ public class Options
     public bool PrintLineNumber { get; set; } = false;
 
     [Option('o', "only-matching", Required = false,
-      HelpText = "Print only the matching part")]
+      HelpText = "Print only the matching part.")]
     public bool PrintOnlyMatchingPart { get; set; } = false;
 
     [Option('m', "max-count", Required = false,
-      HelpText = "Stop after numer of matches")]
+      HelpText = "Stop after numer of matches.")]
     public long MaxMatches { get; set; } = long.MaxValue;
 
     [Option('a', "after-context", Required = false,
-      HelpText = "Print number of context lines trailing match")]
+      HelpText = "Print number of context lines trailing match.")]
     public int AfterContext { get; set; } = 0;
 
     [Option('b', "before-context", Required = false,
-      HelpText = "Print number of context lines leading match")]
+      HelpText = "Print number of context lines leading match.")]
     public int BeforeContext { get; set; } = 0;
 
     [Option('t', "context", Required = false,
-      HelpText = "Print number of context lines leading & trailing match")]
+      HelpText = "Print number of context lines leading & trailing match.")]
     public int Context { get; set; } = 0;
 
     [Option('c', "count", Required = false,
-      HelpText = "Print only count of matching lines per FILE")]
+      HelpText = "Print only count of matching lines per FILE.")]
     public bool CountOnly { get; set; } = false;
 
     [Option('f', "with-filename", Required = false,
-      HelpText = "Print filename for each match")]
+      HelpText = "Print filename for each match.")]
     public bool WithFileName { get; set; } = false;
 
     [Option('u', "binary", Required = false,
-      HelpText = "Do not strip CR characters at EOL (MSDOS/Windows)")]
+      HelpText = "Do not strip CR characters at EOL (MSDOS/Windows).")]
     public bool DoNotStripCR { get; set; } = false;
 
     // Omitting long name, default --verbose
@@ -60,7 +60,7 @@ public class Options
     public bool Verbose { get; set; } = false;
 
     [Option('d', "detect", Required = false,
-      HelpText = "Detect Catastrophic Backtracking problem")]
+      HelpText = "Detect Catastrophic Backtracking problem.")]
     public bool DetectCBT { get; set; } = false;
 }
 
