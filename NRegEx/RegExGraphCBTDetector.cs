@@ -7,7 +7,7 @@
 using System.Collections.Concurrent;
 
 namespace NRegEx;
-public enum CBTDectectionResultTypes
+public enum CBTResultTypes
 {
     //未检测到CBT
     Undetected = 0,
@@ -28,9 +28,9 @@ public enum CBTDectectionResultTypes
 /// <param name="Length">CBT出现在正则表达式中的结束位置（不包括）</param>
 /// <param name="Regex">CBT涉及的正则表达式</param>
 /// <param name="Attacker">用于攻击的字符串</param>
-public record CBTDetectionResult(CBTDectectionResultTypes Type, string Regex, int Position = -1, int Length = 0, int NodeId = -1, string Attacker = "");
+public record CBTResult(CBTResultTypes Type, string Regex, int Position = -1, int Length = 0, int NodeId = -1, string Attacker = "");
 
-public static class RegExGraphValidator
+public static class RegExGraphCBTDetector
 {
     private static ConcurrentDictionary<Node, HashSet<int>> CollectNodeChars(HashSet<Node> nodes, ConcurrentDictionary<Node, HashSet<int>> nodeChars, bool withNewLine)
     {
@@ -217,13 +217,13 @@ public static class RegExGraphValidator
     /// </summary>
     /// <param name="graph"></param>
     /// <returns></returns>
-    public static CBTDetectionResult DetectCatastrophicBacktracking(Regex regex)
+    public static CBTResult DetectCatastrophicBacktracking(Regex regex)
         => DetectCatastrophicBacktracking(
             regex.Model, regex.Options);
-    public static CBTDetectionResult DetectCatastrophicBacktracking(string regex, Options options = Options.PERL_X)
+    public static CBTResult DetectCatastrophicBacktracking(string regex, Options options = Options.PERL_X)
         => DetectCatastrophicBacktracking(
             new RegExDomParser(regex, regex, options).Parse(), options);
-    public static CBTDetectionResult DetectCatastrophicBacktracking(RegExNode model, Options options = Options.PERL_X)
+    public static CBTResult DetectCatastrophicBacktracking(RegExNode model, Options options = Options.PERL_X)
         => DetectCatastrophicBacktracking(
             new RegExGraphBuilder() { UseMinMaxEdge = true }.Build(model, 0, false),
             (options & Options.DOT_NL) == Options.DOT_NL);
@@ -234,7 +234,7 @@ public static class RegExGraphValidator
      *      比如说：任意字符一次或多次重复的循环之前的所有字符显然都已经可以包含在其中了，所以都应当能够引发CBT
      */
 
-    public static CBTDetectionResult DetectCatastrophicBacktracking(Graph graph, bool withNewLine = true)
+    public static CBTResult DetectCatastrophicBacktracking(Graph graph, bool withNewLine = true)
     {
         //GraphUtils.ExportAsDot(graph);
         var steps = 0;
@@ -305,7 +305,7 @@ public static class RegExGraphValidator
                         {
                             //两个环具有完全相同的开始(同源)
                             //或者两个环的开始/结尾具有交集
-                            return new(CBTDectectionResultTypes.ParallelLoops, graph.Name, graph.Position, graph.Length, i_nodes[0].Id);
+                            return new(CBTResultTypes.ParallelLoops, graph.Name, graph.Position, graph.Length, i_nodes[0].Id);
                         }
                         var longer_nodes = (i_nodes.Count >= j_nodes.Count ? i_nodes : j_nodes);
                         var shorter_nodes = (i_nodes.Count < j_nodes.Count ? i_nodes : j_nodes);
@@ -314,7 +314,7 @@ public static class RegExGraphValidator
                         {
                             //如果不能贯通需要查看后面的部分，贯通的话直接认定CBT
                             if (longer_nodes.HasPassage(shorter_nodes, chars))
-                                return new(CBTDectectionResultTypes.NestedLoops, graph.Name, graph.Position, graph.Length, longer_nodes[0].Id);
+                                return new(CBTResultTypes.NestedLoops, graph.Name, graph.Position, graph.Length, longer_nodes[0].Id);
                             else
                                 continue;
                         }
@@ -345,7 +345,7 @@ public static class RegExGraphValidator
                             foreach (var j_node in j_circle)
                                 if (!i_node.IsLink && !j_node.IsLink
                                     && chars[i_node].Overlaps(chars[j_node]))
-                                    return new(CBTDectectionResultTypes.ConnectedLoops, graph.Name, graph.Position, graph.Length, i_node.Id);
+                                    return new(CBTResultTypes.ConnectedLoops, graph.Name, graph.Position, graph.Length, i_node.Id);
                 }
             }
         }
@@ -357,10 +357,10 @@ public static class RegExGraphValidator
                 var i_nodes = i_circle.ComposeNodesList();
                 var first_i_node = i_nodes.FirstOrDefault(n => !n.IsLink);
                 if (first_i_node != null && first_i_node.HasBackEscape(i_nodes.ToHashSet(), chars))
-                    return new(CBTDectectionResultTypes.SingleEscapedLoop, graph.Name, graph.Position, graph.Length,first_i_node.Id);
+                    return new(CBTResultTypes.SingleEscapedLoop, graph.Name, graph.Position, graph.Length,first_i_node.Id);
             }
         }
-        return new(CBTDectectionResultTypes.Undetected, graph.Name, graph.Position, graph.Length);
+        return new(CBTResultTypes.Undetected, graph.Name, graph.Position, graph.Length);
     }
 }
 

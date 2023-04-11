@@ -14,7 +14,7 @@ public class Options
       HelpText = "Regular expression to be processed.")]
     public string RegExpr { get; set; } = "";
 
-    [Option('i', "input", Required = true,
+    [Option('i', "input", Required = false,
       HelpText = "Input file to be processed.")]
     public string InputFile { get; set; } = "";
 
@@ -58,24 +58,26 @@ public class Options
     [Option('v', "verbose", Required = false,
       HelpText = "Prints all diagnostic messages to standard output.")]
     public bool Verbose { get; set; } = false;
+    [Option('d',"detect",Required =false,
+      HelpText = "Detect Catastrophic Backtracking problem")]
+    public bool DetectCBT { get; set; } = false;
 }
 
 public static class Program
 {
-    private static readonly Options Options = new();
     private static int Count = 0;
-    private static Parser? Parser;
+    private static Parser Parser = Parser.Default;
 
-    public static void PrintLeadingContext(string[] lines, int line_number, int num_context, Match m, string filename)
+    public static void PrintLeadingContext(Options options, string[] lines, int line_number, int num_context, Match m, string filename)
     {
         var start = line_number - num_context;
         start = start <= 0 ? 0 : start;  
         Console.WriteLine();
         for (var i = start; i < line_number; i++)
-            PrintMatch(lines, i, m, filename);
+            PrintMatch(options,lines, i, m, filename);
     }
 
-    public static void PrintTrailingContext(string[] lines, int line_number, int num_context, Match m, string filename)
+    public static void PrintTrailingContext(Options options,string[] lines, int line_number, int num_context, Match m, string filename)
     {
         var end = line_number + num_context + 1;
 
@@ -83,30 +85,30 @@ public static class Program
             end = lines.Length;
 
         for (var i = line_number + 1; i < end; i++)
-            PrintMatch(lines, i, m, filename);
+            PrintMatch(options,lines, i, m, filename);
         Console.WriteLine();
     }
 
-    public static void PrintMatch(string[] lines, int linenumber, Match match, string filename)
+    public static void PrintMatch(Options options,string[] lines, int linenumber, Match match, string filename)
     {
-        if (Options.PrintLineNumber)
+        if (options.PrintLineNumber)
             Console.Write(string.Format("[{0}] ", linenumber + 1));
 
-        if (Options.WithFileName)
+        if (options.WithFileName)
             Console.Write(string.Format("[{0}] ", filename));
 
-        if (Options.PrintOnlyMatchingPart)
+        if (options.PrintOnlyMatchingPart)
             Console.Write(lines[linenumber][match.InclusiveStart..match.ExclusiveEnd]);
         else
             Console.Write(lines[linenumber]);
         Console.WriteLine();
     }
 
-    public static void Finalise()
+    public static void Finalise(Options options)
     {
-        if (Options.CountOnly)
+        if (options.CountOnly)
             Console.WriteLine("Number of matches: {0}", Count);
-        if (Options.Verbose)
+        if (options.Verbose)
             Console.WriteLine("Done.");
     }
 
@@ -116,21 +118,22 @@ public static class Program
         Console.WriteLine("Help: " + Parser!.Settings.HelpWriter);
     }
 
-    public static void PrintOptions()
+    public static void PrintOptions(Options options)
     {
         Console.WriteLine("Options:");
-        Console.WriteLine("After Context: " + Options.AfterContext);
-        Console.WriteLine("Before Context: " + Options.BeforeContext);
-        Console.WriteLine("Context: " + Options.Context);
-        Console.WriteLine("Count only: " + Options.CountOnly);
-        Console.WriteLine("Do not strip CR: " + Options.DoNotStripCR);
-        Console.WriteLine("Input filename: " + Options.InputFile);
-        Console.WriteLine("Max Matches: " + Options.MaxMatches);
-        Console.WriteLine("Print line number: " + Options.PrintLineNumber);
-        Console.WriteLine("Print only matching part: " + Options.PrintOnlyMatchingPart);
-        Console.WriteLine("Regular expression: " + Options.RegExpr);
-        Console.WriteLine("Verbose: " + Options.Verbose);
-        Console.WriteLine("With filename: " + Options.WithFileName);
+        Console.WriteLine("After Context: " + options.AfterContext);
+        Console.WriteLine("Before Context: " + options.BeforeContext);
+        Console.WriteLine("Context: " + options.Context);
+        Console.WriteLine("Count only: " + options.CountOnly);
+        Console.WriteLine("Do not strip CR: " + options.DoNotStripCR);
+        Console.WriteLine("Input filename: " + options.InputFile);
+        Console.WriteLine("Max Matches: " + options.MaxMatches);
+        Console.WriteLine("Print line number: " + options.PrintLineNumber);
+        Console.WriteLine("Print only matching part: " + options.PrintOnlyMatchingPart);
+        Console.WriteLine("Regular expression: " + options.RegExpr);
+        Console.WriteLine("Verbose: " + options.Verbose);
+        Console.WriteLine("With filename: " + options.WithFileName);
+        Console.WriteLine("Detect Catastrophic Backtracking problem: " + options.DetectCBT);
     }
     public static void Main(string[] args)
     {
@@ -149,7 +152,7 @@ public static class Program
 
             if (result.Value != null)
             {
-                PlatformRegEx();
+                PlatformRegEx(result.Value);
             }
             else
             {
@@ -161,52 +164,77 @@ public static class Program
             Console.WriteLine("Error (Exception): " + ex.Message);
         }
     }
-    public static void PlatformRegEx()
+    public static void PlatformRegEx(Options options)
     {
-        if (Options.Verbose) PrintOptions();
-
-        var input = File.ReadAllText(Options.InputFile);
-        var regex = new Regex(Options.RegExpr);
-
-        if (Options.Context > 0)
+        if (options.Verbose) PrintOptions(options);
+        if (options.DetectCBT)
         {
-            Options.AfterContext = Options.Context;
-            Options.BeforeContext = Options.Context;
+            var regexpr = options.RegExpr;
+            if (!string.IsNullOrEmpty(regexpr) 
+                && regexpr.StartsWith('"')
+                && regexpr.EndsWith('"'))
+            {
+                regexpr = regexpr[1..^1];
+            }
+            if (!string.IsNullOrEmpty(regexpr))
+            {
+                var result = RegExGraphCBTDetector.DetectCatastrophicBacktracking(regexpr);
+                if (result != null)
+                {
+                    Console.WriteLine($"RegEx: {result.Regex}");
+                    Console.WriteLine($"  CBT: {result.Type}");
+                    Console.WriteLine($"  NID: {result.NodeId}");
+                    Console.WriteLine($"  Pos: {result.Position}");
+                    Console.WriteLine($"  Len: {result.Length}");
+                    Console.WriteLine($"  Att: {result.Attacker}");
+                }
+            }
+
+            return;
+        }
+
+        var input = File.ReadAllText(options.InputFile);
+        var regex = new Regex(options.RegExpr);
+
+        if (options.Context > 0)
+        {
+            options.AfterContext = options.Context;
+            options.BeforeContext = options.Context;
         }
 
         var lines = input.Split(new[] { '\n' }, StringSplitOptions.None);
 
-        if (Options.Verbose)
+        if (options.Verbose)
             Console.WriteLine("Lines read: " + lines.Length);
 
         for (int i = 0; i < lines.Length; i++)
         {
-            if (!Options.DoNotStripCR)
+            if (!options.DoNotStripCR)
             {
                 lines[i] = lines[i].Replace("\r", "");
             }
 
             foreach (var match in regex.Matches(lines[i]).Cast<Match>())
             {
-                if (!Options.CountOnly)
+                if (!options.CountOnly)
                 {
-                    if (Options.BeforeContext > 0)
-                        PrintLeadingContext(lines, i, Options.BeforeContext, match, Options.InputFile);
+                    if (options.BeforeContext > 0)
+                        PrintLeadingContext(options, lines, i, options.BeforeContext, match, options.InputFile);
 
-                    PrintMatch(lines, i, match, Options.InputFile);
+                    PrintMatch(options, lines, i, match, options.InputFile);
 
-                    if (Options.AfterContext > 0)
-                        PrintTrailingContext(lines, i, Options.AfterContext, match, Options.InputFile);
+                    if (options.AfterContext > 0)
+                        PrintTrailingContext(options, lines, i, options.AfterContext, match, options.InputFile);
                 }
-                if (++Count >= Options.MaxMatches)
+                if (++Count >= options.MaxMatches)
                 {
-                    Console.WriteLine("Maximum number of matches reached ({0})", Options.MaxMatches);
-                    Finalise();
+                    Console.WriteLine("Maximum number of matches reached ({0})", options.MaxMatches);
+                    Finalise(options);
                     return;
                 }
             }
         }
 
-        Finalise();
+        Finalise(options);
     }
 }

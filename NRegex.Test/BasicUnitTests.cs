@@ -519,13 +519,13 @@ public class BasicUnitTests
         };
         foreach (var good_one in good_ones)
         {
-            var result = RegExGraphValidator.DetectCatastrophicBacktracking(good_one);
-            Assert.IsFalse(result.Type == CBTDectectionResultTypes.Undetected);
+            var result = RegExGraphCBTDetector.DetectCatastrophicBacktracking(good_one);
+            Assert.IsFalse(result.Type == CBTResultTypes.Undetected);
         }
         foreach (var bad_one in bad_ones)
         {
-            var result = RegExGraphValidator.DetectCatastrophicBacktracking(bad_one);
-            Assert.IsTrue(result.Type!= CBTDectectionResultTypes.Undetected);
+            var result = RegExGraphCBTDetector.DetectCatastrophicBacktracking(bad_one);
+            Assert.IsTrue(result.Type!= CBTResultTypes.Undetected);
         }
     }
     public class ParseRecord
@@ -678,8 +678,8 @@ public class BasicUnitTests
         foreach (var record in records.Where(r => r.Parse == "OK"))
         {
             if (skips.Contains(count)) { count++; continue; }        
-            var result = RegExGraphValidator.DetectCatastrophicBacktracking(record.Input);
-            if (result.Type != CBTDectectionResultTypes.Undetected)
+            var result = RegExGraphCBTDetector.DetectCatastrophicBacktracking(record.Input);
+            if (result.Type != CBTResultTypes.Undetected)
             {
                 output_cbt.WriteLine($"Record: {record.Id}-({count}/{rc}):{record.Input}");
             }
@@ -713,11 +713,11 @@ public class BasicUnitTests
             ++c;
             var _line = line.Trim();
             if (_line.Length == 0 || _line.StartsWith("#")) continue;
-            var result = RegExGraphValidator.DetectCatastrophicBacktracking(_line);
+            var result = RegExGraphCBTDetector.DetectCatastrophicBacktracking(_line);
 
             Debug.WriteLine($"{c:D4} CBT({result}): {_line}");
 
-            Assert.IsTrue(result.Type != CBTDectectionResultTypes.Undetected);
+            Assert.IsTrue(result.Type != CBTResultTypes.Undetected);
         }
 
         Environment.CurrentDirectory = ecd;

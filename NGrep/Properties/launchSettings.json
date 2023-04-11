@@ -2,7 +2,7 @@
   "profiles": {
     "NGrep": {
       "commandName": "Project",
-      "commandLineArgs": "-V -n -r test -i TextFile.txt",
+      "commandLineArgs": "--detect -r \"([A-Za-z0-9.]+\\s*)+\"",
       "workingDirectory": "$(ProjectDir)"
     }
   }

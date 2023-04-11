@@ -5,6 +5,7 @@
  * license that can be found in the LICENSE file.
  */
 using System.Collections;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace NRegEx;
@@ -33,7 +34,10 @@ public class Node
     public readonly static int[] NonWordChars = Enumerable.Range(
                     char.MinValue,
                     char.MaxValue - char.MinValue + 1).Where(i => Unicode.IsValidUTF32(i) && !Unicode.IsRuneLetter(i)).ToArray();
-
+    public static void Reset()
+    {
+        Nid = 0;
+    }
     protected static int Nid = 0;
     protected int id = Nid++;
     public bool IsLink => this.CharSet == null || this.CharSet.Count == 0;
