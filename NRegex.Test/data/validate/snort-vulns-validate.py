@@ -8,7 +8,7 @@ import argparse
 snort_suite = [
 # = [24] =
 # INPUT: /^Location\x3a(\s*|\s*\r?\n\s+)*URL\s*\x3a/smiH
-# PARSE: OK
+# PARSE: OK                                                                                                                                                                                            hhhhhhhnbbbbyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy`   1  1
 # SIZE: 34
 # PUMPABLE: YES
 # VULNERABLE: YES {}
