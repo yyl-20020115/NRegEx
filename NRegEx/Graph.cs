@@ -18,12 +18,17 @@ public class Graph
     public readonly HashSet<Edge> Edges = new();
     public Node Head;
     public Node Tail;
-    public RegExNode? SourceNode = null;
+    public readonly RegExNode SourceNode;
     public readonly List<int> BackReferences = new();
     public readonly List<Graph> ReferenceGraphs = new();
-    public Graph(string name = "", params int[] cs)
+    public int Position { get; protected set; } = -1;
+    public int Length { get; protected set; } = 0;
+    public Graph(string Name,RegExNode SourceNode, params int[] cs)
     {
-        this.Name = name;
+        this.Name = Name;
+        this.SourceNode = SourceNode;
+        this.Position = this.SourceNode.Position;
+        this.Length = this.SourceNode.Length;
         if (cs.Length > 0)
         {
             this.Nodes.Add(this.Head
@@ -32,14 +37,17 @@ public class Graph
         }
         else
         {
-            this.Nodes.Add(this.Head = new(name) { Parent = this });
-            this.Nodes.Add(this.Tail = new(name) { Parent = this });
+            this.Nodes.Add(this.Head = new(Name) { Parent = this });
+            this.Nodes.Add(this.Tail = new(Name) { Parent = this });
         }
     }
     public Graph Copy()
     {
-        var graph = new Graph(this.Name)
-        { SourceNode = SourceNode };
+        var graph = new Graph(this.Name, this.SourceNode)
+        {
+            Position = this.Position,
+            Length = this.Length
+        };
         foreach (var node in this.Nodes)
         {
             graph.Nodes.Add(node.Copy(graph));
@@ -148,7 +156,6 @@ public class Graph
 
         if (plus)
             this.Edges.Add(new(graphs[^1].Tail, graphs[^1].Head));
-
         return this;
     }
 
@@ -156,7 +163,8 @@ public class Graph
         => this.UnionWith(gs as IEnumerable<Graph>);
     public Graph UnionWith(IEnumerable<Graph> gs)
     {
-        foreach (var g in gs) this.UnionWith(g);
+        foreach (var g in gs)
+            this.UnionWith(g);
         return this;
     }
     public Graph UnionWith(params Node[] nodes)
@@ -204,7 +212,6 @@ public class Graph
     public Graph BackReferenceWith(Graph g, int i)
     {
         this.UnionWith(g);
-
         return this;
     }
     public Graph ZeroPlus(Graph g, HashSet<Node>? loopset = null)
@@ -272,7 +279,8 @@ public class Graph
         return this;
     }
 
-    public override string ToString() => $"H:{this.Head},T:{this.Tail}";
+    public override string ToString() 
+        => $"H:{this.Head},T:{this.Tail}";
 
     public Node InsertPointBeforeTail(Node node)
     {

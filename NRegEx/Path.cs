@@ -11,9 +11,9 @@ namespace NRegEx;
 
 public class LinkedNode
 {
-    public readonly Node? Node;
+    public readonly Node Node;
     public LinkedNode? Previous;
-    public LinkedNode(Node? Node, LinkedNode? Previous = null)
+    public LinkedNode(Node Node, LinkedNode? Previous = null)
     {
         this.Node = Node;
         this.Previous = Previous;

@@ -27,7 +27,7 @@ public class RegExArray : Regex
         if (regexs.Length == 0)
             throw new ArgumentException(nameof(regexs));
         this.Model = new(TokenTypes.Union) { PatternName = this.Pattern };
-        this.Graph = new() { SourceNode = this.Model };
+        this.Graph = new(this.Model.Name,this.Model);
         this.SubModels = this.Model.Children;
         foreach (var regex in this.Regexs = regexs)
         {

@@ -519,13 +519,13 @@ public class BasicUnitTests
         };
         foreach (var good_one in good_ones)
         {
-            var p = RegExGraphValidator.IsCatastrophicBacktrackingPossible(good_one);
-            Assert.IsFalse(p);
+            var result = RegExGraphValidator.DetectCatastrophicBacktracking(good_one);
+            Assert.IsFalse(result.Type == CBTDectectionResultTypes.Undetected);
         }
         foreach (var bad_one in bad_ones)
         {
-            var p = RegExGraphValidator.IsCatastrophicBacktrackingPossible(bad_one);
-            Assert.IsTrue(p);
+            var result = RegExGraphValidator.DetectCatastrophicBacktracking(bad_one);
+            Assert.IsTrue(result.Type!= CBTDectectionResultTypes.Undetected);
         }
     }
     public class ParseRecord
@@ -678,8 +678,8 @@ public class BasicUnitTests
         foreach (var record in records.Where(r => r.Parse == "OK"))
         {
             if (skips.Contains(count)) { count++; continue; }        
-            var possible = RegExGraphValidator.IsCatastrophicBacktrackingPossible(record.Input);
-            if (possible)
+            var result = RegExGraphValidator.DetectCatastrophicBacktracking(record.Input);
+            if (result.Type != CBTDectectionResultTypes.Undetected)
             {
                 output_cbt.WriteLine($"Record: {record.Id}-({count}/{rc}):{record.Input}");
             }
@@ -713,11 +713,11 @@ public class BasicUnitTests
             ++c;
             var _line = line.Trim();
             if (_line.Length == 0 || _line.StartsWith("#")) continue;
-            var possible = RegExGraphValidator.IsCatastrophicBacktrackingPossible(_line);
+            var result = RegExGraphValidator.DetectCatastrophicBacktracking(_line);
 
-            Debug.WriteLine($"{c:D4} CBT Possible: {possible} {_line}");
+            Debug.WriteLine($"{c:D4} CBT({result}): {_line}");
 
-            Assert.IsTrue(possible);
+            Assert.IsTrue(result.Type != CBTDectectionResultTypes.Undetected);
         }
 
         Environment.CurrentDirectory = ecd;

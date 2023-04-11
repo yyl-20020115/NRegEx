@@ -16,7 +16,7 @@ public class RegExGraphBuilder
         => GraphUtils.Reform(BuildInternal(node, caseInsensitive), id);
     protected Graph BuildInternal(RegExNode node, bool caseInsensitive = false)
     {
-        var graph = new Graph(node.Name) { SourceNode = node };
+        var graph = new Graph(node.Name, node);
         if (node.IsRemoved) return graph;
 
         switch (node.Type)
@@ -120,8 +120,8 @@ public class RegExGraphBuilder
                         if (condition != null)
                         {
                             var conditionGroupGraph = this.BuildInternal(condition, caseInsensitive);
-                            var actionGroupGraph = new Graph() { SourceNode = node };
-                            var elseActionGroupGraph = new Graph() { SourceNode = node };
+                            var actionGroupGraph = new Graph(node.Name,node);
+                            var elseActionGroupGraph = new Graph(node.Name, node);
 
                             var index = condition.CaptureIndex;
                             if (index is not null)

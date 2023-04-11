@@ -19,10 +19,12 @@ public record class RegExNode(
     BehaviourOptions BehaviourOptions = BehaviourOptions.Greedy,
     bool Inverted = false,
     int Position = -1,
-    int Length = -1,
+    int Length = 0,
     string? PatternName = null,
     bool IsRemoved = false)
 {
     public bool IsRemoved { get; set; } = IsRemoved;
     public List<RegExNode> Children = new();
+    public string Name { get; set; } = Name;
+    public string Value { get; set; } = Value;
 }

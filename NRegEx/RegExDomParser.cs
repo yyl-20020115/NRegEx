@@ -188,7 +188,10 @@ public class RegExDomParser
             throw new RegExSyntaxException(
                 ERR_MISSING_PAREN, this.Pattern);
 
-        return this.NodeStack.Pop();
+        var ret = this.NodeStack.Pop();
+        ret.Name=this.Name;
+        ret.Value = this.Pattern;
+        return ret;
     }
     protected void ProcessCloseParenthesis()
     {

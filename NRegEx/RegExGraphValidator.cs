@@ -7,9 +7,52 @@
 using System.Collections.Concurrent;
 
 namespace NRegEx;
+public enum CBTDectectionResultTypes
+{
+    //未检测到CBT
+    Undetected = 0,
+    //双环连通CBT
+    ConnectedLoops = 1,
+    //双环平行CBT
+    ParallelLoops = 2,
+    //环环相套CBT
+    NestedLoops = 3,
+    //单环逃逸CBT
+    SingleEscapedLoop = 4,
+}
+/// <summary>
+/// CBT测试结果
+/// </summary>
+/// <param name="Type">CBT类型</param>
+/// <param name="Position">CBT出现在正则表达式中的开始位置（包括）</param>
+/// <param name="Length">CBT出现在正则表达式中的结束位置（不包括）</param>
+/// <param name="Regex">CBT涉及的正则表达式</param>
+/// <param name="Attacker">用于攻击的字符串</param>
+public record CBTDetectionResult(CBTDectectionResultTypes Type, string Regex, int Position = -1, int Length = 0, string Attacker = "");
+
 public static class RegExGraphValidator
 {
-    public static bool HasPathTo(this Node main, Node other, bool dual = true)
+    private static ConcurrentDictionary<Node, HashSet<int>> CollectNodeChars(HashSet<Node> nodes, ConcurrentDictionary<Node, HashSet<int>> nodeChars, bool withNewLine)
+    {
+        Parallel.ForEach(nodes, (node, ls) =>
+        {
+            if (!node.IsLink && node.CharsArray != null)
+            {
+                var chars = node.CharsArray.Where(c => Unicode.IsValidUTF32(c)).ToHashSet();
+                if (node.Inverted)
+                {
+                    var set = (withNewLine ? Node.AllChars : Node.AllCharsWithoutNewLine).ToHashSet();
+                    set.ExceptWith(chars);
+                    chars = set;
+                }
+                nodeChars.GetOrAdd(node, chars);
+            }
+        });
+
+        return nodeChars;
+    }
+
+    private static bool HasPathTo(this Node main, Node other, bool dual = true)
     {
         var visited = new HashSet<Node>();
         var nodes = main.Outputs.ToHashSet();
@@ -30,7 +73,7 @@ public static class RegExGraphValidator
 
         return dual && other.HasPathTo(main, false);
     }
-    public static bool HasPathTo(this List<Node> mainNodes, List<Node> otherNodes)
+    private static bool HasPathTo(this List<Node> mainNodes, List<Node> otherNodes)
     {
         foreach (var main in mainNodes)
             foreach (var other in otherNodes)
@@ -38,7 +81,7 @@ public static class RegExGraphValidator
                     return true;
         return false;
     }
-    public static List<Node> LeftShift(this List<Node> nodes)
+    private static List<Node> LeftShift(this List<Node> nodes)
     {
         if (nodes.Count > 0)
         {
@@ -49,7 +92,7 @@ public static class RegExGraphValidator
         return nodes;
     }
 
-    public static bool HasSubpath(this List<Node> longerPath, List<Node> shorterPath)
+    private static bool HasSubpath(this List<Node> longerPath, List<Node> shorterPath)
     {
         if (longerPath == null || shorterPath == null) return false;
         if (longerPath.Count < shorterPath.Count) return false;
@@ -79,7 +122,7 @@ public static class RegExGraphValidator
     /// <param name="chars"></param>
     /// <param name="chs"></param>
     /// <returns></returns>
-    public static bool HasRun(this List<Node> nodesLocal, ConcurrentDictionary<Node, HashSet<int>> chars, HashSet<int> chs)
+    private static bool HasRun(this List<Node> nodesLocal, ConcurrentDictionary<Node, HashSet<int>> chars, HashSet<int> chs)
     {
         foreach (var node in nodesLocal)
         {
@@ -90,7 +133,7 @@ public static class RegExGraphValidator
         }
         return true;
     }
-    public static bool HasBackEscape(this Node node,HashSet<Node> circle_nodes, ConcurrentDictionary<Node, HashSet<int>> chars)
+    private static bool HasBackEscape(this Node node,HashSet<Node> circle_nodes, ConcurrentDictionary<Node, HashSet<int>> chars)
     {
         if (circle_nodes == null || !circle_nodes.Contains(node)) return false;
         if (!chars.TryGetValue(node, out var chs)) return false;
@@ -127,9 +170,7 @@ public static class RegExGraphValidator
         //finally mid == 0 is not necessory
         return false;
     }
-
-
-    public static bool HasPassage(this List<Node> nodesMain, List<Node> nodesLocal, ConcurrentDictionary<Node, HashSet<int>> chars)
+    private static bool HasPassage(this List<Node> nodesMain, List<Node> nodesLocal, ConcurrentDictionary<Node, HashSet<int>> chars)
     {
         if (nodesMain is not null && nodesLocal is not null
             && nodesMain.Count > 0 && nodesLocal.Count > 0
@@ -176,14 +217,14 @@ public static class RegExGraphValidator
     /// </summary>
     /// <param name="graph"></param>
     /// <returns></returns>
-    public static bool IsCatastrophicBacktrackingPossible(Regex regex)
-        => IsCatastrophicBacktrackingPossible(
+    public static CBTDetectionResult DetectCatastrophicBacktracking(Regex regex)
+        => DetectCatastrophicBacktracking(
             regex.Model, regex.Options);
-    public static bool IsCatastrophicBacktrackingPossible(string regex, Options options = Options.PERL_X)
-        => IsCatastrophicBacktrackingPossible(
+    public static CBTDetectionResult DetectCatastrophicBacktracking(string regex, Options options = Options.PERL_X)
+        => DetectCatastrophicBacktracking(
             new RegExDomParser(regex, regex, options).Parse(), options);
-    public static bool IsCatastrophicBacktrackingPossible(RegExNode model, Options options = Options.PERL_X)
-        => IsCatastrophicBacktrackingPossible(
+    public static CBTDetectionResult DetectCatastrophicBacktracking(RegExNode model, Options options = Options.PERL_X)
+        => DetectCatastrophicBacktracking(
             new RegExGraphBuilder() { UseMinMaxEdge = true }.Build(model, 0, false),
             (options & Options.DOT_NL) == Options.DOT_NL);
     /*
@@ -193,7 +234,7 @@ public static class RegExGraphValidator
      *      比如说：任意字符一次或多次重复的循环之前的所有字符显然都已经可以包含在其中了，所以都应当能够引发CBT
      */
 
-    public static bool IsCatastrophicBacktrackingPossible(Graph graph, bool withNewLine = true)
+    public static CBTDetectionResult DetectCatastrophicBacktracking(Graph graph, bool withNewLine = true)
     {
         //GraphUtils.ExportAsDot(graph);
         var steps = 0;
@@ -264,7 +305,7 @@ public static class RegExGraphValidator
                         {
                             //两个环具有完全相同的开始(同源)
                             //或者两个环的开始/结尾具有交集
-                            return true;
+                            return new(CBTDectectionResultTypes.ParallelLoops, graph.Name, graph.Position, graph.Length);
                         }
                         var longer_nodes = (i_nodes.Count >= j_nodes.Count ? i_nodes : j_nodes);
                         var shorter_nodes = (i_nodes.Count < j_nodes.Count ? i_nodes : j_nodes);
@@ -273,7 +314,7 @@ public static class RegExGraphValidator
                         {
                             //如果不能贯通需要查看后面的部分，贯通的话直接认定CBT
                             if (longer_nodes.HasPassage(shorter_nodes, chars))
-                                return true;
+                                return new(CBTDectectionResultTypes.NestedLoops, graph.Name, graph.Position, graph.Length);
                             else
                                 continue;
                         }
@@ -293,7 +334,6 @@ public static class RegExGraphValidator
                                     i_circle_nodes,
                                     j_circle_nodes));
                             }
-
                         }
                     }
                 }
@@ -305,7 +345,7 @@ public static class RegExGraphValidator
                             foreach (var j_node in j_circle)
                                 if (!i_node.IsLink && !j_node.IsLink
                                     && chars[i_node].Overlaps(chars[j_node]))
-                                    return true;
+                                    return new(CBTDectectionResultTypes.ConnectedLoops, graph.Name, graph.Position, graph.Length);
                 }
             }
         }
@@ -317,29 +357,10 @@ public static class RegExGraphValidator
                 var i_nodes = i_circle.ComposeNodesList();
                 var first_i_node = i_nodes.FirstOrDefault(n => !n.IsLink);
                 if (first_i_node != null && first_i_node.HasBackEscape(i_nodes.ToHashSet(), chars))
-                    return true;
+                    return new(CBTDectectionResultTypes.SingleEscapedLoop, graph.Name, graph.Position, graph.Length);
             }
         }
-        return false;
-    }
-    public static ConcurrentDictionary<Node, HashSet<int>> CollectNodeChars(HashSet<Node> nodes, ConcurrentDictionary<Node, HashSet<int>> nodeChars, bool withNewLine)
-    {
-        Parallel.ForEach(nodes, (node, ls) =>
-        {
-            if (!node.IsLink && node.CharsArray != null)
-            {
-                var chars = node.CharsArray.Where(c => Unicode.IsValidUTF32(c)).ToHashSet();
-                if (node.Inverted)
-                {
-                    var set = (withNewLine ? Node.AllChars : Node.AllCharsWithoutNewLine).ToHashSet();
-                    set.ExceptWith(chars);
-                    chars = set;
-                }
-                nodeChars.GetOrAdd(node, chars);
-            }
-        });
-
-        return nodeChars;
+        return new(CBTDectectionResultTypes.Undetected  , graph.Name, graph.Position, graph.Length);
     }
 }
 
