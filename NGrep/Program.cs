@@ -71,7 +71,7 @@ public static class Program
     public static void PrintMatch(Options options, string line, int linenumber, Match match, string filename)
     {
         if (options.PrintLineNumber)
-            Console.Write($"[{linenumber + 1}] ");
+            Console.Write($"[{linenumber}] ");
         if (options.WithFileName)
             Console.Write($"[{filename}] ");
         if (options.PrintOnlyMatchingPart)
