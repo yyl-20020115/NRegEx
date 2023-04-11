@@ -28,7 +28,7 @@ public enum CBTDectectionResultTypes
 /// <param name="Length">CBT出现在正则表达式中的结束位置（不包括）</param>
 /// <param name="Regex">CBT涉及的正则表达式</param>
 /// <param name="Attacker">用于攻击的字符串</param>
-public record CBTDetectionResult(CBTDectectionResultTypes Type, string Regex, int Position = -1, int Length = 0, string Attacker = "");
+public record CBTDetectionResult(CBTDectectionResultTypes Type, string Regex, int Position = -1, int Length = 0, int NodeId = -1, string Attacker = "");
 
 public static class RegExGraphValidator
 {
@@ -133,7 +133,7 @@ public static class RegExGraphValidator
         }
         return true;
     }
-    private static bool HasBackEscape(this Node node,HashSet<Node> circle_nodes, ConcurrentDictionary<Node, HashSet<int>> chars)
+    private static bool HasBackEscape(this Node node, HashSet<Node> circle_nodes, ConcurrentDictionary<Node, HashSet<int>> chars)
     {
         if (circle_nodes == null || !circle_nodes.Contains(node)) return false;
         if (!chars.TryGetValue(node, out var chs)) return false;
@@ -179,7 +179,7 @@ public static class RegExGraphValidator
             var head_main = nodesMain[0];
             var first_local = nodesLocal.FirstOrDefault(n => !n.IsLink) ?? nodesLocal[0];
 
-            if (first_local is not null && chars.TryGetValue(first_local, out var chs))
+            if (first_local != null && chars.TryGetValue(first_local, out var chs))
             {
                 var visited = new HashSet<Node>();
                 var nodes = first_local.Inputs.ToHashSet();
@@ -305,7 +305,7 @@ public static class RegExGraphValidator
                         {
                             //两个环具有完全相同的开始(同源)
                             //或者两个环的开始/结尾具有交集
-                            return new(CBTDectectionResultTypes.ParallelLoops, graph.Name, graph.Position, graph.Length);
+                            return new(CBTDectectionResultTypes.ParallelLoops, graph.Name, graph.Position, graph.Length, i_nodes[0].Id);
                         }
                         var longer_nodes = (i_nodes.Count >= j_nodes.Count ? i_nodes : j_nodes);
                         var shorter_nodes = (i_nodes.Count < j_nodes.Count ? i_nodes : j_nodes);
@@ -314,7 +314,7 @@ public static class RegExGraphValidator
                         {
                             //如果不能贯通需要查看后面的部分，贯通的话直接认定CBT
                             if (longer_nodes.HasPassage(shorter_nodes, chars))
-                                return new(CBTDectectionResultTypes.NestedLoops, graph.Name, graph.Position, graph.Length);
+                                return new(CBTDectectionResultTypes.NestedLoops, graph.Name, graph.Position, graph.Length, longer_nodes[0].Id);
                             else
                                 continue;
                         }
@@ -337,7 +337,7 @@ public static class RegExGraphValidator
                         }
                     }
                 }
-                
+
                 if (circle_pairs.Count > 0)
                 {
                     foreach (var (i_circle, j_circle) in circle_pairs)
@@ -345,22 +345,22 @@ public static class RegExGraphValidator
                             foreach (var j_node in j_circle)
                                 if (!i_node.IsLink && !j_node.IsLink
                                     && chars[i_node].Overlaps(chars[j_node]))
-                                    return new(CBTDectectionResultTypes.ConnectedLoops, graph.Name, graph.Position, graph.Length);
+                                    return new(CBTDectectionResultTypes.ConnectedLoops, graph.Name, graph.Position, graph.Length, i_node.Id);
                 }
             }
         }
         //至此两个环相关的情况已经完全排除，仅需要测试单环的逃逸情况
         if (!circles.IsEmpty)
         {
-            foreach(var i_circle in circles)
+            foreach (var i_circle in circles)
             {
                 var i_nodes = i_circle.ComposeNodesList();
                 var first_i_node = i_nodes.FirstOrDefault(n => !n.IsLink);
                 if (first_i_node != null && first_i_node.HasBackEscape(i_nodes.ToHashSet(), chars))
-                    return new(CBTDectectionResultTypes.SingleEscapedLoop, graph.Name, graph.Position, graph.Length);
+                    return new(CBTDectectionResultTypes.SingleEscapedLoop, graph.Name, graph.Position, graph.Length,first_i_node.Id);
             }
         }
-        return new(CBTDectectionResultTypes.Undetected  , graph.Name, graph.Position, graph.Length);
+        return new(CBTDectectionResultTypes.Undetected, graph.Name, graph.Position, graph.Length);
     }
 }
 
