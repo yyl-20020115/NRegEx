@@ -693,4 +693,34 @@ public class BasicUnitTests
 
         Environment.CurrentDirectory = ecd;
     }
+    /**
+     * 0042 CBT Unsure: ^([a-zA-z]:((\\([-*\.*\w+\s+\d+]+)|(\w+)\\)+)(\w+.zip)|(\w+.ZIP))$
+     * QUESTION:
+     *   ^([a-z]+?\.[a-z]+)+\%$ 
+     *   Why this regex is CBT with input a.aaa.a ?
+     */
+    [TestMethod]
+    public void TestMethod30()
+    {
+        var ecd = Environment.CurrentDirectory;
+        Environment.CurrentDirectory =
+           System.IO.Path.Combine(Environment.CurrentDirectory, "..\\data\\validate");
+
+        var lines = System.IO.File.ReadAllLines(System.IO.Path.Combine(Environment.CurrentDirectory, "vulns.txt"));
+        int c = 0;
+        foreach(var line in lines)
+        {
+            ++c;
+            var _line = line.Trim();
+            if (_line.Length == 0 || _line.StartsWith("#")) continue;
+            var possible = RegExGraphValidator.IsCatastrophicBacktrackingPossible(_line);
+
+            Debug.WriteLine($"{c:D4} CBT Possible: {possible} {_line}");
+
+            Assert.IsTrue(possible);
+        }
+
+        Environment.CurrentDirectory = ecd;
+
+    }
 }
