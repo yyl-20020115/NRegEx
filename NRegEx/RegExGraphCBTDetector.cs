@@ -65,9 +65,7 @@ public static class RegExGraphCBTDetector
                 if (node == other)
                     return true;
                 else if (visited.Add(node))
-                {
                     nodes.UnionWith(node.Outputs);
-                }
             }
         }
 
@@ -158,9 +156,7 @@ public static class RegExGraphCBTDetector
                     else
                     { //环外相交，CBT，true
                         if (!circle_nodes.Contains(n))
-                        {
                             return true;
-                        }
                     }
                 }
                 nodes.UnionWith(n.Inputs.Where(i => i.Id <= nid));
@@ -192,17 +188,13 @@ public static class RegExGraphCBTDetector
                     foreach (var node in nodesCopy)
                     {
                         if (node == head_main)
-                        {
                             //需要确认nodesMain整个都与chs有交集，若有断开
                             //则不符合CBT
                             return nodesMain.HasRun(chars, chs);
-                        }
                         else if (visited.Add(node)
                             && (node.IsLink || chars.TryGetValue(node, out var nhs)
                             && nhs.Overlaps(chs)))
-                        {
                             nodes.UnionWith(node.Inputs);
-                        }
                     }
                 }
             }
