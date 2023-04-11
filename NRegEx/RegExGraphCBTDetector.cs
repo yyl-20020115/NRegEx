@@ -54,7 +54,7 @@ public static class RegExGraphCBTDetector
     }
     private static void CollectNodeChars(HashSet<Node> nodes, ConcurrentDictionary<Node, HashSet<int>> nodeChars, bool withNewLine)
     {
-        var parts = new ConcurrentDictionary<(bool bv, int[] ints), HashSet<int>>();
+        var parts = new ConcurrentDictionary<(bool bv, int[] ints), HashSet<int>>(new BvIntArrayEqualityComparer());
         Parallel.ForEach(nodes, (node, ls) =>
         {
             if (!node.IsLink && node.CharsArray != null)
@@ -244,12 +244,18 @@ public static class RegExGraphCBTDetector
         => DetectCatastrophicBacktracking(
             regex.Model, regex.Options);
     public static CBTResult DetectCatastrophicBacktracking(string regex, Options options = Options.PERL_X)
-        => DetectCatastrophicBacktracking(
+    {
+        Node.Reset();
+        return DetectCatastrophicBacktracking(
             new RegExDomParser(regex, regex, options).Parse(), options);
+    }
     public static CBTResult DetectCatastrophicBacktracking(RegExNode model, Options options = Options.PERL_X)
-        => DetectCatastrophicBacktracking(
+    {
+        Node.Reset();
+        return DetectCatastrophicBacktracking(
             new RegExGraphBuilder() { UseMinMaxEdge = true }.Build(model, 0, false),
             (options & Options.DOT_NL) == Options.DOT_NL);
+    }
     /*
      *  1.	嵌套量词或者巨大量词（指数）：里外两圈，且从外圈到里圈存在通路
      *  2.	多头交叠（指数）：平行多圈（开头相同或者有交集）
