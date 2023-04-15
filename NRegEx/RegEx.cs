@@ -68,7 +68,7 @@ public class Regex
         this.Graph = Builder.Build(this.Model, 0,
             (this.Options & Options.CASE_INSENSITIVE) == Options.CASE_INSENSITIVE)
             .CleanEdges();
-        
+
         this.BackRefPoints = Builder.BackRefPoints;
         this.GroupTypes = Builder.GroupTypes;
         this.GroupGraphs = Builder.GroupGraphs;
@@ -81,9 +81,10 @@ public class Regex
         if (length < 0) length = input.Length - first;
         if (first + length > input.Length) throw new ArgumentOutOfRangeException(nameof(first) + "_" + nameof(length));
 
+        var runes = Utils.ToRunes(input, first);
         Node? last = null;
         int sp = 0, ep = 0;
-        return IsMatchInternal(this.Graph, input, first, length, ref sp, ref ep, ref last, null, reversely ? -1 : 1, this.Options, this.TryWithGroups);
+        return IsMatchInternal(this.Graph, runes.Runes, runes.Start, runes.Length, ref sp, ref ep, ref last, null, reversely ? -1 : 1, this.Options, this.TryWithGroups);
     }
     public bool IsFullyMatch(string input, int start = 0, int length = -1, bool reversely = false)
     {
@@ -92,10 +93,11 @@ public class Regex
         if (length < 0) length = input.Length - start;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
         Node? last = null;
-        return IsMatchCore(this.Graph, input, start, length, ref start, ref last, true, null, reversely ? -1 : 1, this.Options, this.TryWithGroups);
+        var runes = Utils.ToRunes(input, start);
+        return IsMatchCore(this.Graph, runes.Runes, runes.Start, runes.Length, ref start, ref last, true, null, reversely ? -1 : 1, this.Options, this.TryWithGroups);
     }
-    public delegate bool? TryWithGroupsFunction(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, HashSet<Edge> edges, int direction);
-    protected bool? TryWithGroups(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, HashSet<Edge> edges, int direction)
+    public delegate bool? TryWithGroupsFunction(Node node, Rune[] input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, HashSet<Edge> edges, int direction);
+    protected bool? TryWithGroups(Node node, Rune[] input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, HashSet<Edge> edges, int direction)
     {
         if (groups != null)
         {
@@ -110,7 +112,7 @@ public class Regex
         return null;
     }
 
-    protected bool? TryWithGroup(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, HashSet<Edge> edges, int direction, int index, GroupType type)
+    protected bool? TryWithGroup(Node node, Rune[] input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, HashSet<Edge> edges, int direction, int index, GroupType type)
     {
         switch (type)
         {
@@ -124,7 +126,7 @@ public class Regex
                     EmitPosition(node, i, groups[index]);
                     if (this.BackRefPoints.TryGetValue(index, out var graph) && graph != null)
                     {
-                        graph.InsertPointBeforeTail(new(input[i]) { Parent = graph });
+                        graph.InsertPointBeforeTail(new(input[i].Value) { Parent = graph });
                         backs.Add(graph.Nodes.Single(n => n.Groups.Contains(i)));
                     }
                 }
@@ -147,7 +149,7 @@ public class Regex
         }
         return null;
     }
-    protected bool? TryWithConditionGroup(Node node, string input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, int direction, int index, GroupType type)
+    protected bool? TryWithConditionGroup(Node node, Rune[] input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, int direction, int index, GroupType type)
     {
         switch (type)
         {
@@ -223,7 +225,8 @@ public class Regex
         Node? last = null;
         var groups = new ListLookups<int, List<int>>();
         int sp = 0, ep = 0;
-        var ret = IsMatchInternal(this.Graph, input, start, length, ref sp, ref ep, ref last, groups, direction, this.Options, this.TryWithGroups);
+        var runes = Utils.ToRunes(input, start);
+        var ret = IsMatchInternal(this.Graph, runes.Runes, runes.Start, runes.Length, ref sp, ref ep, ref last, groups, direction, this.Options, this.TryWithGroups);
         if (ret)
         {
             var name = this.Name;
@@ -316,7 +319,7 @@ public class Regex
         return result.ToArray();
     }
 
-    protected static bool IsMatchInternal(Graph graph, string input, int first, int length, ref int sp, ref int ep, ref Node? last, ListLookups<int, List<int>>? groups, int direction, Options options, TryWithGroupsFunction function)
+    protected static bool IsMatchInternal(Graph graph, Rune[] input, int first, int length, ref int sp, ref int ep, ref Node? last, ListLookups<int, List<int>>? groups, int direction, Options options, TryWithGroupsFunction function)
     {
         direction = RegexHelpers.FixDirection(direction);
         var tail = first + length;
@@ -352,7 +355,7 @@ public class Regex
         }
         return false;
     }
-    protected static int IsMatchFindStart(Graph graph, string input, int first, int tail, int direction)
+    protected static int IsMatchFindStart(Graph graph, Rune[] input, int first, int tail, int direction)
     {
         var indicators = new RegExIndicators();
 
@@ -383,14 +386,14 @@ public class Regex
                             node.FetchNodes(subs, true, direction);
                             foreach (var sub in subs)
                             {
-                                if (sub.TryHit(input[i]) == true)
+                                if (sub.TryHit(input[i].Value) == true)
                                 {
                                     return i;
                                 }
                             }
                         }
                     }
-                    else if (node.TryHit(input[i]) == true)
+                    else if (node.TryHit(input[i].Value) == true)
                     {
                         return i;
                     }
@@ -400,14 +403,14 @@ public class Regex
         return -1;
     }
     protected static bool VerifyMatchCore(
-        Graph graph, string input, int first, int length,
+        Graph graph, Rune[] input, int first, int length,
         int i, int direction, Options options)
     {
         Node? last = null;
         return IsMatchCore(graph, input, first, length, ref i, ref last, false, null, direction, options, null);
     }
 
-    protected static bool IsMatchCore(Graph graph, string input, int first, int length, ref int i, ref Node? last, bool strict, ListLookups<int, List<int>>? groups, int direction, Options options, TryWithGroupsFunction? function)
+    protected static bool IsMatchCore(Graph graph, Rune[] input, int first, int length, ref int i, ref Node? last, bool strict, ListLookups<int, List<int>>? groups, int direction, Options options, TryWithGroupsFunction? function)
     {
         if (length == 0 && GraphUtils.HasPassThrough(graph)) return true;
         var indicators = new RegExIndicators();
@@ -425,6 +428,8 @@ public class Regex
         var nodes = heads.ToHashSet();
         var backs = new HashSet<Node>();
         var edges = new HashSet<Edge>();
+        var paths = new HashSet<Path>(heads.Select(head => new Path(head)));
+
         while (nodes.Count > 0 && i >= start && i <= end)
         {
             var c = input[i];
@@ -432,6 +437,7 @@ public class Regex
             var quit = false;
             var copies = nodes.ToArray();
             nodes.Clear();
+
             foreach (var node in copies)
             {
                 //this is for BEGIN_LINE etc
@@ -446,7 +452,7 @@ public class Regex
                 }
                 else
                 {
-                    var d = node.TryHit(c);
+                    var d = node.TryHit(c.Value);
                     if (d is null)
                     {
                         node.FetchNodes(nodes, true, direction);
@@ -537,5 +543,4 @@ public class Regex
         }
         return match;
     }
-
 }

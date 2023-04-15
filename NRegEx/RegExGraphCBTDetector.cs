@@ -33,28 +33,24 @@ public record CBTResult(CBTResultTypes Type, string Regex, int Position = -1, in
 
 public static class RegExGraphCBTDetector
 {
-    public class BvIntArrayEqualityComparer : IEqualityComparer<(bool bv,int[] ints)>
+    public class BoolValueIntArrayEqualityComparer : IEqualityComparer<(bool value,int[] ints)>
     {
-        public bool Equals((bool bv, int[] ints) x, (bool bv, int[] ints) y)
-            => x.bv == y.bv && Enumerable.SequenceEqual(x.ints, y.ints);
-
-        public int GetHashCode([DisallowNull] (bool bv, int[] ints) o)
+        public bool Equals((bool value, int[] ints) x, (bool value, int[] ints) y)
+            => x.value == y.value && Enumerable.SequenceEqual(x.ints, y.ints);
+        public int GetHashCode([DisallowNull] (bool value, int[] ints) o)
         {
-            var hash = o.bv ? 1 : 0;
+            var hash = o.value ? 1 : 0;
             for (var i = 0; i < o.ints.Length; i++)
             {
                 hash ^= o.ints[i];
                 hash *= 31;
             }
-
             return hash;
         }
-
-
     }
     private static void CollectNodeChars(HashSet<Node> nodes, ConcurrentDictionary<Node, HashSet<int>> nodeChars, bool withNewLine)
     {
-        var parts = new ConcurrentDictionary<(bool bv, int[] ints), HashSet<int>>(new BvIntArrayEqualityComparer());
+        var parts = new ConcurrentDictionary<(bool bv, int[] ints), HashSet<int>>(new BoolValueIntArrayEqualityComparer());
         Parallel.ForEach(nodes, (node, ls) =>
         {
             if (!node.IsLink && node.CharsArray != null)
@@ -230,7 +226,7 @@ public static class RegExGraphCBTDetector
     ///     1. 一个非链接有效输入同时属于两个或者两个以上的环
     ///     2. 一个非链接有效输入和另一个非链接有效输入各自在不同的环中，两者具有通路（或者部分重叠），且输入具有非空交集。
     /// </summary>
-    /// <param name="graph"></param>
+    /// <param name="regex"></param>
     /// <returns></returns>
     public static CBTResult DetectCatastrophicBacktracking(Regex regex)
         => DetectCatastrophicBacktracking(
@@ -257,7 +253,7 @@ public static class RegExGraphCBTDetector
 
     public static CBTResult DetectCatastrophicBacktracking(Graph graph, bool withNewLine = true)
     {
-        GraphUtils.ExportAsDot(graph);
+        //GraphUtils.ExportAsDot(graph);
         var steps = 0;
         var chars = new ConcurrentDictionary<Node, HashSet<int>>();
         var heads = new ConcurrentDictionary<Node, HashSet<Edge>>();
@@ -384,7 +380,7 @@ public static class RegExGraphCBTDetector
         return new(CBTResultTypes.Undetected, graph.Name, graph.Position, graph.Length);
     }
 }
-
+//其它相关研究结果
 //a. 嵌套量词（NQ）模式：具有嵌套量词的正则表达式。
 //   包围模式，外部完全包含内部
 //      (\d+)+ 但是(a\d+)+不是：考虑前缀情况

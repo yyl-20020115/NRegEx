@@ -4,6 +4,8 @@
  * Use of this source code is governed by a BSD-style
  * license that can be found in the LICENSE file.
  */
+using System.Text;
+
 namespace NRegEx;
 
 public class RegExIndicators
@@ -31,16 +33,16 @@ public class RegExIndicators
         [NotWordBoundaryIndex] = RegExTextReader.NOT_WORD_BOUNDARY,
     };
 
-    public void UpdateIndicators(string input, int i, int first, int tail, int direction)
+    public void UpdateIndicators(Rune[] input, int i, int first, int tail, int direction)
     {
         direction = RegexHelpers.FixDirection(direction);
         int start = first;
         if (!(i >= first && i < tail)) return;
 
         int end = tail - 1;
-        char? Last = i > start && i < tail ? input[i - direction] : null;
-        char? This = i >= start && i < tail ? input[i + 0] : null;
-        char? Next = i < end ? input[i + direction] : null;
+        int? Last = i > start && i < tail ? input[i - direction].Value : null;
+        int? This = i >= start && i < tail ? input[i + 0].Value : null;
+        int? Next = i < end ? input[i + direction].Value : null;
 
         if (direction < 0) (start, end) = (end, first);
 

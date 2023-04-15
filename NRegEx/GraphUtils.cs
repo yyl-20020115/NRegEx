@@ -193,7 +193,6 @@ public static class GraphUtils
     public static Graph Reorder(Graph graph, int id = 0)
     {
         var cdict = new ConcurrentDictionary<Node, HashSet<Node>>();
-        //foreach (var node in graph.Nodes)
         Parallel.ForEach(graph.Nodes, node =>
         {
             cdict[node] = graph.Edges.Where(
@@ -206,9 +205,9 @@ public static class GraphUtils
 
         var follows = visited.ToHashSet();
         
-        var list = new List<HashSet<Node>>
+        var list = new List<List<Node>>
         {
-            follows.ToHashSet(),
+            follows.OrderBy(c => c.Id).ToList(),
         };
 
         var collects = new HashSet<Node>();
@@ -220,7 +219,7 @@ public static class GraphUtils
 
             if ((follows = collects.ToHashSet()).Count > 0)
             {
-                list.Add(collects);
+                list.Add(collects.OrderBy(c => c.Id).ToList()); 
                 collects = new();
             }
         } while (follows.Count > 0);

@@ -350,4 +350,45 @@ public static class Utils
         }
         return builder.ToString();
     }
+    public static (Rune[] Runes, int Start, int Length) ToRunes(string text, int start)
+    {
+        var runes = text.EnumerateRunes().ToArray();
+        //runes.Length <= text.Length 
+        return (runes, GetRuneIndex(text,start), runes.Length);
+    }
+    /// <summary>
+    /// Get the rune index according to char index(start) in text
+    /// </summary>
+    /// <param name="text">text object</param>
+    /// <param name="start">start index in text</param>
+    /// <returns></returns>
+    /// <remarks>
+    /// start is assumed to align to runes boundary.
+    /// </remarks>
+    public static int GetRuneIndex(string text, int start)
+    {
+        var index = 0;
+        var count = 0;
+        foreach (var rune in text.EnumerateRunes())
+        {
+            if (count < start)
+            {
+                count += rune.Utf16SequenceLength;
+                index++;
+            }
+            if (count == start)
+            {
+                //OK
+                break;
+            }
+            else if (count > start)
+            {
+                //if not aligned, make index smaller to be pre-aligned position,
+                //to avoid half rune situation.
+                index--;
+                break;
+            }
+        }
+        return index;
+    }
 }
