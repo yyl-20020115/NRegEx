@@ -11,7 +11,7 @@ public class RegExGraphBuilder
     public readonly Dictionary<int, Graph> BackRefPoints = new();
     public readonly Dictionary<int, GroupType> GroupTypes = new();
     public readonly ListLookups<int, Graph> ConditionsGraphs = new();
-    public bool UseMinMaxEdge = false;
+    public bool UseMinMaxEdge = true; //NOTICE: should work with path functions.
     public Graph Build(RegExNode node, int id = 0, bool caseInsensitive = false)
         => GraphUtils.Reform(BuildInternal(node, caseInsensitive), id);
     protected Graph BuildInternal(RegExNode node, bool caseInsensitive = false)

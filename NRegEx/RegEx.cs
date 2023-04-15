@@ -94,7 +94,9 @@ public class Regex
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
         Node? last = null;
         var runes = Utils.ToRunes(input, start);
-        return IsMatchCore(this.Graph, runes.Runes, runes.Start, runes.Length, ref start, ref last, true, null, reversely ? -1 : 1, this.Options, this.TryWithGroups);
+        var paths = new HashSet<CountablePath>();
+
+        return IsMatchCore(this.Graph, runes.Runes, runes.Start, runes.Length, ref start, ref last, true, paths, null, reversely ? -1 : 1, this.Options, this.TryWithGroups);
     }
     public delegate bool? TryWithGroupsFunction(Node node, Rune[] input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, HashSet<Edge> edges, int direction);
     protected bool? TryWithGroups(Node node, Rune[] input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, HashSet<Edge> edges, int direction)
@@ -332,8 +334,8 @@ public class Regex
         while (i >= first && i < tail)
         {
             length -= RegexHelpers.Abs(i - start);
-
-            if (IsMatchCore(graph, input, i, length, ref o, ref last, false, groups, direction, options, function))
+            var paths = new HashSet<CountablePath>();
+            if (IsMatchCore(graph, input, i, length, ref o, ref last, false, paths, groups, direction, options, function))
             {
                 ep = o;
                 return true;
@@ -407,10 +409,12 @@ public class Regex
         int i, int direction, Options options)
     {
         Node? last = null;
-        return IsMatchCore(graph, input, first, length, ref i, ref last, false, null, direction, options, null);
+        var paths = new HashSet<CountablePath>();
+
+        return IsMatchCore(graph, input, first, length, ref i, ref last, false, paths, null, direction, options, null);
     }
 
-    protected static bool IsMatchCore(Graph graph, Rune[] input, int first, int length, ref int i, ref Node? last, bool strict, ListLookups<int, List<int>>? groups, int direction, Options options, TryWithGroupsFunction? function)
+    protected static bool IsMatchCore(Graph graph, Rune[] input, int first, int length, ref int i, ref Node? last, bool strict, HashSet<CountablePath> paths, ListLookups<int, List<int>>? groups, int direction, Options options, TryWithGroupsFunction? function)
     {
         if (length == 0 && GraphUtils.HasPassThrough(graph)) return true;
         var indicators = new RegExIndicators();
@@ -428,7 +432,8 @@ public class Regex
         var nodes = heads.ToHashSet();
         var backs = new HashSet<Node>();
         var edges = new HashSet<Edge>();
-        var paths = new HashSet<CountablePath>(heads.Select(head => new CountablePath(head)));
+        //var paths = new HashSet<CountablePath>
+        paths.UnionWith(heads.Select(head => new CountablePath(head)));
         var steps = 0;
         while (nodes.Count > 0 && i >= start && i <= end)
         {
@@ -441,9 +446,9 @@ public class Regex
             nodes.Clear();
 
             var removes = new HashSet<Node>();
-            foreach(var path in paths.ToArray())
+            foreach (var path in paths.ToArray())
             {
-                foreach(var node in copies)
+                foreach (var node in copies)
                 {
                     if (path.CopyWith(node) is CountablePath cp)
                     {
@@ -459,7 +464,7 @@ public class Regex
                                 cp.MinRepeats = repeat.MinRepeats;
                                 cp.MaxRepeats = repeat.MaxRepeats;
                             }
-                            if (cp.CountableEdge != null && !cp.TryPassingOnce())
+                            if (cp.CountableEdge != null && !cp.TryPassingOnceAndClear())
                             {
                                 removes.Add(node);
                             }
@@ -513,10 +518,10 @@ public class Regex
                 }
             }
 
-            if (hits.Count>0)
+            if (hits.Count > 0)
             {
                 //only keep the hit ones
-                paths.RemoveWhere(path => !hits.Contains(path.Tail));
+                paths.RemoveWhere(path => !hits.Contains(path.Tail!));
 
                 i += direction;
                 //if (quit &&(i < start || i > end))

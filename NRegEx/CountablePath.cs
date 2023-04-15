@@ -34,11 +34,11 @@ public class CountablePath : Path
     /// and if 0, return false
     /// </summary>
     /// <returns></returns>
-    public bool TryPassingOnce()
+    public bool TryPassingOnceAndClear()
     {
-
-        if (!this.MinRepeats.HasValue && !this.MaxRepeats.HasValue)
-            return false;
+        var again = true;
+        if (this.CountableEdge == null || !this.MinRepeats.HasValue && !this.MaxRepeats.HasValue)
+            return again = false;
 
         if(!this.MinRepeats.HasValue && this.MaxRepeats.HasValue)
         {
@@ -51,27 +51,37 @@ public class CountablePath : Path
             {
                 this.MaxRepeats = this.MaxRepeats.Value - 1;
                 if (this.MaxRepeats.Value <= 0)
-                    return false;
+                    again = false;
             }
             if (this.MinRepeats.Value <= 0)
-                return false;
+                again = false;
         }
-        return true;
+        if (!again)
+        {
+            this.CountableEdge = null;
+            this.MinRepeats = null;
+            this.MaxRepeats = null;
+        }
+        return again;
     }
     protected override Path Create(List<LinkedNode> reversed_list, bool isCircle = false)
     {
-        var cp = new CountablePath(reversed_list, isCircle);
-        cp.CountableEdge = CountableEdge;
-        cp.MinRepeats = this.MinRepeats;
-        cp.MaxRepeats = this.MaxRepeats;
+        var cp = new CountablePath(reversed_list, isCircle)
+        {
+            CountableEdge = CountableEdge,
+            MinRepeats = this.MinRepeats,
+            MaxRepeats = this.MaxRepeats
+        };
         return cp;
     }
     protected override Path Create(Path path, Node node)
     {
-        var cp = new CountablePath(path, node);
-        cp.CountableEdge = CountableEdge;
-        cp.MinRepeats = this.MinRepeats;
-        cp.MaxRepeats = this.MaxRepeats;
+        var cp = new CountablePath(path, node)
+        {
+            CountableEdge = CountableEdge,
+            MinRepeats = this.MinRepeats,
+            MaxRepeats = this.MaxRepeats
+        };
         return cp;
     }
 }
