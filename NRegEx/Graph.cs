@@ -16,6 +16,7 @@ public class Graph
 
     public readonly HashSet<Node> Nodes = new();
     public readonly HashSet<Edge> Edges = new();
+    public readonly Dictionary<(Node, Node), Edge> RepeativeEdges = new();
     public Node Head;
     public Node Tail;
     public readonly RegExNode SourceNode;
@@ -68,6 +69,11 @@ public class Graph
     {
         if (this.Edges.Count == 0)
             this.Edges.Add(new(this.Head, this.Tail));
+        foreach(var edge in this.Edges.Where(e=>e.MinRepeats.HasValue||e.MaxRepeats.HasValue))
+        {
+            this.RepeativeEdges.Add((edge.Head, edge.Tail), edge);
+        }
+
         return this;
     }
     public Graph ComposeLiteral(params Node[] sequence)

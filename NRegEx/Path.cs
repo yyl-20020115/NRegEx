@@ -24,7 +24,7 @@ public class LinkedNode
 public class Path
 {
     public LinkedNode? ListTail = null;
-
+    public Node? Tail => this.ListTail?.Node;
     protected int length = 0;
     protected int hash = 0;
     protected bool isCircle = false;
@@ -33,7 +33,7 @@ public class Path
     public bool IsCircle => this.isCircle;
     public Path(params Node[] nodes)
         :this(nodes.Select(n=>new LinkedNode(n)).ToList()) { }
-    public Path(List<LinkedNode> reversed_list, bool isCircle = false)
+    protected Path(List<LinkedNode> reversed_list, bool isCircle = false)
     {
         if (reversed_list.Count > 0)
         {
@@ -49,30 +49,8 @@ public class Path
         }
         this.isCircle = isCircle;
     }
-    public Path(List<Node> reversed_list, bool isCircle = false)
-    {
-        if (reversed_list.Count > 0)
-        {
-            var inner_reversed_list = new List<LinkedNode>();
 
-            for (int i = 0; i < reversed_list.Count; i++)
-            {
-                var node = reversed_list[i];
-                this.hash ^= node.GetHashCode();
-                this.hash *= 31;
-                var ln = new LinkedNode(node)
-                {
-                    Previous = i == 0 ? null : inner_reversed_list[i - 1]
-                };
-                inner_reversed_list.Add(ln);
-            }
-            this.ListTail = inner_reversed_list[^1];
-            this.length = inner_reversed_list.Count;
-        }
-        this.isCircle = isCircle;
-    }
-
-    public Path(Path path, Node node):
+    protected Path(Path path, Node node):
         this(node)
     {
         if(node != null && this.ListTail != null)
@@ -103,7 +81,7 @@ public class Path
         return null;
     }
     public Path CopyWith(Node node) 
-        => new(this, node);
+        => this.Create(this, node);
     public Path CopyUntil(LinkedNode target, bool isCircle = true)
     {
         if (target == null)
@@ -121,7 +99,7 @@ public class Path
                 if (list == target)
                 {
                     nodes.Reverse();
-                    path = new(nodes, isCircle);
+                    path = this.Create(nodes, isCircle);
                     break;
                 }
                 list = list.Previous;
@@ -148,18 +126,6 @@ public class Path
         }
     }
 
-    public IEnumerable<LinkedNode> LinkedNodesReversed
-    {
-        get
-        {
-            var node = this.ListTail;
-            while (node != null)
-            {
-                yield return node;
-                node = node.Previous;
-            }
-        }
-    }
     public override int GetHashCode() 
         => this.hash;
     public override string ToString()
@@ -180,4 +146,9 @@ public class Path
         }
         return builder.ToString();
     }
+
+    protected virtual Path Create(List<LinkedNode> reversed_list, bool isCircle = false) 
+        => new (reversed_list, isCircle);
+    protected virtual Path Create(Path path, Node node)
+        => new (path, node);
 }

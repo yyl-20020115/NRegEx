@@ -428,16 +428,54 @@ public class Regex
         var nodes = heads.ToHashSet();
         var backs = new HashSet<Node>();
         var edges = new HashSet<Edge>();
-        var paths = new HashSet<Path>(heads.Select(head => new Path(head)));
-
+        var paths = new HashSet<CountablePath>(heads.Select(head => new CountablePath(head)));
+        var steps = 0;
         while (nodes.Count > 0 && i >= start && i <= end)
         {
+            steps++;
+
             var c = input[i];
-            var hit = false;
+            var hits = new HashSet<Node>();
             var quit = false;
             var copies = nodes.ToArray();
             nodes.Clear();
 
+            var removes = new HashSet<Node>();
+            foreach(var path in paths.ToArray())
+            {
+                foreach(var node in copies)
+                {
+                    if (path.CopyWith(node) is CountablePath cp)
+                    {
+                        paths.Add(cp);
+                        //发现重复多次的边
+                        //如果已经发现，则减去1，否则设定
+                        //如果减到0，则去掉此节点
+                        if (graph.RepeativeEdges.TryGetValue((path.Tail!, node), out var repeat))
+                        {
+                            if (cp.CountableEdge == null)
+                            {
+                                cp.CountableEdge = repeat;
+                                cp.MinRepeats = repeat.MinRepeats;
+                                cp.MaxRepeats = repeat.MaxRepeats;
+                            }
+                            if (cp.CountableEdge != null && !cp.TryPassingOnce())
+                            {
+                                removes.Add(node);
+                            }
+                        }
+                    }
+                }
+            }
+            //extend paths
+            //paths.UnionWith(paths.SelectMany(path => copies.Select(n => path.CopyWith(n) as CountablePath)));
+            if (removes.Count > 0)
+            {
+                nodes.ExceptWith(removes);
+            }
+            //all paths are invalid
+            if (nodes.Count == 0) return false;
+            copies = nodes.ToArray();
             foreach (var node in copies)
             {
                 //this is for BEGIN_LINE etc
@@ -445,7 +483,7 @@ public class Regex
                 {
                     //hit = true;
                     //no advance
-                    quit |= (node.Indicator == END_INDICATOR());
+                    quit |= node.Indicator == END_INDICATOR();
 
                     node.FetchNodes(nodes, true, direction);
                     last = node;
@@ -468,14 +506,18 @@ public class Regex
                                 return false;
                         }
 
-                        hit = true;
+                        hits.Add(node);
                         node.FetchNodes(nodes, false, direction);
                         last = node;
                     }
                 }
             }
-            if (hit)
+
+            if (hits.Count>0)
             {
+                //only keep the hit ones
+                paths.RemoveWhere(path => !hits.Contains(path.Tail));
+
                 i += direction;
                 //if (quit &&(i < start || i > end))
                 //    return true;
