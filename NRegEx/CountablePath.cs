@@ -13,27 +13,17 @@ public class CountablePath : Path
     public int? MaxRepeats;
     public Edge? CountableEdge;
     public CountablePath(params Node[] nodes)
-        :base(nodes)
-    {
-
-    }
+        : base(nodes) { }
     protected CountablePath(List<LinkedNode> reversed_list, bool isCircle = false)
-        :base(reversed_list)
-    {
-
-    }
+        : base(reversed_list) { }
 
     protected CountablePath(Path path, Node node)
-        :base(path,node)
-    {
-
-
-    }
+        : base(path, node) { }
     /// <summary>
     /// call this function to make MinRepeats-- and MaxRepeats--
     /// and if 0, return false
     /// </summary>
-    /// <returns></returns>
+    /// <returns>true if having another try</returns>
     public bool TryPassingOnceAndClear()
     {
         var again = true;

@@ -458,7 +458,7 @@ public class Regex
                         //如果减到0，则去掉此节点
                         if (graph.RepeativeEdges.TryGetValue((path.Tail!, node), out var repeat))
                         {
-                            if (cp.CountableEdge == null)
+                            if (cp.CountableEdge != repeat)
                             {
                                 cp.CountableEdge = repeat;
                                 cp.MinRepeats = repeat.MinRepeats;
