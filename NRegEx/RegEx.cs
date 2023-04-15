@@ -4,6 +4,7 @@
  * Use of this source code is governed by a BSD-style
  * license that can be found in the LICENSE file.
  */
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace NRegEx;
@@ -540,7 +541,10 @@ public class Regex
         {
             graph.RemoveEdges(edges);
         }
-
+        //if any path is uncompleted ({2,} if hits<2)
+        //we treat it as failed to match
+        if (paths.Any(p => p.IsUncompleted))
+            return false;
         if (strict)
         {
             return ((direction >= 0 ? (i == end + 1) : (i == start - 1))

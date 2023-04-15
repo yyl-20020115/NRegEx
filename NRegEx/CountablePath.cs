@@ -14,6 +14,7 @@ public class CountablePath : Path
     public Edge? CountableEdge;
     public CountablePath(params Node[] nodes)
         : base(nodes) { }
+
     protected CountablePath(List<LinkedNode> reversed_list, bool isCircle = false)
         : base(reversed_list) { }
 
@@ -54,6 +55,7 @@ public class CountablePath : Path
         }
         return again;
     }
+    public bool IsUncompleted => this.MinRepeats.HasValue && this.MinRepeats.Value > 0;
     protected override Path Create(List<LinkedNode> reversed_list, bool isCircle = false)
     {
         var cp = new CountablePath(reversed_list, isCircle)
