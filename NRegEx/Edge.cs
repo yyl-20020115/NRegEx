@@ -10,11 +10,9 @@ public class Edge
 {
     public readonly Node Head;
     public readonly Node Tail;
-    public readonly int MinRepeats;
-    public readonly int MaxRepeats;
-    public bool HasSpecifiedRepeats 
-        => this.MinRepeats != 1 || this.MaxRepeats != 1;
-    public Edge(Node Head, Node Tail,int MinRepeats = 1, int MaxRepeats = 1)
+    public readonly int? MinRepeats;
+    public readonly int? MaxRepeats;
+    public Edge(Node Head, Node Tail,int? MinRepeats = null, int? MaxRepeats = null)
     {
         this.Head = Head;
         this.Tail = Tail;

@@ -343,7 +343,7 @@ public class Graph
     }
     public Graph CleanEdges(uint Repeats = 1)
     {
-        this.Edges.RemoveWhere(e => e.MinRepeats > Repeats);
+        this.Edges.RemoveWhere(e => e.MinRepeats.GetValueOrDefault() > Repeats);
         return this;
     }
 }

@@ -78,7 +78,24 @@ public static class GraphUtils
             builder.AppendLine($"\t{node.Id} {label};");
         }
         foreach (var edge in graph.Edges.OrderBy(e => e.Head.Id).OrderBy(e => e.Tail.Id))
-            builder.AppendLine($"\t{edge.Head.Id}->{edge.Tail.Id};");
+        {
+            if (edge.MinRepeats.HasValue && edge.MaxRepeats.HasValue)
+            {
+                builder.AppendLine(
+                    $"\t{edge.Head.Id}->{edge.Tail.Id} [label=\"min={edge.MinRepeats},max={edge.MaxRepeats}\"];");
+            }
+            else if(edge.MinRepeats.HasValue)
+            {
+
+                builder.AppendLine(
+                    $"\t{edge.Head.Id}->{edge.Tail.Id} [label=\"min={edge.MinRepeats}\"];");
+            }
+            else
+            {
+                builder.AppendLine(
+                    $"\t{edge.Head.Id}->{edge.Tail.Id};");
+            }
+        }
         builder.AppendLine("}");
         return builder;
     }
@@ -170,7 +187,7 @@ public static class GraphUtils
 
         return false;
     }
-    public static Graph Reform(Graph graph, int id = 0) 
+    public static Graph Reform(Graph graph, int id = 0)
         => Reorder(Compact(graph), id);
 
     public static Graph Reorder(Graph graph, int id = 0)
@@ -185,13 +202,13 @@ public static class GraphUtils
         
         var dict = new Dictionary<Node, HashSet<Node>>(cdict);
 
-        var visited = new HashSet<Node>();
-        var follows = dict[graph.Head].Where(n => visited.Add(n)).ToHashSet();
-        // GetFollowings(graph, graph.Head, visited);
+        var visited = new HashSet<Node>() { graph.Head };
+
+        var follows = visited.ToHashSet();
+        
         var list = new List<HashSet<Node>>
         {
-            new() { graph.Head },
-            follows
+            follows.ToHashSet(),
         };
 
         var collects = new HashSet<Node>();
@@ -199,7 +216,7 @@ public static class GraphUtils
         {
             foreach (var node in follows)
                 collects.UnionWith(
-                    dict[graph.Head].Where(n => visited.Add(n)));
+                    dict[node].Where(n => visited.Add(n)));
 
             if ((follows = collects.ToHashSet()).Count > 0)
             {
@@ -208,8 +225,13 @@ public static class GraphUtils
             }
         } while (follows.Count > 0);
         foreach (var line in list)
+        {
             foreach (var node in line)
+            {
                 node.SetId(id++);
+            }
+        }
+
         return graph;
     }
 }

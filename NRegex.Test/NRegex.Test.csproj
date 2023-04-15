@@ -65,8 +65,4 @@
     </None>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Graphs\" />
-  </ItemGroup>
-
 </Project>

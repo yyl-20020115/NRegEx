@@ -257,7 +257,7 @@ public static class RegExGraphCBTDetector
 
     public static CBTResult DetectCatastrophicBacktracking(Graph graph, bool withNewLine = true)
     {
-        //GraphUtils.ExportAsDot(graph);
+        GraphUtils.ExportAsDot(graph);
         var steps = 0;
         var chars = new ConcurrentDictionary<Node, HashSet<int>>();
         var heads = new ConcurrentDictionary<Node, HashSet<Edge>>();

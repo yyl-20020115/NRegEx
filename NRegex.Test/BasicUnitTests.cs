@@ -520,12 +520,12 @@ public class BasicUnitTests
         foreach (var good_one in good_ones)
         {
             var result = RegExGraphCBTDetector.DetectCatastrophicBacktracking(good_one);
-            Assert.IsFalse(result.Type == CBTResultTypes.Undetected);
+            Assert.IsTrue(result.Type == CBTResultTypes.Undetected);
         }
         foreach (var bad_one in bad_ones)
         {
             var result = RegExGraphCBTDetector.DetectCatastrophicBacktracking(bad_one);
-            Assert.IsTrue(result.Type!= CBTResultTypes.Undetected);
+            Assert.IsFalse(result.Type== CBTResultTypes.Undetected);
         }
     }
     public class ParseRecord
