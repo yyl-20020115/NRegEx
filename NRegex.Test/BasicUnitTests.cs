@@ -14,7 +14,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
-using static System.Net.WebRequestMethods;
 
 namespace NRegex.Test;
 
@@ -525,7 +524,7 @@ public class BasicUnitTests
         foreach (var bad_one in bad_ones)
         {
             var result = RegExGraphCBTDetector.DetectCatastrophicBacktracking(bad_one);
-            Assert.IsFalse(result.Type== CBTResultTypes.Undetected);
+            Assert.IsFalse(result.Type == CBTResultTypes.Undetected);
         }
     }
     public class ParseRecord
@@ -677,7 +676,7 @@ public class BasicUnitTests
         using var output_ncbt = new StreamWriter("rxxr-regexlib-Output-NOT-CBT.txt");
         foreach (var record in records.Where(r => r.Parse == "OK"))
         {
-            if (skips.Contains(count)) { count++; continue; }        
+            if (skips.Contains(count)) { count++; continue; }
             var result = RegExGraphCBTDetector.DetectCatastrophicBacktracking(record.Input);
             if (result.Type != CBTResultTypes.Undetected)
             {
@@ -708,7 +707,7 @@ public class BasicUnitTests
 
         var lines = System.IO.File.ReadAllLines(System.IO.Path.Combine(Environment.CurrentDirectory, "vulns.txt"));
         int c = 0;
-        foreach(var line in lines)
+        foreach (var line in lines)
         {
             ++c;
             var _line = line.Trim();
@@ -722,5 +721,28 @@ public class BasicUnitTests
 
         Environment.CurrentDirectory = ecd;
 
+    }
+    [TestMethod]
+    public void TestMethod31_LEARNING_REGULAR_EXPRESSIONS()
+    {
+        (string Regexp, string Accepted, string Unaccepted)[] triples = new[]
+        {
+            ("\b[Cc][Aa][Rr]\b", "This is my Car!", "incarcerate"),
+            //("\b[Cc][Aa][Rr]\b", "This is my Car!", "incarcerate"),
+            //("\b[Cc][Aa][Rr]\b", "This is my Car!", "incarcerate"),
+            //("\b[Cc][Aa][Rr]\b", "This is my Car!", "incarcerate"),
+            //("\b[Cc][Aa][Rr]\b", "This is my Car!", "incarcerate"),
+            //("\b[Cc][Aa][Rr]\b", "This is my Car!", "incarcerate"),
+            //("\b[Cc][Aa][Rr]\b", "This is my Car!", "incarcerate"),
+            //("\b[Cc][Aa][Rr]\b", "This is my Car!", "incarcerate"),
+        };
+
+        foreach ((var Regexp, var Accepted, var Unaccepted) in triples)
+        {
+            var reg = new Regex(Regexp);
+
+            Assert.IsTrue(reg.IsMatch(Accepted));
+            Assert.IsFalse(reg.IsMatch(Unaccepted));
+        }
     }
 }

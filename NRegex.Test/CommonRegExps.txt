@@ -2,10 +2,10 @@
 //DONE: word boundary, line start, line end
 //NOTICE: back reference condition and lookaround conditions are not supported
 //TODO: lookaround (different groups)
-^([a-zA-Z0-9]+\s?)*$
-(x+)+y
-(x+z)+y :breaks the loop (x+) and (x+)+
-//灾难性回溯算法：TODO？
+//^([a-zA-Z0-9]+\s?)*$
+//(x+)+y
+//(x+z)+y :breaks the loop (x+) and (x+)+
+//灾难性回溯算法：DONE!
 
 
 $ number 	Includes the last substring matched by the capturing group that is identified by number, where number is a decimal value, in the replacement string. For more information, see Substituting a Numbered Group.
