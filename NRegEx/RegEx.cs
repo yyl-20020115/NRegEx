@@ -4,37 +4,14 @@
  * Use of this source code is governed by a BSD-style
  * license that can be found in the LICENSE file.
  */
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace NRegEx;
 
 public delegate string CaptureEvaluator(Capture capture);
 
-public class Regex
+public partial class Regex
 {
-    public static string[] Split(string input, string pattern, int start = 0, int length = -1, bool reverselySearch = false)
-        => new Regex(pattern).Split(input, start, length, reverselySearch);
-    public static string ReplaceFirst(string input, string pattern, string replacement, int start = 0)
-        => new Regex(pattern).ReplaceFirst(input, replacement, start);
-
-    public static string ReplaceFirst(string input, string pattern, CaptureEvaluator evaluator, int start = 0)
-        => new Regex(pattern).ReplaceFirst(input, evaluator, start);
-
-    public static string ReplaceAll(string input, string pattern, string replacement, int start = 0)
-        => new Regex(pattern).ReplaceAll(input, replacement, start);
-
-    public static string ReplaceAll(string input, string pattern, CaptureEvaluator evaluator, int start = 0)
-        => new Regex(pattern).ReplaceAll(input, evaluator, start);
-
-    public static bool IsMatch(string input, string pattern, int start = 0, int length = -1)
-        => new Regex(pattern).IsMatch(input, start, length);
-    public static bool IsFullyMatch(string input, string pattern, int start = 0, int length = -1)
-        => new Regex(pattern).IsFullyMatch(input, start, length);
-    public static Match Match(string input, string pattern, int start = 0, int length = -1)
-        => new Regex(pattern).Match(input, start, length);
-    public static List<Match> Matches(string input, string pattern, int start = 0, int length = -1)
-         => new Regex(pattern).Matches(input, start, length);
     /// <summary>
     /// We should check easy back tracing regex first
     /// or we'll have to accept the early (not lazy or greedy) result for sure.
@@ -82,10 +59,10 @@ public class Regex
         if (length < 0) length = input.Length - first;
         if (first + length > input.Length) throw new ArgumentOutOfRangeException(nameof(first) + "_" + nameof(length));
 
-        var runes = Utils.ToRunes(input, first);
+        var (Runes, Start, Length) = Utils.ToRunes(input, first);
         Node? last = null;
         int sp = 0, ep = 0;
-        return IsMatchInternal(this.Graph, runes.Runes, runes.Start, runes.Length, ref sp, ref ep, ref last, null, reversely ? -1 : 1, this.Options, this.TryWithGroups);
+        return IsMatchInternal(this.Graph, Runes, Start, Length, ref sp, ref ep, ref last, null, reversely ? -1 : 1, this.Options, this.TryWithGroups);
     }
     public bool IsFullyMatch(string input, int start = 0, int length = -1, bool reversely = false)
     {
@@ -94,122 +71,19 @@ public class Regex
         if (length < 0) length = input.Length - start;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));
         Node? last = null;
-        var runes = Utils.ToRunes(input, start);
+        var (Runes, Start, Length) = Utils.ToRunes(input, start);
         var paths = new HashSet<CountablePath>();
 
-        return IsMatchCore(this.Graph, runes.Runes, runes.Start, runes.Length, ref start, ref last, true, paths, null, reversely ? -1 : 1, this.Options, this.TryWithGroups);
+        return IsMatchCore(this.Graph, Runes, Start, Length, ref start, ref last, true, paths, null, reversely ? -1 : 1, this.Options, this.TryWithGroups);
     }
-    public delegate bool? TryWithGroupsFunction(Node node, Rune[] input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, HashSet<Edge> edges, int direction);
-    protected bool? TryWithGroups(Node node, Rune[] input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, HashSet<Edge> edges, int direction)
-    {
-        if (groups != null)
-        {
-            foreach (var index in node.Groups)
-            {
-                if (this.GroupTypes.TryGetValue(index, out var type))
-                {
-                    this.TryWithGroup(node, input, i, groups, backs, edges, direction, index, type);
-                }
-            }
-        }
-        return null;
-    }
-
-    protected bool? TryWithGroup(Node node, Rune[] input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, HashSet<Edge> edges, int direction, int index, GroupType type)
-    {
-        switch (type)
-        {
-            case GroupType.NotGroup:
-            case GroupType.NotCaptiveGroup:
-                break;
-            case GroupType.NormalGroup:
-            case GroupType.AtomicGroup:
-                if (groups != null)
-                {
-                    EmitPosition(node, i, groups[index]);
-                    if (this.BackRefPoints.TryGetValue(index, out var graph) && graph != null)
-                    {
-                        graph.InsertPointBeforeTail(new(input[i].Value) { Parent = graph });
-                        backs.Add(graph.Nodes.Single(n => n.Groups.Contains(i)));
-                    }
-                }
-                break;
-            case GroupType.LookAroundConditionGroup:
-            case GroupType.BackReferenceConditionGroup:
-                {
-                    //TODO: how to do conditions 
-                    // we can link the conditioned graphs with edges
-                }
-                break;
-            case GroupType.BackReferenceCondition:
-                {
-                    //TODO: how to do conditions 
-                    // we can link the conditioned graphs with edges
-                }
-                break;
-            default:
-                return this.TryWithConditionGroup(node, input, i, groups, backs, direction, index, type);
-        }
-        return null;
-    }
-    protected bool? TryWithConditionGroup(Node node, Rune[] input, int i, ListLookups<int, List<int>>? groups, HashSet<Node> backs, int direction, int index, GroupType type)
-    {
-        switch (type)
-        {
-            case GroupType.ForwardPositiveGroup:
-                {
-                    if (this.GroupGraphs.TryGetValue(index, out var g))
-                    {
-                        return VerifyMatchCore(g, input, 0, input.Length, i, direction, Options);
-                    }
-                }
-                break;
-            case GroupType.ForwardNegativeGroup:
-                {
-                    if (this.GroupGraphs.TryGetValue(index, out var g))
-                    {
-                        return !VerifyMatchCore(g, input, 0, input.Length, i, direction, Options);
-                    }
-                }
-                break;
-            case GroupType.BackwardPositiveGroup:
-                {
-                    if (this.GroupGraphs.TryGetValue(index, out var g))
-                    {
-                        return VerifyMatchCore(g, input, 0, input.Length, i, -direction, Options);
-                    }
-                }
-                break;
-            case GroupType.BackwardNegativeGroup:
-                {
-                    if (this.GroupGraphs.TryGetValue(index, out var g))
-                    {
-                        return !VerifyMatchCore(g, input, 0, input.Length, i, -direction, Options);
-                    }
-                }
-                break;
-        }
-        return null;
-    }
-
-    protected static void EmitPosition(Node node, int i, ICollection<List<int>> captures)
-    {
-        if ((node.Ending & Endings.Start) == Endings.Start
-            || captures.Count == 0)
-        {
-            captures.Add(new());
-        }
-        captures.Last().Add(i);
-    }
+    
     protected static bool TryHitHode(Node node, RegExIndicators indicators)
     {
         if (!node.IsLink)
         {
             foreach (var kv in indicators.IndicatorsDict)
-            {
                 if (Check(indicators.Indicators[kv.Key], node, kv.Value))
                     return true;
-            }
         }
         return false;
     }
@@ -217,6 +91,7 @@ public class Regex
         => value && Check(node.CharsArray, other);
     protected static bool Check(int[]? values, int i)
         => values is not null && Array.IndexOf(values, i) >= 0;
+
     public Match Match(string input, int start = 0, int length = -1, bool reversely = false)
     {
         if (input == null) throw new ArgumentNullException(nameof(input));
@@ -228,14 +103,14 @@ public class Regex
         Node? last = null;
         var groups = new ListLookups<int, List<int>>();
         int sp = 0, ep = 0;
-        var runes = Utils.ToRunes(input, start);
-        var ret = IsMatchInternal(this.Graph, runes.Runes, runes.Start, runes.Length, ref sp, ref ep, ref last, groups, direction, this.Options, this.TryWithGroups);
+        var (Runes, Start, Length) = Utils.ToRunes(input, start);
+        var ret = IsMatchInternal(this.Graph, Runes, Start, Length, ref sp, ref ep, ref last, groups, direction, this.Options, this.TryWithGroups);
         if (ret)
         {
             var name = this.Name;
             if (last?.Parent?.SourceNode is RegExNode r)
                 name = r.PatternName ?? name;
-            return BuildMatch(this, input, name, sp, ep, groups, direction, this.NamedGroups);
+            return CreateMatch(this, input, name, sp, ep, groups, direction, this.NamedGroups);
         }
         return new Match(this, input, false);
     }
@@ -264,63 +139,6 @@ public class Regex
         }
         return matches;
     }
-    public string ReplaceFirst(string input, string replacement, int start = 0)
-        => this.ReplaceFirst(input, (Capture capture) => replacement, start);
-    public string ReplaceFirst(string input, string replacement, Match match, int start = 0)
-        => this.ReplaceFirst(input, (Capture capture) => replacement, match, start);
-    public string ReplaceFirst(string input, CaptureEvaluator evaluator, int start = 0)
-        => this.ReplaceFirst(input, evaluator, this.Match(input, start), start);
-    public string ReplaceFirst(string input, CaptureEvaluator evaluator, Match match, int start = 0)
-    {
-        if (match is not null)
-        {
-            var builder = new StringBuilder();
-            var delta = match.InclusiveStart - start;
-            if (delta > 0) builder.Append(input[start..match.InclusiveStart]);
-            var replacement = evaluator(match) ?? "";
-            builder.Append(replacement);
-            start = match.ExclusiveEnd;
-            if (start < input.Length) builder.Append(input[start..]);
-            return builder.Length > 0 ? builder.ToString() : input;
-        }
-        return input;
-    }
-
-    public string ReplaceAll(string input, string replacement, int start = 0)
-        => this.ReplaceAll(input, (Capture capture) => replacement, start);
-    public string ReplaceAll(string input, string replacement, List<Match> matches, int start = 0)
-        => this.ReplaceAll(input, (Capture capture) => replacement, matches, start);
-    public string ReplaceAll(string input, CaptureEvaluator evaluator, int start = 0)
-        => ReplaceAll(input, evaluator, Matches(input, start), start);
-    public string ReplaceAll(string input, CaptureEvaluator evaluator, List<Match> matches, int start = 0)
-    {
-        var builder = new StringBuilder();
-        foreach (var match in matches)
-        {
-            var delta = match.InclusiveStart - start;
-            if (delta > 0) builder.Append(input[start..match.InclusiveStart]);
-            var replacement = evaluator(match) ?? "";
-            builder.Append(replacement);
-            start = match.ExclusiveEnd;
-        }
-        if (start < input.Length) builder.Append(input[start..]);
-        return builder.Length > 0 ? builder.ToString() : input;
-    }
-    public string[] Split(string input, int first = 0, int length = -1, bool reverselySearch = false)
-        => this.Split(input, this.Matches(input, first, length, reverselySearch));
-    public string[] Split(string input, List<Match> matches)
-    {
-        var first = 0;
-        var result = new List<string>();
-        foreach (var match in matches)
-        {
-            var delta = match.InclusiveStart - first;
-            if (delta > 0) result.Add(input[first..match.InclusiveStart]);
-            first = match.ExclusiveEnd;
-        }
-        if (first < input.Length) result.Add(input[first..]);
-        return result.ToArray();
-    }
 
     protected static bool IsMatchInternal(Graph graph, Rune[] input, int first, int length, ref int sp, ref int ep, ref Node? last, ListLookups<int, List<int>>? groups, int direction, Options options, TryWithGroupsFunction function)
     {
@@ -329,7 +147,6 @@ public class Regex
         var start = direction >= 0 ? first : tail - 1;
 
         int i = IsMatchFindStart(graph, input, first, tail, direction);
-
         int o = sp = ep = i;
 
         while (i >= first && i < tail)
@@ -405,16 +222,7 @@ public class Regex
         }
         return -1;
     }
-    protected static bool VerifyMatchCore(
-        Graph graph, Rune[] input, int first, int length,
-        int i, int direction, Options options)
-    {
-        Node? last = null;
-        var paths = new HashSet<CountablePath>();
-
-        return IsMatchCore(graph, input, first, length, ref i, ref last, false, paths, null, direction, options, null);
-    }
-
+    
     protected static bool IsMatchCore(Graph graph, Rune[] input, int first, int length, ref int i, ref Node? last, bool strict, HashSet<CountablePath> paths, ListLookups<int, List<int>>? groups, int direction, Options options, TryWithGroupsFunction? function)
     {
         if (length == 0 && GraphUtils.HasPassThrough(graph)) return true;
@@ -560,7 +368,7 @@ public class Regex
                        ((options & Options.ONE_LINE) == Options.ONE_LINE)
                         ? RegExTextReader.END_LINE : RegExTextReader.END_TEXT;
     }
-    protected static Match BuildMatch(Regex source, string input, string name, int sp, int ep, ListLookups<int, List<int>>? groups, int direction, DualDictionary<string, int> namedGroups)
+    protected static Match CreateMatch(Regex source, string input, string name, int sp, int ep, ListLookups<int, List<int>>? groups, int direction, DualDictionary<string, int> namedGroups)
     {
         //direction
         (sp, ep) = (Math.Min(sp, ep), Math.Max(sp, ep));
