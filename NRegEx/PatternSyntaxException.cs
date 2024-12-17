@@ -6,11 +6,7 @@
  */
 namespace NRegEx;
 
-public class PatternSyntaxException : Exception
+public class PatternSyntaxException(string message, string content = "") : Exception(message)
 {
-    public readonly string Content;
-
-    public PatternSyntaxException(string message, string content = "")
-        : base(message) => this.Content = content;
-
+    public readonly string Content = content;
 }

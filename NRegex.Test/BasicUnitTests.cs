@@ -10,7 +10,6 @@ using NRegEx;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -725,7 +724,7 @@ public class BasicUnitTests
     [TestMethod]
     public void TestMethod31_LEARNING_REGULAR_EXPRESSIONS()
     {
-        (string Regexp, string Accepted, string Unaccepted)[] triples = new[]
+        (string Regexp, string Acceptable, string Unacceptable)[] Triples = new[]
         {
             ("\\.","."," "),
             ("Ben","Ben","bEn"),
@@ -791,12 +790,13 @@ public class BasicUnitTests
             ("(5[1-5]\\d{14})|(4\\d{12}(\\d{3})?)|3[47]\\d{13})|(6011\\d{14})|((30[0-5]|36\\d|38|d)\\d{11})","",""),
         };
 
-        foreach ((var Regexp, var Accepted, var Unaccepted) in triples)
+
+        foreach ((var Regexp, var Acceptable, var Unacceptable) in Triples)
         {
             var reg = new Regex(Regexp);
 
-            Assert.IsTrue(reg.IsMatch(Accepted));
-            Assert.IsFalse(reg.IsMatch(Unaccepted));
+            Assert.IsTrue(reg.IsMatch(Acceptable));
+            Assert.IsFalse(reg.IsMatch(Unacceptable));
         }
     }
 }

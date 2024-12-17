@@ -6,20 +6,13 @@
  */
 namespace NRegEx;
 
-public class Capture
+public class Capture(string Name = "", int InclusiveStart = 0, int ExclusiveEnd = int.MaxValue, string? Value = null)
 {
     public readonly static Capture Empty = new();
-    public readonly string Name;
-    public readonly int InclusiveStart;
-    public readonly int ExclusiveEnd;
-    public readonly string? Value;
-    public Capture(string Name = "", int InclusiveStart = 0, int ExclusiveEnd = int.MaxValue, string? Value = null)
-    {
-        this.Name = Name;
-        this.InclusiveStart = InclusiveStart;
-        this.ExclusiveEnd = ExclusiveEnd;
-        this.Value = Value;
-    }
-    public override string ToString() 
-        => Value ?? string.Empty;
+    public readonly string Name = Name;
+    public readonly int InclusiveStart = InclusiveStart;
+    public readonly int ExclusiveEnd = ExclusiveEnd;
+    public readonly string? Value = Value;
+
+    public override string ToString()  => Value ?? string.Empty;
 }

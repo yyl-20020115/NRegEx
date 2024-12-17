@@ -217,10 +217,10 @@ public static class GraphUtils
                 collects.UnionWith(
                     dict[node].Where(n => visited.Add(n)));
 
-            if ((follows = collects.ToHashSet()).Count > 0)
+            if ((follows = [.. collects]).Count > 0)
             {
-                list.Add(collects.OrderBy(c => c.Id).ToList()); 
-                collects = new();
+                list.Add([.. collects.OrderBy(c => c.Id)]); 
+                collects = [];
             }
         } while (follows.Count > 0);
         foreach (var line in list)

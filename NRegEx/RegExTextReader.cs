@@ -6,7 +6,7 @@
  */
 namespace NRegEx;
 
-public class RegExTextReader
+public class RegExTextReader(TextReader reader, bool lineMode)
 {
     public const int EOF = -1;
     public const int UNICODE_LIMIT = 0x10ffff;
@@ -23,7 +23,7 @@ public class RegExTextReader
     public const int BEGIN_WORD = BEGIN_LINE + 2;
     public const int END_WORD = END_LINE + 2;
 
-    public readonly TextReader Reader;
+    public readonly TextReader Reader = reader;
     protected enum ReaderStates : uint
     {
         NotStarted = 0,
@@ -33,12 +33,7 @@ public class RegExTextReader
     }
     protected ReaderStates State = ReaderStates.NotStarted;
 
-    public readonly bool LineMode;
-    public RegExTextReader(TextReader reader, bool lineMode)
-    {
-        this.Reader = reader;
-        this.LineMode = lineMode;
-    }
+    public readonly bool LineMode = lineMode;
 
     public bool HasMore => this.Peek() != EOF;
 

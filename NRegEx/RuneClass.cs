@@ -10,7 +10,7 @@ public class RuneClass
 {
     public static List<RuneClass> FromTable(int[][] table, bool inverted, List<RuneClass>? list = null, int Positon = -1)
     {
-        list ??= new();
+        list ??= [];
         foreach (var triple in table)
         {
             int lo = triple[0], hi = triple[1], stride = triple[2];
@@ -28,7 +28,7 @@ public class RuneClass
                 }
                 if (range.Count > 0)
                 {
-                    list.Add(new(inverted, range.ToArray()) { Position = Positon });
+                    list.Add(new(inverted, [.. range]) { Position = Positon });
                 }
             }
         }

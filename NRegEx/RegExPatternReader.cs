@@ -8,10 +8,10 @@ using System.Text;
 
 namespace NRegEx;
 
-public class RegExPatternReader
+public class RegExPatternReader(string pattern)
 {
-    public readonly string Pattern;
-    public readonly Stack<int> PositionStack = new();
+    public readonly string Pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
+    public readonly Stack<int> PositionStack = [];
     protected int position = 0;
     public int Position
         => this.position;
@@ -19,8 +19,7 @@ public class RegExPatternReader
         => this.position < this.Pattern.Length;
     public string Rest
         => this.Pattern[this.position..];
-    public RegExPatternReader(string pattern) =>
-        this.Pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
+
     public void RewindTo(int pos)
         => this.position = pos;
     public int Peek() => this.position < this.Pattern.Length

@@ -54,7 +54,7 @@ public partial class Regex
     }
     public bool IsMatch(string input, int first = 0, int length = -1, bool reversely = false)
     {
-        if (input == null) throw new ArgumentNullException(nameof(input));
+        ArgumentNullException.ThrowIfNull(input);
         if (first < 0 || first > input.Length) throw new ArgumentOutOfRangeException(nameof(first));
         if (length < 0) length = input.Length - first;
         if (first + length > input.Length) throw new ArgumentOutOfRangeException(nameof(first) + "_" + nameof(length));
@@ -66,7 +66,7 @@ public partial class Regex
     }
     public bool IsFullyMatch(string input, int start = 0, int length = -1, bool reversely = false)
     {
-        if (input == null) throw new ArgumentNullException(nameof(input));
+        ArgumentNullException.ThrowIfNull(input);
         if (start < 0 || start > input.Length) throw new ArgumentOutOfRangeException(nameof(start));
         if (length < 0) length = input.Length - start;
         if (start + length > input.Length) throw new ArgumentOutOfRangeException(nameof(start) + "_" + nameof(length));

@@ -15,17 +15,17 @@ namespace NRegEx;
 /// </summary>
 public class RegExArray : Regex
 {
-    public readonly Dictionary<string, Regex> RegexDictionary = new();
+    public readonly Dictionary<string, Regex> RegexDictionary = [];
     public readonly Regex[] Regexs;
     public readonly List<RegExNode> SubModels;
-    public readonly List<Graph> SubGraphs = new();
+    public readonly List<Graph> SubGraphs = [];
     public RegExArray(params string[] regexs)
         : this(regexs.Select(r => new Regex(r)).ToArray()) { }
     public RegExArray(params Regex[] regexs)
         : base(string.Join('|', regexs.Select(r => $"({r.Pattern})").ToArray()))
     {
         if (regexs.Length == 0)
-            throw new ArgumentException(nameof(regexs));
+            throw new ArgumentException(null, nameof(regexs));
         this.Model = new(TokenTypes.Union) { PatternName = this.Pattern };
         this.Graph = new(this.Model.Name,this.Model);
         this.SubModels = this.Model.Children;

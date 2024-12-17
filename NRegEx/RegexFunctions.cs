@@ -81,6 +81,6 @@ public partial class Regex
             first = match.ExclusiveEnd;
         }
         if (first < input.Length) result.Add(input[first..]);
-        return result.ToArray();
+        return [.. result];
     }
 }

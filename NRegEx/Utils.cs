@@ -15,11 +15,11 @@ namespace NRegEx;
 public static class Utils
 {
 
-    public static readonly int[] EMPTY_INTS = Array.Empty<int>();
+    public static readonly int[] EMPTY_INTS = [];
     //|()[]{}^$*+?\.
     //there is no place for #
     public readonly static char[] MetaChars
-        = { '|', '(', ')', '[', ']', '{', '}', '^', '$', '*', '+', '?', '\\', '.' };
+        = ['|', '(', ')', '[', ']', '{', '}', '^', '$', '*', '+', '?', '\\', '.'];
 
     // Returns true iff |c| is an ASCII letter or decimal digit.
     public static bool Isalnum(int c)

@@ -24,7 +24,7 @@ public record class RegExNode(
     bool IsRemoved = false)
 {
     public bool IsRemoved { get; set; } = IsRemoved;
-    public List<RegExNode> Children = new();
+    public List<RegExNode> Children = [];
     public string Name { get; set; } = Name;
     public string Value { get; set; } = Value;
 }

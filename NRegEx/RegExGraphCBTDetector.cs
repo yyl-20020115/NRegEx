@@ -8,7 +8,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 
 namespace NRegEx;
-public enum CBTResultTypes
+public enum CBTResultTypes : uint
 {
     //未检测到CBT
     Undetected = 0,

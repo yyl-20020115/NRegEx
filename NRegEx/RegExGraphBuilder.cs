@@ -7,10 +7,10 @@
 namespace NRegEx;
 public class RegExGraphBuilder
 {
-    public readonly Dictionary<int, Graph> GroupGraphs = new();
-    public readonly Dictionary<int, Graph> BackRefPoints = new();
-    public readonly Dictionary<int, GroupType> GroupTypes = new();
-    public readonly ListLookups<int, Graph> ConditionsGraphs = new();
+    public readonly Dictionary<int, Graph> GroupGraphs = [];
+    public readonly Dictionary<int, Graph> BackRefPoints = [];
+    public readonly Dictionary<int, GroupType> GroupTypes = [];
+    public readonly ListLookups<int, Graph> ConditionsGraphs = [];
     public bool UseMinMaxEdge = true; //NOTICE: should work with path functions.
     public Graph Build(RegExNode node, int id = 0, bool caseInsensitive = false)
         => GraphUtils.Reform(BuildInternal(node, caseInsensitive), id);
@@ -126,8 +126,8 @@ public class RegExGraphBuilder
                             var index = condition.CaptureIndex;
                             if (index is not null)
                             {
-                                ConditionsGraphs[index.Value] = new List<Graph> {
-                                        actionGroupGraph, elseActionGroupGraph };
+                                ConditionsGraphs[index.Value] = [
+                                        actionGroupGraph, elseActionGroupGraph ];
                                 //TODO:
                                 if (condition.Type == TokenTypes.BackReference)
                                 {

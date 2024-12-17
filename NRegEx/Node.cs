@@ -97,9 +97,9 @@ public class Node
     public int SetId(int id) => this.id = id;
     protected BitArray? charSet = null;
     protected int[]? charsArray;
-    public readonly HashSet<Node> Inputs = new();
-    public readonly HashSet<Node> Outputs = new();
-    public readonly List<int> Groups = new();
+    public readonly HashSet<Node> Inputs = [];
+    public readonly HashSet<Node> Outputs = [];
+    public readonly List<int> Groups = [];
     public Node(string Name = "") 
         => this.Name = Name;
     public Node(params int[] chars)

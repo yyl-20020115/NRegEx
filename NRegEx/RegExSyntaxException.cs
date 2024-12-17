@@ -6,14 +6,8 @@
  */
 namespace NRegEx;
 
-public class RegExSyntaxException : Exception
+public class RegExSyntaxException(string error, string patttern = "") : Exception("Error parsing regexp: " + error + (string.IsNullOrEmpty(patttern) ? "" : ": `" + patttern + "`"))
 {
-    public readonly string Error;
-    public readonly string Patttern;
-    public RegExSyntaxException(string error, string patttern = "")
-          : base("Error parsing regexp: " + error + (string.IsNullOrEmpty(patttern) ? "" : ": `" + patttern + "`"))
-    {
-        this.Error = error;
-        this.Patttern = patttern;
-    }
+    public readonly string Error = error;
+    public readonly string Patttern = patttern;
 }

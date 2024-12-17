@@ -14,14 +14,14 @@ public class Graph
     //public int SetId(int id) => this.id = id;
     public readonly string Name;
 
-    public readonly HashSet<Node> Nodes = new();
-    public readonly HashSet<Edge> Edges = new();
-    public readonly Dictionary<(Node, Node), Edge> RepeativeEdges = new();
+    public readonly HashSet<Node> Nodes = [];
+    public readonly HashSet<Edge> Edges = [];
+    public readonly Dictionary<(Node, Node), Edge> RepeativeEdges = [];
     public Node Head;
     public Node Tail;
     public readonly RegExNode SourceNode;
-    public readonly List<int> BackReferences = new();
-    public readonly List<Graph> ReferenceGraphs = new();
+    public readonly List<int> BackReferences = [];
+    public readonly List<Graph> ReferenceGraphs = [];
     public int Position { get; protected set; } = -1;
     public int Length { get; protected set; } = 0;
     public Graph(string Name,RegExNode SourceNode, params int[] cs)

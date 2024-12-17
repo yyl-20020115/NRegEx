@@ -8,7 +8,7 @@ using System.Text;
 
 namespace NRegEx;
 
-public class RegExDomParser
+public class RegExDomParser(string name, string pattern, Options options)
 {
     public const int MatchGroupIndex = 0;
 
@@ -27,22 +27,17 @@ public class RegExDomParser
     private const string ERR_MISSING_REPEAT_ARGUMENT = "missing argument to repetition operator";
     private const string ERR_TRAILING_BACKSLASH = "trailing backslash at end of expression";
     private const string ERR_DUPLICATE_NAMED_CAPTURE = "duplicate capture group name";
-    public readonly string Name;
-    public readonly RegExPatternReader Reader;
-    public Options Options;
-    public readonly Dictionary<string, int> NamedGroups = new();
+    public readonly string Name = name;
+    public readonly RegExPatternReader Reader = new(
+            pattern ?? throw new ArgumentNullException(nameof(pattern)));
+    public Options Options = options;
+    public readonly Dictionary<string, int> NamedGroups = [];
     public string Pattern => this.Reader.Pattern;
-    protected readonly Stack<RegExNode> NodeStack = new();
-    protected readonly Stack<RegExNode> NestStack = new();
+    protected readonly Stack<RegExNode> NodeStack = [];
+    protected readonly Stack<RegExNode> NestStack = [];
 
     protected int CaptureIndex = MatchGroupIndex;
-    public RegExDomParser(string name, string pattern, Options options)
-    {
-        this.Name = name;
-        this.Reader = new RegExPatternReader(
-            pattern ?? throw new ArgumentNullException(nameof(pattern)));
-        this.Options = options;
-    }
+
     /// <summary>
     /// Lazy/Possessive/Normal support
     /// </summary>
@@ -112,7 +107,7 @@ public class RegExDomParser
                         if (tops != BehaviourOptions.Greedy) this.Reader.Skip();
                         this.Push(new(TokenTypes.OnePlus,
                             text, "", 1, -1, BehaviourOptions: tops, Position: Position, PatternName: this.Name)
-                        { Children = new() { this.NodeStack.Pop() } });
+                        { Children = [this.NodeStack.Pop()] });
                     }
                     continue;
                 case '*':
@@ -122,7 +117,7 @@ public class RegExDomParser
                         if (tops != BehaviourOptions.Greedy) this.Reader.Skip();
                         this.Push(new(TokenTypes.ZeroPlus,
                             text, "", 0, -1, BehaviourOptions: tops, Position: Position, PatternName: this.Name)
-                        { Children = new() { this.NodeStack.Pop() } });
+                        { Children = [this.NodeStack.Pop()] });
                     }
                     continue;
                 case '?':
@@ -132,7 +127,7 @@ public class RegExDomParser
                         if (tops != BehaviourOptions.Greedy) this.Reader.Skip();
                         this.Push(new(TokenTypes.ZeroOne,
                             text, "", 0, 1, BehaviourOptions: tops, Position: Position, PatternName: this.Name)
-                        { Children = new() { this.NodeStack.Pop() } });
+                        { Children = [this.NodeStack.Pop()] });
                     }
                     continue;
                 case '(':
@@ -168,7 +163,7 @@ public class RegExDomParser
                             this.Reader.Discard();
                             this.Push(new(TokenTypes.Repeats,
                                 text ?? "", "", min, max, Position: Position, PatternName: this.Name)
-                            { Children = new() { this.NodeStack.Pop() } });
+                            { Children = [this.NodeStack.Pop()] });
                         }
                     }
                     continue;
@@ -207,7 +202,7 @@ public class RegExDomParser
         {
             result = new RegExNode(TokenTypes.Group, GroupType: open.GroupType, PatternName: this.Name, CaptureIndex: open.CaptureIndex)
             {
-                Children = new() { result }
+                Children = [result]
             };
         }
 
@@ -388,8 +383,7 @@ public class RegExDomParser
 
             Reader.SkipString(name);
             Reader.Skip(5 + delta); // "(?P<>"
-            RegExNode? node = null;
-
+            RegExNode? node;
             if (s.StartsWith("(?#'"))
             {
                 //(?#'name' expr expr )  zero width non captive declaration.
@@ -420,7 +414,7 @@ public class RegExDomParser
                 throw new PatternSyntaxException(ERR_DUPLICATE_NAMED_CAPTURE, name);
 
             NamedGroups.Add(name, this.CaptureIndex);
-            this.Push(node);
+            this.Push(null);
 
             return;
         }
@@ -1229,8 +1223,8 @@ public class RegExDomParser
         {
             children.Add(new(TokenTypes.Sequence, PatternName: this.Name)
             {
-                Children = new() {new(TokenTypes.RuneClass, Options: Options,
-                    Runes: runes.ToArray(), Inverted: inverted, Position: position, PatternName:this.Name)}
+                Children = [new(TokenTypes.RuneClass, Options: Options,
+                    Runes: [.. runes], Inverted: inverted, Position: position, PatternName:this.Name)]
             });
         }
     }

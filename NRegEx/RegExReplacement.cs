@@ -6,19 +6,13 @@
  */
 namespace NRegEx;
 
-public class RegExReplacement
+public class RegExReplacement(ReplacementType Type, string Value = "", int index = -1, string Name = "")
 {
-    public readonly ReplacementType Type;
-    public readonly string Name;
-    public readonly int Index;
-    public readonly string Value;
-    public RegExReplacement(ReplacementType Type, string Value = "", int index = -1, string Name = "")
-    {
-        this.Type = Type;
-        this.Value = Value;
-        this.Index = index;
-        this.Name = Name;
-    }
+    public readonly ReplacementType Type = Type;
+    public readonly string Name = Name;
+    public readonly int Index = index;
+    public readonly string Value = Value;
+
     public string Replace(Match match, string input, string pre, string post) => Type switch
     {
         ReplacementType.Dollar => "$",

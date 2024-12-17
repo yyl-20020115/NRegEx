@@ -9,15 +9,11 @@ using System.Text;
 
 namespace NRegEx;
 
-public class LinkedNode
+public class LinkedNode(Node Node, LinkedNode? Previous = null)
 {
-    public readonly Node Node;
-    public LinkedNode? Previous;
-    public LinkedNode(Node Node, LinkedNode? Previous = null)
-    {
-        this.Node = Node;
-        this.Previous = Previous;
-    }
+    public readonly Node Node = Node;
+    public LinkedNode? Previous = Previous;
+
     public override string ToString()
         =>this.Node?.ToString()??string.Empty;
 }

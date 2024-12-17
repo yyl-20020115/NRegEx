@@ -62,7 +62,7 @@ public class ListLookups<TKey, TValue>
         if (this.Data.TryGetValue(key, out var list))
             list.Add(value);
         else
-            this.Data.Add(key, new List<TValue> { value });
+            this.Data.Add(key, [value]);
     }
     public void Add(TKey key, IEnumerable<TValue> values)
     {

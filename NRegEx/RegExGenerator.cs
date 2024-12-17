@@ -8,15 +8,15 @@ using System.Text;
 
 namespace NRegEx;
 
-public class RegExGenerator
+public class RegExGenerator(Regex regex, Random? random = null, int maxRetries = 8)
 {
     public static string RemoveStartEndMarkers(string regExp)
     {
-        if (regExp.StartsWith("^", StringComparison.Ordinal))
+        if (regExp.StartsWith('^'))
         {
             regExp = regExp[1..];
         }
-        if (regExp.EndsWith("$", StringComparison.Ordinal))
+        if (regExp.EndsWith('$'))
         {
             regExp = regExp[..^1];
         }
@@ -24,18 +24,12 @@ public class RegExGenerator
         return regExp;
     }
 
-    public readonly Regex Regex;
-    public readonly Random Random;
-    public readonly int MaxRetries;
+    public readonly Regex Regex = regex;
+    public readonly Random Random = random ?? Random.Shared;
+    public readonly int MaxRetries = maxRetries;
 
     public RegExGenerator(string regex, Random? random = null, int maxRetries = 8)
             : this(new Regex(RemoveStartEndMarkers(regex)), random) { }
-    public RegExGenerator(Regex regex, Random? random = null, int maxRetries = 8)
-    {
-        this.Regex = regex;
-        this.MaxRetries = maxRetries;
-        this.Random = random ?? Random.Shared;
-    }
 
     protected virtual int GenerateRandomRune(int[]? runes)
         => runes == null ? '\0' : runes[Random.Next(runes.Length)];
@@ -58,7 +52,6 @@ public class RegExGenerator
         if (node.Children.Count > 0) this.Generate(node.Children[0], builder);
         return builder;
     }
-
     protected virtual StringBuilder? GenerateRune(int[] runes, int count, StringBuilder? builder)
     {
         for (int i = 0; i < count; i++)
@@ -73,7 +66,7 @@ public class RegExGenerator
         {
             var set = new HashSet<int>(Node.AllChars);
             set.ExceptWith(runes);
-            runes = set.ToArray();
+            runes = [.. set];
         }
         return runes;
     }

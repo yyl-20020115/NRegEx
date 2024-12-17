@@ -367,11 +367,11 @@ public static class UnicodeTables
         CASE_ORBIT[0x212b] = (char)0xc5;
     }
 
-    private static int[][] Make_Lu() => new int[][] {
-      new[]{0x0041, 0x005A, 1},
-      new[]{0x00C0, 0x00D6, 1},
-      new[]{0x00D8, 0x00DE, 1},
-      new[]{0x0100, 0x0136, 2},
+    private static int[][] Make_Lu() => [
+      [0x0041, 0x005A, 1],
+      [0x00C0, 0x00D6, 1],
+      [0x00D8, 0x00DE, 1],
+      [0x0100, 0x0136, 2],
       new[]{0x0139, 0x0147, 2},
       new[]{0x014A, 0x0178, 2},
       new[]{0x0179, 0x017D, 2},
@@ -495,7 +495,7 @@ public static class UnicodeTables
       new[]{0x1D756, 0x1D76E, 1},
       new[]{0x1D790, 0x1D7A8, 1},
       new[]{0x1D7CA, 0x1D7CA, 1}
-    };
+    ];
 
     private static int[][] Make_Ll() => new int[][] {
       new[]{0x0061, 0x007A, 1},

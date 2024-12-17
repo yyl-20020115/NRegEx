@@ -11,7 +11,7 @@ namespace NRegEx;
 public static class RegExTools
 {
     public static string Result(this Match match, string replacement)
-        => DoReplace(match.Input, new Match[] { match }, replacement);
+        => DoReplace(match.Input, [match], replacement);
     public static string Result(this IEnumerable<Match> matches, string replacement)
         => DoReplace(matches.First().Input, matches.ToArray(), replacement);
     public static string DoReplace(string input, string pattern, string replacement)

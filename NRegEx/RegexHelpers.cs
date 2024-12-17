@@ -4,6 +4,8 @@
  * Use of this source code is governed by a BSD-style
  * license that can be found in the LICENSE file.
  */
+namespace NRegEx;
+
 public static class RegexHelpers
 {
     public static int FixDirection(int direction) => direction >= 0 ? 1 : -1;

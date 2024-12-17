@@ -56,24 +56,13 @@ public class CountablePath : Path
         return again;
     }
     public bool IsUncompleted => this.MinRepeats.HasValue && this.MinRepeats.Value > 0;
-    protected override Path Create(List<LinkedNode> reversed_list, bool isCircle = false)
+    protected override Path Create(List<LinkedNode> reversed_list, bool isCircle = false) 
+        => new CountablePath(reversed_list, isCircle);
+    protected override Path Create(Path path, Node node) 
+        => new CountablePath(path, node)
     {
-        var cp = new CountablePath(reversed_list, isCircle)
-        {
-            CountableEdge = CountableEdge,
-            MinRepeats = this.MinRepeats,
-            MaxRepeats = this.MaxRepeats
-        };
-        return cp;
-    }
-    protected override Path Create(Path path, Node node)
-    {
-        var cp = new CountablePath(path, node)
-        {
-            CountableEdge = CountableEdge,
-            MinRepeats = this.MinRepeats,
-            MaxRepeats = this.MaxRepeats
-        };
-        return cp;
-    }
+        CountableEdge = CountableEdge,
+        MinRepeats = this.MinRepeats,
+        MaxRepeats = this.MaxRepeats
+    };
 }

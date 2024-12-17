@@ -6,101 +6,94 @@
  */
 namespace NRegEx;
 
-public class CharGroup
+public class CharGroup(int Sign, int[] Class)
 {
-    public readonly int Sign;
-    public readonly int[] Class;
-
-    private CharGroup(int Sign, int[] Class)
-    {
-        this.Sign = Sign;
-        this.Class = Class;
-    }
-
-    private static readonly int[] Code1 = {
+    public readonly int Sign = Sign;
+    public readonly int[] Class = Class;
+    private static readonly int[] Code1 = [
         /* \d */
         0x30, 0x39,
-    };
+    ];
 
-    private static readonly int[] Code2 = {
+    private static readonly int[] Code2 = [
         /* \s */
         0x9, 0xa, 0xc, 0xd, 0x20, 0x20,
-    };
+    ];
 
-    private static readonly int[] Code3 = {
+    private static readonly int[] Code3 = [
         /* \w */
         0x30, 0x39, 0x41, 0x5a, 0x5f, 0x5f, 0x61, 0x7a,
-    };
+    ];
 
-    private static readonly int[] Code4 = {
+    private static readonly int[] Code4 = [
         /* [:alnum:] */
         0x30, 0x39, 0x41, 0x5a, 0x61, 0x7a,
-    };
+    ];
 
-    private static readonly int[] Code5 = {
+    private static readonly int[] Code5 = [
         /* [:alpha:] */
         0x41, 0x5a, 0x61, 0x7a,
-    };
+    ];
 
-    private static readonly int[] Code6 = {
+    private static readonly int[] Code6 = [
         /* [:ascii:] */
         0x0, 0x7f,
-    };
+    ];
 
-    private static readonly int[] Code7 = {
+    private static readonly int[] Code7 = [
         /* [:blank:] */
         0x9, 0x9, 0x20, 0x20,
-    };
+    ];
 
-    private static readonly int[] Code8 = {
+    private static readonly int[] Code8 = [
         /* [:cntrl:] */
         0x0, 0x1f, 0x7f, 0x7f,
-    };
+    ];
 
-    private static readonly int[] Code9 = {
+    private static readonly int[] Code9 = [
         /* [:digit:] */
         0x30, 0x39,
-    };
+    ];
 
-    private static readonly int[] Code10 = {
+    private static readonly int[] Code10 = [
         /* [:graph:] */
         0x21, 0x7e,
-    };
+    ];
 
-    private static readonly int[] Code11 = {
+    private static readonly int[] Code11 = [
         /* [:lower:] */
         0x61, 0x7a,
-    };
+    ];
 
-    private static readonly int[] Code12 = {
+    private static readonly int[] Code12 = [
         /* [:print:] */
         0x20, 0x7e,
-    };
+    ];
 
-    private static readonly int[] Code13 = {
+    private static readonly int[] Code13 = [
         /* [:punct:] */
         0x21, 0x2f, 0x3a, 0x40, 0x5b, 0x60, 0x7b, 0x7e,
-    };
+    ];
 
-    private static readonly int[] Code14 = {
+    private static readonly int[] Code14 = [
         /* [:space:] */
         0x9, 0xd, 0x20, 0x20,
-    };
+    ];
 
-    private static readonly int[] Code15 = {
+    private static readonly int[] Code15 = [
         /* [:upper:] */
         0x41, 0x5a,
-    };
+    ];
 
-    private static readonly int[] Code16 = {
+    private static readonly int[] Code16 = [
         /* [:word:] */
         0x30, 0x39, 0x41, 0x5a, 0x5f, 0x5f, 0x61, 0x7a,
-    };
+    ];
 
-    private static readonly int[] Code17 = {
+    private static readonly int[] Code17 = [
         /* [:xdigit:] */
         0x30, 0x39, 0x41, 0x46, 0x61, 0x66,
-    };
+    ];
 
     public static readonly Dictionary<string, CharGroup> PERL_GROUPS = new()
     {
