@@ -112,7 +112,7 @@ public partial class Regex
         if ((node.Ending & Endings.Start) == Endings.Start
             || captures.Count == 0)
         {
-            captures.Add(new());
+            captures.Add([]);
         }
         captures.Last().Add(i);
     }

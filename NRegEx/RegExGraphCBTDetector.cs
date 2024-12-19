@@ -79,7 +79,7 @@ public static class RegExGraphCBTDetector
         {
             var nodeCopy = nodes.ToArray();
             nodes.Clear();
-            foreach (var node in nodes)
+            foreach (var node in nodeCopy)
             {
                 if (node == other)
                     return true;

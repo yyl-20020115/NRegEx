@@ -59,7 +59,7 @@ public class GeneratorTests
 
     private List<string> GenerateRegex(RegExGenerator generator, int count, int minLength, int maxLength)
     {
-        List<string> regexList = new();
+        List<string> regexList = [];
         for (int i = 0; i < count; i++)
         {
             try
@@ -86,7 +86,7 @@ public class GeneratorTests
 
     private static List<string> GenerateRegex(RegExGenerator generator, int count)
     {
-        List<string> regexList = new();
+        List<string> regexList = [];
         for (int i = 0; i < count; i++)
         {
             regexList.Add(generator.Generate());
